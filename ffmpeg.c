@@ -112,6 +112,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 #if HAVE_LIBGD20
     PHP_FALIAS(getframe,            getFrame,           NULL)
     PHP_FALIAS(getframeresampled,   getFrameResampled,  NULL)
+    PHP_FALIAS(getframeintoimage,   getFrameIntoImage,  NULL)
 #endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
@@ -1273,6 +1274,110 @@ PHP_FUNCTION(getFrameResampled)
     }
 }
 /* }}} */
+
+
+/* {{{ proto bool getFrameIntoImage(resource dest_gd_img [, int frame [, int crop_top [, int crop_bottom [, int crop_left [, int crop_right ]]]]])
+ */
+PHP_FUNCTION(getFrameIntoImage)
+{
+    int argc, wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
+    int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0; 
+    zval **argv[6], *gd_img_resource;
+    gdImage *gd_img;
+    AVFrame *frame = NULL;
+    ffmovie_context *ffmovie_ctx;
+
+    /* get the number of arguments */
+    argc = ZEND_NUM_ARGS();
+
+    if (argc > 6 || argc < 1) {
+        WRONG_PARAM_COUNT;
+    }
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    /* retrieve arguments */ 
+    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+        WRONG_PARAM_COUNT;
+    }
+
+    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, argv[0], -1, "Image", le_gd);
+    
+    if (!gd_img->trueColor) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "First parameter must be a previously initialized gd image.");
+    }
+
+    /* check for optional frame number arg */
+    if (argc >= 2) {
+        convert_to_long_ex(argv[1]);
+        wanted_frame = Z_LVAL_PP(argv[1]);
+    }
+
+    /* check for optional crop top arg */
+    if (argc >= 3) {
+        convert_to_long_ex(argv[2]);
+        crop_top = Z_LVAL_PP(argv[2]);
+
+        /*  crop top  must be even number for lavc cropping */
+        if (crop_top % 2) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop top must be an even number");
+        }
+    }
+
+    /* check for optional crop bottom arg */
+    if (argc >= 4) {
+        convert_to_long_ex(argv[3]);
+        crop_bottom = Z_LVAL_PP(argv[3]);
+        
+        /*  crop bottom must be even number for lavc cropping */
+        if (crop_bottom % 2) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop bottom must be an even number");
+        }
+    }
+
+    /* check for optional crop left arg */
+    if (argc >= 5) {
+        convert_to_long_ex(argv[4]);
+        crop_left = Z_LVAL_PP(argv[4]);
+
+        /*  crop left must be even number for lavc cropping */
+        if (crop_left % 2) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop left must be an even number");
+        }
+    }
+
+    /* check for optional crop right arg */
+    if (argc >= 6) {
+        convert_to_long_ex(argv[5]);
+        crop_right = Z_LVAL_PP(argv[5]);
+
+        /*  crop right must be even number for lavc cropping */
+        if (crop_right % 2) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop right must be an even number");
+        }
+    }
+
+    wanted_width = gdImageSX(gd_img);
+    wanted_height = gdImageSY(gd_img);
+    
+    frame = _php_getframe(ffmovie_ctx, wanted_frame, 
+            wanted_width, wanted_height, 
+            crop_top, crop_bottom, crop_left, crop_right);
+    
+    if (frame) {
+        _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
+        RETURN_TRUE
+    } else {
+        RETURN_FALSE
+    }
+}
+/* }}} */
+
 
 #endif /* HAVE_LIBGD20 */
 
