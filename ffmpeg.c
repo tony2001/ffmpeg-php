@@ -915,8 +915,7 @@ PHP_FUNCTION(getFrame)
     if (final_frame) {
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
-        zend_error(E_ERROR, "Couldn't find frame %d in %s", wanted_frame,
-                _php_get_filename(ffmovie_ctx));
+        RETURN_FALSE
     }
 }
 /* }}} */
