@@ -20,7 +20,7 @@ ZEND_RINIT_FUNCTION(ffmpeg);
 ZEND_RSHUTDOWN_FUNCTION(ffmpeg);
 ZEND_MINFO_FUNCTION(ffmpeg);
 
-ZEND_FUNCTION(ffmpeg_movie_open);
+ZEND_FUNCTION(ffmpeg_movie);
 
 ZEND_FUNCTION(getDuration);
 ZEND_FUNCTION(getFrameCount);
