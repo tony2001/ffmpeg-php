@@ -35,12 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-/* FIXME: make this work without the ../../ when compiling standalone */    
-#if HAVE_GD_BUNDLED     
-#include "../../ext/gd/libgd/gd.h"    
-#else   
 #include "gd.h" 
-#endif /* HAVE_GD_BUNDLED */
 
 #define GET_MOVIE_RESOURCE(im) {\
 	zval **_tmp_zval;\
@@ -896,7 +891,8 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
  */
 
 AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
-        int wanted_width, int wanted_height)
+        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
+        int crop_left, int crop_right)
 {
     int got_frame, video_stream;
     enum PixelFormat target_pixfmt;
@@ -963,9 +959,11 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             yuv_frame = decoded_frame;
                         }
 
-                        img_resample_ctx = img_resample_init(
+                        img_resample_ctx = img_resample_full_init(
                                 wanted_width, wanted_height,
-                                decoder_ctx->width, decoder_ctx->height);
+                                decoder_ctx->width, decoder_ctx->height,
+                                crop_top, crop_bottom, crop_left, crop_right,
+                                0, 0, 0, 0);
                         
                         resampled_frame = av_malloc(sizeof (AVFrame));
                         
@@ -1063,7 +1061,8 @@ PHP_FUNCTION(getFrame)
 
     wanted_width = _php_get_framewidth(ffmovie_ctx);
     wanted_height = _php_get_frameheight(ffmovie_ctx); 
-    frame = _php_getframe(ffmovie_ctx, wanted_frame, wanted_width, wanted_height);
+    frame = _php_getframe(ffmovie_ctx, wanted_frame, 
+            wanted_width, wanted_height, 0, 0, 0, 0);
 
     if (frame) {
 
@@ -1093,17 +1092,18 @@ PHP_FUNCTION(getFrame)
  */
 PHP_FUNCTION(getFrameResampled)
 {
-    zval **argv[2], *gd_img_resource;
+    zval **argv[6], *gd_img_resource;
     gdImage *gd_img;
     int argc;
     int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
+    int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0; 
     AVFrame *frame = NULL;
     ffmovie_context *ffmovie_ctx;
 
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
 
-    if (argc > 3 || argc < 2) {
+    if (argc > 7 || argc < 2) {
         WRONG_PARAM_COUNT;
     }
 
@@ -1143,7 +1143,7 @@ PHP_FUNCTION(getFrameResampled)
     }
 
     /* check for optional frame number arg */
-    if (argc == 3) {
+    if (argc >= 3) {
         convert_to_long_ex(argv[2]);
         wanted_frame = Z_LVAL_PP(argv[2]);
 
@@ -1152,8 +1152,54 @@ PHP_FUNCTION(getFrameResampled)
             zend_error(E_ERROR, "Frame number must be greater than zero");
         }
     }
-    
-    frame = _php_getframe(ffmovie_ctx, wanted_frame, wanted_width, wanted_height);
+
+    /* check for optional crop top arg */
+    if (argc >= 4) {
+        convert_to_long_ex(argv[3]);
+        crop_top = Z_LVAL_PP(argv[3]);
+
+        /*  crop top  must be even number for lavc cropping */
+        if (crop_top % 2) {
+            zend_error(E_ERROR, "Crop top must be an even number");
+        }
+    }
+
+    /* check for optional crop bottom arg */
+    if (argc >= 5) {
+        convert_to_long_ex(argv[4]);
+        crop_bottom = Z_LVAL_PP(argv[4]);
+        
+        /*  crop bottom must be even number for lavc cropping */
+        if (crop_bottom % 2) {
+            zend_error(E_ERROR, "Crop bottom must be an even number");
+        }
+    }
+
+    /* check for optional crop left arg */
+    if (argc >= 6) {
+        convert_to_long_ex(argv[5]);
+        crop_left = Z_LVAL_PP(argv[5]);
+
+        /*  crop left must be even number for lavc cropping */
+        if (crop_left % 2) {
+            zend_error(E_ERROR, "Crop left must be an even number");
+        }
+    }
+
+    /* check for optional crop right arg */
+    if (argc >= 7) {
+        convert_to_long_ex(argv[6]);
+        crop_right = Z_LVAL_PP(argv[6]);
+
+        /*  crop right must be even number for lavc cropping */
+        if (crop_right % 2) {
+            zend_error(E_ERROR, "Crop right must be an even number");
+        }
+    }
+
+    frame = _php_getframe(ffmovie_ctx, wanted_frame, 
+            wanted_width, wanted_height, 
+            crop_top, crop_bottom, crop_left, crop_right);
 
     if (frame) {
 
@@ -1176,8 +1222,6 @@ PHP_FUNCTION(getFrameResampled)
     }
 }
 /* }}} */
-
-
 
 #endif /* HAVE_LIBGD20 */
 
