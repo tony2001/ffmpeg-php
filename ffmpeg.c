@@ -804,7 +804,7 @@ zval* _php_get_gd_image(int w, int h)
     MAKE_STD_ZVAL(width);
     MAKE_STD_ZVAL(height);
 
-    ZVAL_STRING(function_name, function_cname, 1);
+    ZVAL_STRING(function_name, function_cname, 0);
     ZVAL_LONG(width, w);
     ZVAL_LONG(height, h);
 
