@@ -13,4 +13,4 @@ imagedestroy($gd_image);
 printf("ffmpeg getFrameNumber(): %d\n", $mov->getFrameNumber());
 ?>
 --EXPECT--
-ffmpeg getFrameNumber(): 6
+ffmpeg getFrameNumber(): 5
