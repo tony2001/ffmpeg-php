@@ -5,6 +5,9 @@
   without the performance hit of reopening the movie for each getFrame() call.
 
 * Add option to resize (resample) the frame returned from getFrame(). This
-  will use ffmpegs resampling which is better than GDs and should speed a
-  bit when returning say a thumbnail sized frame since less data has to
+  will use ffmpeg's resampling which is better than GDs and should speed up 
+  a bit when returning say a thumbnail sized frame since less data has to
   be copied into the gd_image.
+
+* Try to use av_seek_frame before reverting to sequential reads, this will speed
+  up getFrame() on formats that support seeking.
