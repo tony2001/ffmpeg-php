@@ -323,7 +323,7 @@ PHP_FUNCTION(ffmpeg_movie)
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
 
-    ifx(argc != 1) {
+    if (argc != 1) {
         WRONG_PARAM_COUNT;
     }
 
