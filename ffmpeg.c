@@ -454,6 +454,7 @@ PHP_FUNCTION(getFrameHeight) {
     GET_MOVIE_RESOURCE(im);
     RETURN_LONG(_php_get_frameheight(im));
 }
+/* }}} */
 
 
 /* {{{ _php_get_pixelformat()
