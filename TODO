@@ -19,6 +19,6 @@
 
 * Add padding to getFrameResampled()
 
-* Add cropping for non resampled images
+* Test cropping for non resampled images
 
 * Add ffmpeg_track object to encapsulate audio file specific methods
