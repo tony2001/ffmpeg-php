@@ -168,7 +168,6 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
        avpicture_free((AVPicture *)ffmovie_ctx->resample_ctx_frame.frame);
        av_free(ffmovie_ctx->resample_ctx_frame.frame);
     }
-
 }
 /* }}} */
 
@@ -746,15 +745,6 @@ static AVFrame *_php_get_context_frame(ffmovie_frame *ff_frame, int width,
 /* }}} */
 
 
-/* {{{ _php_free_av_frame()
- * free buffer allocated by the decoder in _php_getframe()
- */
-static void _php_free_decoder_ctx_frame(ffmovie_context *ffmovie_ctx) {
-    avpicture_free((AVPicture*)&ffmovie_ctx->decoder_ctx_frame);
-}
-/* }}} */
-
-
 /* {{{ dump_img_to_sgi()
  * For debugging frame conversions
  * TODO: add img conversion to allow other pix_fmts than PIX_FMT_RGBA32
@@ -1061,14 +1051,6 @@ PHP_FUNCTION(get_frame)
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
         
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
-
-        /* 
-           free the frame allocated by the decoder in _php_getframe (likely not 
-           the same frame as the returned by _php_getframe since different frame
-           pointers are returned depending on the combination of 
-           resampling/conversion/cropping that happens in _php_getframe()
-          */
-        _php_free_decoder_ctx_frame(ffmovie_ctx);
 
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
