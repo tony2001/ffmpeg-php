@@ -578,10 +578,25 @@ PHP_FUNCTION(getFrameHeight)
    that requires it is called.
  */
 static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
-        int stream_index)
+        int stream_type)
 {
     AVCodec *decoder;
-    
+    int stream_index;
+
+    stream_index = _php_get_stream_index(ffmovie_ctx->fmt_ctx, stream_type);
+    if (stream_index < 0) {
+        // FIXME: Find a way to do this without the if statement
+        if (stream_type = CODEC_TYPE_VIDEO) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Can't find video stream in %s", 
+                    _php_get_filename(ffmovie_ctx));
+        } else {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Can't find audio stream in %s", 
+                    _php_get_filename(ffmovie_ctx));
+        }
+    }
+
     if (!ffmovie_ctx->codec_ctx) {
    
         ffmovie_ctx->codec_ctx = 
@@ -590,7 +605,7 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
         /* find the decoder */
         decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
         if (!decoder) {
-            zend_error(E_ERROR, "Could not finder decoder for %s", 
+            zend_error(E_ERROR, "Could not find decoder for %s", 
                     _php_get_filename(ffmovie_ctx));
         }
 
@@ -610,15 +625,9 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
 static long _php_get_framenumber(ffmovie_context *ffmovie_ctx) 
 {
     AVCodecContext *decoder_ctx;
-    int video_stream;
 
-    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
-            CODEC_TYPE_VIDEO);
-    if (video_stream < 0) {
-        return 0;
-    }
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     if (decoder_ctx->frame_number <= 0) {
         return 1; /* no frames read yet so return the first */
     } else {
@@ -646,15 +655,9 @@ PHP_FUNCTION(getFrameNumber)
 static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx;
-    int video_stream;
+    
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
 
-    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
-            CODEC_TYPE_VIDEO);
-    if (video_stream < 0) {
-        return NULL;
-    }
-
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     return avcodec_get_pix_fmt_name(decoder_ctx->pix_fmt);
 }
 /* }}} */
@@ -869,31 +872,25 @@ int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int heigh
 /* }}} */
 
 
-/* {{{ _php_getframe()
+/* {{{ _php_findframe()
    Returns a frame from the movie.
  */
-AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
-        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
-        int crop_left, int crop_right)
+AVFrame* _php_findframe(int wanted_frame, ffmovie_context *ffmovie_ctx)
 {
-    int got_frame, video_stream, non_resize_crop = 0;
-    enum PixelFormat target_pixfmt;
-    AVPacket packet;
     AVCodecContext *decoder_ctx;
-    ImgReSampleContext *img_resample_ctx;
-    AVFrame *final_frame = NULL;
-    AVFrame *yuv_frame, *resampled_frame;
+    AVPacket packet;
+    int got_frame; 
+    int video_stream;
 
-    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
-            CODEC_TYPE_VIDEO);
+    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_VIDEO);
     if (video_stream < 0) {
-        return NULL; /* FIXME: Should probably error here */
+        return NULL;
     }
-
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
+ 
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
+    if (wanted_frame && wanted_frame <= ffmovie_ctx->codec_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
             zend_error(E_ERROR, "Error seeking to begining of video stream");
         }
@@ -902,8 +899,48 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         ffmovie_ctx->codec_ctx = NULL;
 
         /* re-open decoder */
-        decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
+        decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
     }
+
+    /* read frames looking for wanted_frame */ 
+    while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
+
+        if (packet.stream_index == video_stream) {
+            avcodec_decode_video(decoder_ctx, &ffmovie_ctx->decoder_ctx_frame, &got_frame,
+                    packet.data, packet.size);
+
+            if (got_frame) {
+                if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
+                    /* free wanted frame packet */
+                    av_free_packet(&packet);
+                    break; 
+                }
+            }
+        }
+
+        /* free the packet allocated by av_read_frame */
+        av_free_packet(&packet);
+    }
+    return &ffmovie_ctx->decoder_ctx_frame;
+}
+/* }}} */
+
+
+/* {{{ _php_getframe()
+   find a frame in the movie and return it.
+ */
+AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
+        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
+        int crop_left, int crop_right)
+{
+    int non_resize_crop = 0;
+    enum PixelFormat target_pixfmt;
+    AVCodecContext *decoder_ctx;
+    ImgReSampleContext *img_resample_ctx;
+    AVFrame *decoded_frame, *final_frame = NULL;
+    AVFrame *yuv_frame, *resampled_frame;
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
 
     if (crop_top || crop_bottom) {
         if (crop_top + crop_bottom >= decoder_ctx->height) {
@@ -919,119 +956,93 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         }
     }
 
-    /* read frames looking for wanted_frame */ 
-    while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
+    /* decoded frame is really just a pointer to ffmovie_ctx->decoder_ctx_frame */
+    if (decoded_frame = _php_findframe(wanted_frame, ffmovie_ctx)) {
 
-        if (packet.stream_index == video_stream) {
-            avcodec_decode_video(decoder_ctx, &ffmovie_ctx->decoder_ctx_frame, &got_frame,
-                    packet.data, packet.size);
+        if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
+                (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
+        {
+            /* not resampling so just point to the decoded frame */
+            resampled_frame = decoded_frame;
+            target_pixfmt = decoder_ctx->pix_fmt;
 
-            if (got_frame) {
-
-                /* get wanted frame or next frame in stream if called without
-                   a frame number */
-                if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
-                    
-                    if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
-                            (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
-                    {
-                        /* not resampling so just point to the decoded frame */
-                        resampled_frame = &ffmovie_ctx->decoder_ctx_frame;
-                        target_pixfmt = decoder_ctx->pix_fmt;
-
-                        if (crop_top || crop_bottom || crop_left || crop_right) {
-                            non_resize_crop = 1;
-                            wanted_width = decoder_ctx->width; // FIXME: hack
-                            wanted_height = decoder_ctx->height; // FIXME: hack
-                        }
-
-                    } else { /* resampling is needed */
-
-                        /* convert to PIX_FMT_YUV420P required for resampling */
-                        if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
-
-                            yuv_frame = _php_get_context_frame(
-                                    &ffmovie_ctx->yuv_ctx_frame,
-                                    decoder_ctx->width, decoder_ctx->height, 
-                                    PIX_FMT_YUV420P);
-
-                            if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
-                                        (AVPicture *)&ffmovie_ctx->decoder_ctx_frame, 
-                                        decoder_ctx->pix_fmt, decoder_ctx->width, 
-                                        decoder_ctx->height) < 0) {
-                                zend_error(E_ERROR, "Error converting for resampling");
-                            }
-
-                        } else {
-                            yuv_frame = &ffmovie_ctx->decoder_ctx_frame;
-                        }
-
-                        img_resample_ctx = img_resample_full_init(
-                                wanted_width, wanted_height,
-                                decoder_ctx->width, decoder_ctx->height,
-                                crop_top, crop_bottom, crop_left, crop_right,
-                                0, 0, 0, 0);
-                        
-                        resampled_frame = _php_get_context_frame(
-                                &ffmovie_ctx->resample_ctx_frame,
-                                wanted_width, wanted_height, PIX_FMT_YUV420P);
-                        
-                        img_resample(img_resample_ctx, 
-                                (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
-
-                        target_pixfmt = PIX_FMT_YUV420P;
-                    }
-
-                    if (target_pixfmt != PIX_FMT_RGBA32) {
-
-                        final_frame = _php_get_context_frame(
-                                &ffmovie_ctx->rgba_ctx_frame,
-                                wanted_width, wanted_height, PIX_FMT_RGBA32); 
-                            
-                        if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
-                                    (AVPicture*)resampled_frame, target_pixfmt,
-                                    wanted_width, wanted_height) < 0) {
-                            zend_error(E_ERROR, "Can't convert frame");
-                        }
-
-                    } else {
-                        final_frame = resampled_frame;
-                    }
-                    
-                    if (non_resize_crop) {
-                        avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
-                                PIX_FMT_RGBA32, wanted_width, wanted_height);
-                        ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0]
-                            + (crop_top * final_frame->linesize[0])
-                                  + (crop_left * RGBA_PIXELSTRIDE);
-
-                        ffmovie_ctx->crop_ctx_frame.linesize[0] = final_frame->linesize[0];
-
-                        /*
-                           original final_frame is a context frame which 
-                           gets freed automatically at when the ffmpeg_movie 
-                           resource is freed..
-                         */
-                        final_frame = &ffmovie_ctx->crop_ctx_frame;
-                    }
-
-                    /* free wanted frame packet */
-                    av_free_packet(&packet);
-                    break; 
-                }
+            if (crop_top || crop_bottom || crop_left || crop_right) {
+                non_resize_crop = 1;
+                wanted_width = decoder_ctx->width; // FIXME: hack
+                wanted_height = decoder_ctx->height; // FIXME: hack
             }
+
+        } else { /* resampling is needed */
+
+            /* convert to PIX_FMT_YUV420P required for resampling */
+            if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
+
+                yuv_frame = _php_get_context_frame(
+                        &ffmovie_ctx->yuv_ctx_frame,
+                        decoder_ctx->width, decoder_ctx->height, 
+                        PIX_FMT_YUV420P);
+
+                if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
+                            (AVPicture *)decoded_frame, 
+                            decoder_ctx->pix_fmt, decoder_ctx->width, 
+                            decoder_ctx->height) < 0) {
+                    zend_error(E_ERROR, "Error converting for resampling");
+                }
+
+            } else {
+                yuv_frame = decoded_frame;
+            }
+
+            img_resample_ctx = img_resample_full_init(
+                    wanted_width, wanted_height,
+                    decoder_ctx->width, decoder_ctx->height,
+                    crop_top, crop_bottom, crop_left, crop_right,
+                    0, 0, 0, 0);
+
+            resampled_frame = _php_get_context_frame(
+                    &ffmovie_ctx->resample_ctx_frame,
+                    wanted_width, wanted_height, PIX_FMT_YUV420P);
+
+            img_resample(img_resample_ctx, 
+                    (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
+
+            target_pixfmt = PIX_FMT_YUV420P;
         }
 
-        /* free the packet allocated by av_read_frame */
-        av_free_packet(&packet);
-    }
+        if (target_pixfmt != PIX_FMT_RGBA32) {
 
-    if (final_frame) {
-        return final_frame;
-    } else {
-        return NULL;
-    }
+            final_frame = _php_get_context_frame(
+                    &ffmovie_ctx->rgba_ctx_frame,
+                    wanted_width, wanted_height, PIX_FMT_RGBA32); 
 
+            if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
+                        (AVPicture*)resampled_frame, target_pixfmt,
+                        wanted_width, wanted_height) < 0) {
+                zend_error(E_ERROR, "Can't convert frame");
+            }
+
+        } else {
+            final_frame = resampled_frame;
+        }
+
+        if (non_resize_crop) {
+            avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
+                    PIX_FMT_RGBA32, wanted_width, wanted_height);
+            ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0]
+                + (crop_top * final_frame->linesize[0])
+                + (crop_left * RGBA_PIXELSTRIDE);
+
+            ffmovie_ctx->crop_ctx_frame.linesize[0] = final_frame->linesize[0];
+
+            /*
+               original final_frame is a context frame which 
+               gets freed automatically at when the ffmpeg_movie 
+               resource is freed..
+             */
+            final_frame = &ffmovie_ctx->crop_ctx_frame;
+        }
+
+    }
     return final_frame;
 }
 /* }}} */
