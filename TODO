@@ -1,2 +1,3 @@
 Add option to config.m4 to -rpath path to ffmpeg libs
+Add check for GD library to config.m4
 
