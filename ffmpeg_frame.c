@@ -284,6 +284,7 @@ static int _php_get_gd_image(int w, int h)
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
     int ret;
+    TSRMLS_FETCH();
    
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
