@@ -526,7 +526,7 @@ PHP_FUNCTION(crop)
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     /* retrieve arguments */ 
-    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
+    argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
 
     if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
         efree(argv);
@@ -603,7 +603,7 @@ PHP_FUNCTION(resize)
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     /* retrieve arguments */ 
-    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
+    argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
 
     if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
         efree(argv);
@@ -701,6 +701,7 @@ PHP_FUNCTION(resize)
     RETURN_TRUE;
 }
 /* }}} */
+
 
 /*
  * Local variables:
