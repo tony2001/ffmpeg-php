@@ -492,7 +492,7 @@ zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img,
     int *data = (int*)av_pict->data[0];
 
     for (y = 0; y < height; y++) {
-        row_start = y * height;
+        row_start = y * width;
         for (x = 0; x < width; x++) {
             gdImageSetPixel(gd_img, x, y, data[row_start + x]); 
         }
