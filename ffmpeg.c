@@ -56,6 +56,8 @@
 
 #define RGBA_PIXELSTRIDE 4
 
+static int le_ffmpeg_movie_classp; 
+
 static int le_ffmpeg_movie;
 
 static int le_gd;
@@ -336,7 +338,7 @@ PHP_FUNCTION(ffmpeg_movie)
      directly, but adding it to the returned object. */
 	ret = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_movie);
     
-    object_init_ex(getThis(), &ffmpeg_movie_class_entry);
+    object_init_ex(getThis(), ffmpeg_movie_class_entry_ptr);
     add_property_resource(getThis(), "ffmpeg_movie", ret);
 }
 /* }}} */
