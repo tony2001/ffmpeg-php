@@ -607,7 +607,6 @@ static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ct
 
         /* open the decoder */
         if (avcodec_open(ffmovie_ctx->codec_ctx, decoder) < 0) {
-            /* TODO: must clean up before erroring */
             zend_error(E_ERROR, "Could not open codec for %s", 
                     _php_get_filename(ffmovie_ctx));
         }
@@ -713,6 +712,11 @@ PHP_FUNCTION(getFrame)
 
                     _php_rgba32_to_gd_image((int*)final_frame->data[0], gd_img, decoder_ctx->width,
                             decoder_ctx->height);
+
+                   
+                    /* free wanted frame */
+                    av_free_packet(&packet);
+                    break; 
                 }
             }
         }
