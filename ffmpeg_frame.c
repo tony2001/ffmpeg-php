@@ -255,7 +255,7 @@ static int _php_resample_frame(ff_frame_context *ff_frame,
 
     resampled_frame = avcodec_alloc_frame();
     avpicture_alloc((AVPicture*)resampled_frame, PIX_FMT_YUV420P, 
-            ff_frame->width, ff_frame->height);
+            wanted_width, wanted_height);
 
     img_resample(img_resample_ctx, (AVPicture*)resampled_frame, 
             (AVPicture*)ff_frame->av_frame);
