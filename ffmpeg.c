@@ -106,6 +106,9 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getFrameHeight, NULL)
     PHP_FALIAS(getframeheight, getFrameHeight, NULL)
 
+    PHP_FE(getFrameNumber, NULL)
+    PHP_FALIAS(getframenumber, getFrameNumber, NULL)
+
 #if HAVE_LIBGD20
     PHP_FE(getFrame, NULL)
     PHP_FALIAS(getframe, getFrame, NULL)
@@ -552,29 +555,6 @@ zval* _php_get_gd_image(int w, int h)
 /* }}} */
 
 
-/* {{{ _php_rgba32_to_gd_image()
- */
-int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height) 
-{
-    int x, y;
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            if (gdImageBoundsSafe(dest, x, y)) {
-                dest->tpixels[y][x] = src[x];
-            } else {
-                return -1;
-            }
-        }
-        src += width;
-    }
-    return 0;
-}
-/* }}} */
-
-#if HAVE_LIBGD20
-
-
 /* {{{ _php_get_codec_ctx() 
    Opens codecs and gets codec context. Always call this to get a pointer to 
    the codec context. This allows to postpone codec init until a function
@@ -585,14 +565,15 @@ static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ct
     int video_stream;
     AVCodec *decoder;
     
-    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
-            CODEC_TYPE_VIDEO);
-    if (video_stream < 0) {
-        zend_error(E_ERROR, "Video stream not found in %s",
-                _php_get_filename(ffmovie_ctx));
-    }
-
     if (!ffmovie_ctx->codec_ctx) {
+
+        video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
+                CODEC_TYPE_VIDEO);
+        if (video_stream < 0) {
+            zend_error(E_ERROR, "Video stream not found in %s",
+                    _php_get_filename(ffmovie_ctx));
+        }
+        
         ffmovie_ctx->codec_ctx = &ffmovie_ctx->fmt_ctx->streams[video_stream]->codec;
         
         /* find the decoder */
@@ -610,6 +591,58 @@ static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ct
         }
     }
     return ffmovie_ctx->codec_ctx;
+}
+/* }}} */
+
+
+/* {{{ _php_get_frame_number()
+ */
+static long _php_get_frame_number(ffmpeg_movie_context *ffmovie_ctx) 
+{
+    AVCodecContext *decoder_ctx;
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+    if (decoder_ctx->frame_number <= 0) {
+        return 1; /* no frames read yet so return the first */
+    } else {
+        return decoder_ctx->frame_number;
+    }
+}
+/* }}} */
+
+
+/* {{{ proto resource getFrameNumber()
+ */
+PHP_FUNCTION(getFrameNumber)
+{
+    ffmpeg_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    RETURN_LONG(_php_get_frame_number(ffmovie_ctx));
+}
+/* }}} */
+
+
+#if HAVE_LIBGD20
+
+/* {{{ _php_rgba32_to_gd_image()
+ */
+int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height) 
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if (gdImageBoundsSafe(dest, x, y)) {
+                dest->tpixels[y][x] = src[x];
+            } else {
+                return -1;
+            }
+        }
+        src += width;
+    }
+    return 0;
 }
 /* }}} */
 
