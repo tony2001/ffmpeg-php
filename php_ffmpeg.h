@@ -32,7 +32,10 @@ PHP_FUNCTION(getAuthor);
 PHP_FUNCTION(getCopyright);
 PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
+
+#if HAVE_LIBGD20
 PHP_FUNCTION(getFrameAsGDImage);
+#endif /* HAVE_LIBGD20 */
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)

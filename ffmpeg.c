@@ -28,11 +28,19 @@
 #include <inttypes.h>
 #include <math.h>
 
-#include "gd.h"
 #include "php.h"
 #include "php_ini.h"
+#include "php_globals.h"
 #include "ext/standard/info.h"
+
 #include "php_ffmpeg.h"
+
+// FIXME: make this work without the ../../ when compiling standalone 
+#if HAVE_GD_BUNDLED
+  #include "../../ext/gd/libgd/gd.h"
+#else
+  #include "gd.h"
+#endif
 
 #define INBUF_SIZE 4096
 
@@ -50,6 +58,8 @@
 
 
 static int le_ffmpeg_movie;
+
+static int le_gd;
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 
@@ -97,8 +107,10 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getFrameHeight, NULL)
     PHP_FALIAS(getframeheight, getFrameHeight, NULL)
 
+#if HAVE_LIBGD20
     PHP_FE(getFrameAsGDImage, NULL)
     PHP_FALIAS(getframeasgdimage, getFrameAsGDImage, NULL)
+#endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
 };
@@ -501,6 +513,7 @@ zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img,
 }
 /* }}} */
 
+#if HAVE_LIBGD20
 
 /* {{{ proto resource getFrameAsGDImage(int frame)
  */
@@ -508,7 +521,7 @@ PHP_FUNCTION(getFrameAsGDImage)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
-    int argc, frame, size, got_picture, len, img_id;
+    int argc, frame, size, got_picture, len;
     FILE *f;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     char buf[1024];
@@ -616,8 +629,8 @@ found_frame:
        zend_error(E_ERROR, "Error creating GD Image");
     }
     
-    ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
-    ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);
+    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
+    ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
    
     zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
     /* make sure frame data is RGBA32 */
@@ -652,6 +665,8 @@ found_frame:
     RETURN_RESOURCE(gd_img_resource->value.lval);
 }
 /* }}} */
+
+#endif /* HAVE_LIBGD20 */
 
 /*
  * Local variables:
