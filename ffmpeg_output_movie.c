@@ -136,6 +136,24 @@ void register_ffmpeg_output_movie_class(int module_number) {
 /* }}} */
 
 
+/* {{{ _php_get_stream_index()
+ */
+static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
+{
+    int i;
+    
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        if (fmt_ctx->streams[i] && 
+                fmt_ctx->streams[i]->codec.codec_type == type) {
+            return i;
+        }
+    }
+    /* stream not found */
+    return -1;
+}
+/* }}} */
+
+
 /* {{{ _php_addframe()
    add a frame from to the movie.
  */
