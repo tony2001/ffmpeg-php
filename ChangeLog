@@ -1,8 +1,24 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.3.6 (12/xx/2004)
+    New Features:
+    * More malloc optimizations in frame conversion/resampling (tkirby)
+    * All functions have been renamed to conform to php coding standards
+      getFrame() is now get_frame()... This is required in order to begin
+      porting ffmpeg-php to PHP5 (tkirby) 
+    * Added cropping support to get_frame_resampled() (tkirby)
+
+    Bug Fixes:
+    * Fixed memory leak when freeing ffmpeg_movie objects (tkirby)
+    * Fixed bug #1077952 Segfault with multiple calls to 
+      get_frame_resampled (tkirby)
+    * Fixed tiny memory leak in _php_get_gd_image() (tkirby)
+    * Added configure warning if trying to build against php 5 since it
+      is not supported yet. (tkirby)
+
 version 0.3.5 (11/29/2004):
     New Features:
-    * Can now be built independently of php sources. (tkirby)
+    * Can now be built independently of PHP sources. (tkirby)
     * Added ebuild goodness for the Gentoo Type/R crowd 
       (tkirby - Gentoo User :-)
 
