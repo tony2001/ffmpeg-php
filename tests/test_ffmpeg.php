@@ -34,7 +34,7 @@ function getDirFiles($dirPath)
 }
 
 
-if (php_sapi_name() != 'cgi') {
+if (php_sapi_name() == 'cgi') {
     echo '<pre>';
 }
 
@@ -90,7 +90,7 @@ foreach($movies as $movie) {
     echo "\n--------------------\n\n";
 }
 
-if (php_sapi_name() != 'cgi') {
+if (php_sapi_name() == 'cgi') {
     echo '</pre>';
 }
 
