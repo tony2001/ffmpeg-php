@@ -1,5 +1,18 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.3.2 (11/22/2004):
+    New Features:
+    * Added getPixelFormat() function (Todd Kirby)
+    * Optimized getFrame() function so that reading successive frames is much 
+      faster (Todd Kirby)
+    * getFrame() can now be called without an argument to get the next frame in
+      the stream (Todd Kirby)
+
+    Bug Fixes:
+    * Fixed getFrame() returning one frame off of the requested 
+      frame (Todd Kirby)
+
+
 version 0.3.1 (11/19/2004):
     Bug Fixes:
     * Full getFrame() rework, should now work with all ffmpeg 
