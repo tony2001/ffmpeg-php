@@ -261,6 +261,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
 {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "ffmpeg support", "enabled");
+    /* TODO: print ffmpeg-php version and lavc version and build numbers here */
 	php_info_print_table_end();
 }
 /* }}} */
@@ -1305,7 +1306,7 @@ PHP_FUNCTION(getFrameIntoImage)
     
     if (!gd_img->trueColor) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "First parameter must be a previously initialized gd image.");
+                "First parameter must be a truecolor gd image.");
     }
 
     /* check for optional frame number arg */
@@ -1388,6 +1389,6 @@ PHP_FUNCTION(getFrameIntoImage)
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: noet sw=4 ts=4 fdm=marker
+ * vim600: noet sw=4 ts=4
  * vim<600: noet sw=4 ts=4
  */
