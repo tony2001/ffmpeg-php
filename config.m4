@@ -4,20 +4,6 @@ PHP_ARG_WITH(ffmpeg,for ffmpeg support,
 dnl Determine path to ffmpeg libs
 if test "$PHP_FFMPEG" != "no"; then
 
-  dnl check php version and bail if it's 5 
-  dnl TODO: This should be a function
-  php_vers=`$PHP_CONFIG --version 2>/dev/null|head -n 1|sed -e 's/^[^0-9]*//' -e 's/[a-z]* *$//'`
-  
-  if test -z "$php_vers"; then
-    echo "Error: php-config not found."
-    exit 1
-  fi
-  IFS=.; set $php_vers; IFS=' '
-  if test "$1" = "5"; then
-    echo "*** ERROR: ffmpeg-php doesn't work with php version $php_vers yet. ***"
-    exit 1
-  fi
-
   AC_MSG_CHECKING(for ffmpeg libraries)
   for i in $PHP_FFMPEG /usr/local /usr ; do
     if test -f $i/include/ffmpeg/avcodec.h; then
