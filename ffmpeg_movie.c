@@ -182,6 +182,8 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
+/* {{{ register_ffmpeg_movie_class()
+ */
 void register_ffmpeg_movie_class(int module_number) {
     le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
             NULL, "ffmpeg_movie", module_number);
@@ -194,8 +196,7 @@ void register_ffmpeg_movie_class(int module_number) {
     ffmpeg_movie_class_entry_ptr = 
         zend_register_internal_class(&ffmpeg_movie_class_entry TSRMLS_CC);
 }
-
-
+/* }}} */
 
 
 /* {{{ _php_get_codec_ctx() 
