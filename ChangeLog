@@ -1,0 +1,8 @@
+ChangeLog for smbfs.
+
+2004-11-17 Todd Kirby <doubleshot at pacbell dot net>
+
+	* First alpha release.
+        * Inital support for getFrame()
+
+New entries at the top.
