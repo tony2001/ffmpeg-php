@@ -740,7 +740,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
         for (x = 0; x < width; x++) {
             if (gdImageBoundsSafe(dest, x, y)) {
 				/* copy frame to gdimage buffer zeroing the alpha channel */
-                dest->tpixels[y][x] = src[x];
+                dest->tpixels[y][x] = src[x] & 0x00ffffff;
             } else {
                 return -1;
             }
