@@ -92,6 +92,8 @@ static AVStream *_php_get_video_stream(AVFormatContext *fmt_ctx)
 
 
 /* {{{ _php_get_audio_stream()
+ * TODO: Some containers can have multiple audio streams, so this
+ *       will eventually need to be replaced by something smarter
  */
 static AVStream *_php_get_audio_stream(AVFormatContext *fmt_ctx)
 {
@@ -847,7 +849,13 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
     if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
-        if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
+        if (
+#if LIBAVFORMAT_BUILD >=  4619
+                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, 0)
+#else 
+                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0)
+#endif
+                < 0) {
             zend_error(E_ERROR, "Error seeking to beginning of video stream");
         }
  
