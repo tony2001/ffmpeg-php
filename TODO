@@ -1,7 +1,10 @@
-* Add option to config.m4 to -rpath path to ffmpeg libs
+* Add option to config.m4 to -rpath path to ffmpeg libs.
 
 * Add option to store open ffmpeg_movies as persistant resources. This will
-  allow an script that returns a single frame to be called repeatedly
+  allow an script that returns frames as images to be called repeatedly
   without the performance hit of reopening the movie for each getFrame() call.
 
-* Add Constants for libavcodec version and build
+* Add option to resize (resample) the frame returned from getFrame(). This
+  will use ffmpegs resampling which is better than GDs and should speed a
+  bit when returning say a thumbnail sized frame since less data has to
+  be copied into the gd_image.
