@@ -951,7 +951,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             
                             yuv_frame = av_malloc(sizeof(AVFrame));
                             avpicture_alloc( (AVPicture*)yuv_frame, PIX_FMT_YUV420P,
-                                    wanted_width, wanted_height);
+                                    decoder_ctx->width, decoder_ctx->height);
 
                             if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
                                         (AVPicture *)decoded_frame, decoder_ctx->pix_fmt, 
@@ -993,7 +993,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                                     wanted_width, wanted_height);
 
                         if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
-                                    (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
+                                    (AVPicture*)resampled_frame, target_pixfmt,
                                     wanted_width, wanted_height) < 0) {
                             zend_error(E_ERROR, "Can't convert frame");
                         }
