@@ -31,7 +31,6 @@ PHP_FUNCTION(getAudioChannels);
 typedef struct {
     AVFormatContext *fmt_ctx;
 
-    /* FIXME: This should be array of codec contexts, 1 per stream */
     AVCodecContext *codec_ctx[MAX_STREAMS];
 } ff_movie_context;
 

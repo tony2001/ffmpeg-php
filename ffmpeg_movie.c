@@ -214,13 +214,13 @@ void register_ffmpeg_movie_class(int module_number) {
 /* }}} */
 
 
-/* {{{ _php_get_codec_ctx() 
+/* {{{ _php_get_decoder_context() 
    Opens codecs and gets codec context. Always call this to get a pointer to 
    the codec context. This allows to postpone codec init until a function
    that requires it is called.
  */
 static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
-        int stream_type)
+        int stream_type, int reload_codec)
 {
     AVCodec *decoder;
     int stream_index;
@@ -238,9 +238,13 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
             return NULL;
         }
     }
+    
+    if (reload_codec && ffmovie_ctx->codec_ctx[stream_index]) {
+        /* close decoder */
+        avcodec_close(ffmovie_ctx->codec_ctx[stream_index]);
+        ffmovie_ctx->codec_ctx[stream_index] = NULL;
+    }
 
-    /* FIXME: This will break if and audio function is called before 
-       getFrame since the audio codec will get set as the decoder to use */
     if (!ffmovie_ctx->codec_ctx[stream_index]) {
    
         ffmovie_ctx->codec_ctx[stream_index] = 
@@ -490,7 +494,7 @@ static long _php_get_framenumber(ff_movie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx = NULL;
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
     if (!decoder_ctx) {
         return 0;
     }
@@ -530,7 +534,7 @@ static int _php_get_pixelformat(ff_movie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx;
     
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
     if (!decoder_ctx) {
         return 0;
     }
@@ -620,7 +624,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
         return NULL;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type, 0);
     if (!decoder_ctx) {
         return NULL;
     }
@@ -712,7 +716,7 @@ static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
         return 0;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO, 0);
     if (!decoder_ctx) {
         return 0;
     }
@@ -758,7 +762,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         return NULL;
     }
  
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
     if (decoder_ctx == NULL) {
         return NULL;
     }
@@ -768,13 +772,11 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
             zend_error(E_ERROR, "Error seeking to begining of video stream");
         }
-        /* close decoder */
-        avcodec_close(decoder_ctx);
-        decoder_ctx = NULL;
+ 
+#define RELOAD_CODEC 1
 
-        //zend_printf("reload");
         /* re-open decoder */
-        decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+        decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, RELOAD_CODEC);
         if (decoder_ctx == NULL) {
             //zend_printf("reload");
             return NULL;
