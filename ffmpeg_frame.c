@@ -390,21 +390,21 @@ PHP_FUNCTION(toGDImage)
 
 /* {{{ proto object _php_read_frame_from_file(mixed)
  */
-_php_read_frame_from_file(ff_frame_context *ff_frame, char* filename)
+/*_php_read_frame_from_file(ff_frame_context *ff_frame, char* filename)
 {
     AVFrame *frame = NULL;
     AVFormatContext *ic;
     AVFormatParameters *ap;
     int err;
 
-    /* open the input file with generic libav function */
+    // open the input file with generic libav function
     err = av_open_input_file(&ic, filename, NULL, 0, ap);
     if (err < 0) {
         zend_error(E_ERROR, "Can't open image file %d, %d", err, AVERROR_NOFMT);
     }
 
     
-}
+}*/
 /* }}} */
 
 
@@ -440,7 +440,7 @@ PHP_FUNCTION(ffmpeg_frame)
             /* TODO: test for resource or string */
             convert_to_string_ex(argv[0]);
             zend_error(E_ERROR, "Creating an ffmpeg_frame from a file is not implemented yet\n");
-            _php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
+            //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
             ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, argv[0], -1, "Image", le_gd);
