@@ -1,8 +1,6 @@
 
-
-PHP_ARG_ENABLE(ffmpeg-rpath, hard code full path to ffmpeg libs,
-[  --enable-ffmpeg-rpath, hardcode library paths, no,no   ])
-
+PHP_ARG_ENABLE(ffmpeg-rpath,hard code full path to ffmpeg libs,
+[  --enable-ffmpeg-rpath     Hardcode ffmpeg library paths.])
 
 PHP_ARG_WITH(ffmpeg,for ffmpeg support, 
 [  --with-ffmpeg[=DIR]       Include ffmpeg support (requires ffmpeg >= 0.49.0).])
