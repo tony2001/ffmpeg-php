@@ -499,6 +499,7 @@ PHP_FUNCTION(getFrameWidth)
     
     RETURN_LONG(_php_get_framewidth(ffmovie_ctx));
 }
+/* }}} */
 
 
 /* {{{ _php_get_frameheight()
@@ -650,7 +651,6 @@ PHP_FUNCTION(getBitRate)
 /* }}} */
 
 
-
 /* {{{ proto int hasAudio()
  */
 PHP_FUNCTION(hasAudio)
@@ -661,8 +661,11 @@ PHP_FUNCTION(hasAudio)
 
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
+/* }}} */
 
 
+/* {{{ _php_get_rgba_conv_frame()
+ */
 AVFrame *_php_get_rgba_conv_frame(int width, int height) 
 {
     int rgba_frame_size;
@@ -683,7 +686,7 @@ AVFrame *_php_get_rgba_conv_frame(int width, int height)
 
     return conv_frame; 
 }
-
+/* }}} */
 
 #if HAVE_LIBGD20
 
@@ -736,6 +739,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             if (gdImageBoundsSafe(dest, x, y)) {
+				/* copy frame to gdimage buffer zeroing the alpha channel */
                 dest->tpixels[y][x] = src[x];
             } else {
                 return -1;
