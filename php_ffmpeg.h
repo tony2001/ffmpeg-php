@@ -4,7 +4,7 @@
 extern zend_module_entry ffmpeg_module_entry;
 #define phpext_ffmpeg_ptr &ffmpeg_module_entry
 
-#ifdef ZEND_WIN32
+#ifdef PHP_WIN32
 #define PHP_FFMPEG_API __declspec(dllexport)
 #else
 #define PHP_FFMPEG_API
@@ -14,25 +14,25 @@ extern zend_module_entry ffmpeg_module_entry;
 #include "TSRM.h"
 #endif
 
-ZEND_MINIT_FUNCTION(ffmpeg);
-ZEND_MSHUTDOWN_FUNCTION(ffmpeg);
-ZEND_RINIT_FUNCTION(ffmpeg);
-ZEND_RSHUTDOWN_FUNCTION(ffmpeg);
-ZEND_MINFO_FUNCTION(ffmpeg);
+PHP_MINIT_FUNCTION(ffmpeg);
+PHP_MSHUTDOWN_FUNCTION(ffmpeg);
+PHP_RINIT_FUNCTION(ffmpeg);
+PHP_RSHUTDOWN_FUNCTION(ffmpeg);
+PHP_MINFO_FUNCTION(ffmpeg);
 
-ZEND_FUNCTION(ffmpeg_movie);
+PHP_FUNCTION(ffmpeg_movie);
 
-ZEND_FUNCTION(getDuration);
-ZEND_FUNCTION(getFrameCount);
-ZEND_FUNCTION(getFrameRate);
-ZEND_FUNCTION(getFileName);
-ZEND_FUNCTION(getComment);
-ZEND_FUNCTION(getTitle);
-ZEND_FUNCTION(getAuthor);
-ZEND_FUNCTION(getCopyright);
-//ZEND_FUNCTION(hasVideo);
-//ZEND_FUNCTION(hasAudio);
-ZEND_FUNCTION(getFrame);
+PHP_FUNCTION(getDuration);
+PHP_FUNCTION(getFrameCount);
+PHP_FUNCTION(getFrameRate);
+PHP_FUNCTION(getFileName);
+PHP_FUNCTION(getComment);
+PHP_FUNCTION(getTitle);
+PHP_FUNCTION(getAuthor);
+PHP_FUNCTION(getCopyright);
+//PHP_FUNCTION(hasVideo);
+//PHP_FUNCTION(hasAudio);
+PHP_FUNCTION(getFrame);
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)

@@ -59,48 +59,51 @@ typedef struct {
 } ffmpegInputMovie;
 
 
-// Methods of the ffmpeg_movie class 
+/* {{{ ffmpeg_movie methods[]
+    Methods of the ffmpeg_movie class 
+*/
 zend_function_entry ffmpeg_movie_class_methods[] = {
    
-	ZEND_FE(ffmpeg_movie, NULL)
+	PHP_FE(ffmpeg_movie, NULL)
 
-	ZEND_FE(getDuration, NULL)
-    ZEND_FALIAS(getduration, getDuration, NULL)
+	PHP_FE(getDuration, NULL)
+    PHP_FALIAS(getduration, getDuration, NULL)
 
-	ZEND_FE(getFrameCount, NULL)
-    ZEND_FALIAS(getframecount, getFrameCount, NULL)
+	PHP_FE(getFrameCount, NULL)
+    PHP_FALIAS(getframecount, getFrameCount, NULL)
 
-	ZEND_FE(getFrameRate, NULL)
-    ZEND_FALIAS(getframerate, getFrameRate, NULL)
+	PHP_FE(getFrameRate, NULL)
+    PHP_FALIAS(getframerate, getFrameRate, NULL)
     
-	ZEND_FE(getFileName, NULL)
-    ZEND_FALIAS(getfilename, getFileName, NULL)
+	PHP_FE(getFileName, NULL)
+    PHP_FALIAS(getfilename, getFileName, NULL)
     
-	ZEND_FE(getComment, NULL)
-    ZEND_FALIAS(getcomment, getComment, NULL)
+	PHP_FE(getComment, NULL)
+    PHP_FALIAS(getcomment, getComment, NULL)
  
-	ZEND_FE(getTitle, NULL)
-    ZEND_FALIAS(gettitle, getTitle, NULL)
+	PHP_FE(getTitle, NULL)
+    PHP_FALIAS(gettitle, getTitle, NULL)
 
-    ZEND_FE(getAuthor, NULL)
-    ZEND_FALIAS(getauthor, getAuthor, NULL)
+    PHP_FE(getAuthor, NULL)
+    PHP_FALIAS(getauthor, getAuthor, NULL)
  
-	ZEND_FE(getCopyright, NULL)
-    ZEND_FALIAS(getcopyright, getCopyright, NULL)
+	PHP_FE(getCopyright, NULL)
+    PHP_FALIAS(getcopyright, getCopyright, NULL)
 
 /*
-    ZEND_FE(hasVideo, NULL)
-    ZEND_FALIAS(hasvideo, hasVideo, NULL)
+    PHP_FE(hasVideo, NULL)
+    PHP_FALIAS(hasvideo, hasVideo, NULL)
 
-    ZEND_FE(hasAudio, NULL)
-    ZEND_FALIAS(hasaudio, hasAudio, NULL)
+    PHP_FE(hasAudio, NULL)
+    PHP_FALIAS(hasaudio, hasAudio, NULL)
 */
     
-    ZEND_FE(getFrame, NULL)
-    ZEND_FALIAS(getframe, getFrame, NULL)
+    PHP_FE(getFrame, NULL)
+    PHP_FALIAS(getframe, getFrame, NULL)
 
 	{NULL, NULL, NULL}
 };
+/* }}} */
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -108,13 +111,13 @@ zend_module_entry ffmpeg_module_entry = {
 #endif
 	"ffmpeg",
 	NULL,
-	ZEND_MINIT(ffmpeg),
-	ZEND_MSHUTDOWN(ffmpeg),
+	PHP_MINIT(ffmpeg),
+	PHP_MSHUTDOWN(ffmpeg),
 	NULL,
 	NULL,
-	ZEND_MINFO(ffmpeg),
+	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.2", // version number for ffmpeg-php 
+	"0.2", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -124,7 +127,8 @@ zend_module_entry ffmpeg_module_entry = {
 ZEND_GET_MODULE(ffmpeg)
 #endif
 
-
+/* {{{ _php_free_ffmpeg_movie
+ */
 static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
     ffmpegInputMovie *input = (ffmpegInputMovie*)rsrc->ptr;    
@@ -132,9 +136,12 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
     av_close_input_file(input->ic);
 	efree(input);
 }
+/* }}} */
 
 
-static int _php__php_get_video_stream_index(AVStream *st[])
+/* {{{ _php_get_video_stream_index
+ */
+static int _php_get_video_stream_index(AVStream *st[])
 {
     int i;
     for (i = 0; i < MAX_STREAMS; i++) {
@@ -142,10 +149,14 @@ static int _php__php_get_video_stream_index(AVStream *st[])
             return i;
         }
     }
-    // no video found
+    /* no video found */
     return -1;
 }
+/* }}} */
 
+
+/* {{{ _php_get_audio_stream_index
+ */
 static int _php_get_audio_stream_index(AVStream *st[])
 {
     int i;
@@ -155,23 +166,30 @@ static int _php_get_audio_stream_index(AVStream *st[])
             return i;
         }
     }
-    // no audio found
+    /* no audio found */
     zend_printf("no found audio\n");
     return -1;
 }
+/* }}} */
 
+
+/* {{{ proto bool php_free_ffmpeg_movie()
+ */
 static AVStream *_php_get_video_stream(AVStream *st[])
 {
-    int i = _php__php_get_video_stream_index(st);
+    int i = _php_get_video_stream_index(st);
     
     if (i != -1) {
         return st[i];
     }
     return NULL;
 }
+/* }}} */
 
 
-ZEND_MINIT_FUNCTION(ffmpeg)
+/* {{{ php module init function
+ */
+PHP_MINIT_FUNCTION(ffmpeg)
 {
 	le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
             NULL, "ffmpeg_movie", module_number);
@@ -179,37 +197,45 @@ ZEND_MINIT_FUNCTION(ffmpeg)
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
             ffmpeg_movie_class_methods);
     
-    // register ffmpeg movie class
+    /* register ffmpeg movie class */
     ffmpeg_movie_class_entry_ptr = 
         zend_register_internal_class(&ffmpeg_movie_class_entry TSRMLS_CC);
     
 
-    // must be called before using avcodec libraries. 
+    /* must be called before using avcodec libraries. */ 
     avcodec_init();
 
-    // register all codecs
+    /* register all codecs */
     av_register_all();
     return SUCCESS;
 }
+/* }}} */
 
 
-ZEND_MSHUTDOWN_FUNCTION(ffmpeg)
+/* {{{ php module shutdown function
+ */
+PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
 	return SUCCESS;
 }
+/* }}} */
 
 
-// Add an entry for ffmpeg support in phpinfo() 
-ZEND_MINFO_FUNCTION(ffmpeg)
+/* {{{ php info function
+   Add an entry for ffmpeg support in phpinfo() */
+PHP_MINFO_FUNCTION(ffmpeg)
 {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "ffmpeg support", "enabled");
 	php_info_print_table_end();
 }
+/* }}} */
 
 
-ZEND_FUNCTION(ffmpeg_movie)
+/* {{{ php_free_ffmpeg_movie
+ */
+PHP_FUNCTION(ffmpeg_movie)
 {
     int argc, ret;
     zval **argv[0];
@@ -218,7 +244,7 @@ ZEND_FUNCTION(ffmpeg_movie)
     AVFormatParameters params, *ap = &params;
     
     /* get the number of arguments */
-    argc = ZEND_NUM_ARGS();
+    argc = PHP_NUM_ARGS();
 
     if(argc != 1) {
         WRONG_PARAM_COUNT;
@@ -244,30 +270,36 @@ ZEND_FUNCTION(ffmpeg_movie)
         zend_error(E_ERROR, "Can't find codec parameters for movie\n");
     }
 
-    // pass null for resource result since we're not returning the resource
-    // directly, but adding it to the returned object.
-	ret = ZEND_REGISTER_RESOURCE(NULL, im, le_ffmpeg_movie);
+    /* pass null for resource result since we're not returning the resource
+     directly, but adding it to the returned object. */
+	ret = PHP_REGISTER_RESOURCE(NULL, im, le_ffmpeg_movie);
     
     object_init_ex(getThis(), &ffmpeg_movie_class_entry);
     add_property_resource(getThis(), "ffmpeg_movie", ret);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getDuration)
+/* {{{ php_free_ffmpeg_movie
+ */
+PHP_FUNCTION(getDuration)
 {
     ffmpegInputMovie *im;
        
-    if (ZEND_NUM_ARGS() != 0)  {
-		ZEND_WRONG_PARAM_COUNT();
+    if (PHP_NUM_ARGS() != 0)  {
+		PHP_WRONG_PARAM_COUNT();
 	}
     
     GET_MOVIE_RESOURCE(im);
     
     RETURN_DOUBLE((float)im->ic->duration / AV_TIME_BASE);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getFrameCount)
+/* {{{ php_free_ffmpeg_movie
+ */
+PHP_FUNCTION(getFrameCount)
 {
     ffmpegInputMovie *im;
     AVStream *st;
@@ -282,9 +314,12 @@ ZEND_FUNCTION(getFrameCount)
 
     RETURN_LONG(lrint(frame_rate * duration));
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getFrameRate)
+/* {{{ php_free_ffmpeg_movie
+ */
+PHP_FUNCTION(getFrameRate)
 {
     ffmpegInputMovie *im;
     AVStream *st;
@@ -297,14 +332,20 @@ ZEND_FUNCTION(getFrameRate)
 
     RETURN_DOUBLE((float)enc->frame_rate / enc->frame_rate_base);
 }
+/* }}} */
 
 
+/* {{{ _php_get_filename()
+ */
 static char* _php_get_filename(ffmpegInputMovie *im) {
     return im->ic->filename;
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getFileName)
+/* {{{ getFileName()
+ */
+PHP_FUNCTION(getFileName)
 {
     ffmpegInputMovie *im;
     char* filename;
@@ -314,9 +355,12 @@ ZEND_FUNCTION(getFileName)
     filename = _php_get_filename(im);
     RETURN_STRINGL(filename, strlen(filename), 1);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getComment)
+/* {{{ getComment()
+ */
+PHP_FUNCTION(getComment)
 {
     ffmpegInputMovie *im;
 
@@ -324,9 +368,12 @@ ZEND_FUNCTION(getComment)
     
     RETURN_STRINGL(im->ic->comment, strlen(im->ic->comment), 1);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getTitle)
+/* {{{ getTitle()
+ */
+PHP_FUNCTION(getTitle)
 {
     ffmpegInputMovie *im;
     
@@ -334,9 +381,12 @@ ZEND_FUNCTION(getTitle)
 
     RETURN_STRINGL(im->ic->title, strlen(im->ic->title), 1);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getAuthor)
+/* {{{ getAuthor()
+ */
+PHP_FUNCTION(getAuthor)
 {
     ffmpegInputMovie *im;
     
@@ -344,9 +394,12 @@ ZEND_FUNCTION(getAuthor)
 
     RETURN_STRINGL(im->ic->author, strlen(im->ic->author), 1);
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getCopyright)
+/* {{{ getCopyright()
+ */
+PHP_FUNCTION(getCopyright)
 {
     ffmpegInputMovie *im;
     
@@ -354,8 +407,11 @@ ZEND_FUNCTION(getCopyright)
 
     RETURN_STRINGL(im->ic->copyright, strlen(im->ic->author), 1);
 }
+/* }}} */
 
 
+/* {{{ temporary
+ */
 static void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *filename) 
 {
     FILE *f;
@@ -367,9 +423,12 @@ static void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *file
         fwrite(buf + i * wrap,1,xsize,f);
     fclose(f);
 }
+/* }}} */
 
 
-_php_copy_frame_to_gd(AVFrame *pict)
+/* {{{ _php_copy_frame_to_gd()
+ */
+void _php_copy_frame_to_gd(AVFrame *pict)
 {
     zval func;
     zval retval;
@@ -383,14 +442,17 @@ _php_copy_frame_to_gd(AVFrame *pict)
     INIT_ZVAL(param); 
 
 
-    // get imagecreatetruecolor function
-    // call imagecreatetruecolor and get a gdImagePtr resource from gd
-    // fill gdImagePtr with pict data
-    // return gdImagePtr resource 
+    /* get imagecreatetruecolor function
+       call imagecreatetruecolor and get a gdImagePtr resource from gd
+       fill gdImagePtr with pict data
+       return gdImagePtr resource  */
 }
+/* }}} */
 
 
-ZEND_FUNCTION(getFrame)
+/* {{{ getFrame(int frame)
+ */
+PHP_FUNCTION(getFrame)
 {
 	zval **argv[0];
     int argc;
@@ -406,14 +468,14 @@ ZEND_FUNCTION(getFrame)
     
     ffmpegInputMovie *im;
 
-    // get the number of arguments 
-    argc = ZEND_NUM_ARGS();
+    /* get the number of arguments */
+    argc = PHP_NUM_ARGS();
 
     if(argc != 1) {
         WRONG_PARAM_COUNT;
     }
 
-    // retrieve arguments 
+    /* retrieve arguments */ 
     if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
         WRONG_PARAM_COUNT;
     }
@@ -493,8 +555,8 @@ ZEND_FUNCTION(getFrame)
                 if (frame == Z_LVAL_PP(argv[0])) {
                     _php_copy_frame_to_gd(pict);
                     
-                    //pgm_save(pict->data[0], pict->linesize[0], 
-                    //      c->width, c->height, buf);
+                    /*pgm_save(pict->data[0], pict->linesize[0], 
+                      c->width, c->height, buf); */
                     goto getframe_done;
                 }
                 frame++;
@@ -525,6 +587,7 @@ getframe_done:
     free(pict);
     
 }
+/* }}} */
 
 /*
  * Local variables:
