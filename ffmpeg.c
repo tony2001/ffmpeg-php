@@ -37,14 +37,14 @@
 #define INBUF_SIZE 4096
 
 #define GET_MOVIE_RESOURCE(im) {\
-	zval **tmp;\
+	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"),\
-                (void **)&tmp) == FAILURE) {\
+                (void **)&_tmp_zval) == FAILURE) {\
         zend_error(E_ERROR, "Unable to find ffmpeg_movie property");\
         RETURN_FALSE;\
     }\
 \
-    ZEND_FETCH_RESOURCE(im, ffmpeg_movie_context*, tmp, -1, "ffmpeg_movie",\
+    ZEND_FETCH_RESOURCE(im, ffmpeg_movie_context*, _tmp_zval, -1, "ffmpeg_movie",\
             le_ffmpeg_movie);\
 }\
 
@@ -493,6 +493,7 @@ zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img,
 
     for (y = 0; y < height; y++) {
         row_start = y * width;
+        //zend_printf("writing %d to row %d\n", data[row_start], row_start);
         for (x = 0; x < width; x++) {
             gdImageSetPixel(gd_img, x, y, data[row_start + x]); 
         }
@@ -514,7 +515,7 @@ PHP_FUNCTION(getFrameAsGDImage)
     AVCodec *codec;
     AVStream *st;
     AVFrame *src;
-    AVPicture tmp, *av_pict;
+    AVPicture tmp_pict, *av_pict;
     AVCodecContext *c= NULL;
     
     ffmpeg_movie_context *ffmovie_ctx;
@@ -576,8 +577,9 @@ PHP_FUNCTION(getFrameAsGDImage)
     frame = 0;
     for(;;) {
         size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (size == 0)
+        if (size == 0) {
             break;
+        }
 
         inbuf_ptr = inbuf;
         while (size > 0) {
@@ -616,21 +618,19 @@ found_frame:
     
     ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);
-
-    
+   
+    zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
     /* make sure frame data is RGBA32 */
     if (c->pix_fmt != PIX_FMT_RGBA32) {
-        avpicture_alloc(&tmp, PIX_FMT_RGBA32, c->width, c->height);
+        zend_printf("w: %d, h: %d\n", c->width, c->height);
+        avpicture_alloc(&tmp_pict, PIX_FMT_RGBA32, c->width, c->height);
        
-        /*
-        avpicture_fill(&tmp, (uint8_t *)im, PIX_FMT_RGBA32, 
-                c->width, c->height);
-         */
-        
-        if (img_convert(&tmp, PIX_FMT_RGBA32,
+        if (img_convert(&tmp_pict, PIX_FMT_RGBA32,
                     (AVPicture*)src, c->pix_fmt, c->width, c->height) < 0) {
+            zend_error(E_ERROR, "Error converting frame");
         }
-        av_pict = &tmp;
+        
+        av_pict = &tmp_pict;
     } else {
         av_pict = (AVPicture*)src;
     }
@@ -646,7 +646,7 @@ found_frame:
    
     /* FIXME
     if (tmp.data[0]) {
-        avpicture_free(&tmp);
+        avpicture_free(&tmp_pict);
     }*/
 
     RETURN_RESOURCE(gd_img_resource->value.lval);
