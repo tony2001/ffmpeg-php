@@ -8,4 +8,4 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
 printf("ffmpeg getFileName(): %s\n", $mov->getFileName());
 ?>
 --EXPECTREGEX--
-ffmpeg getFileName(): .*/test.avi
+ffmpeg getFileName\(\): .*\/test.avi
