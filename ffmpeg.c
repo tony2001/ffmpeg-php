@@ -343,6 +343,22 @@ PHP_FUNCTION(ffmpeg_movie)
 /* }}} */
 
 
+/* {{{ _php_get_duration()
+ */
+static float _php_get_duration(ffmovie_context *ffmovie_ctx)
+{
+    float duration;
+
+    duration = ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE;
+
+    if (duration < 0) {
+        duration = 0.0f;
+    }
+    return duration;
+}
+/* }}} */
+
+
 /* {{{ proto int getDuration()
  */
 PHP_FUNCTION(getDuration)
@@ -351,7 +367,7 @@ PHP_FUNCTION(getDuration)
        
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    RETURN_DOUBLE((float)ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE);
+    RETURN_DOUBLE(_php_get_duration(ffmovie_ctx));
 }
 /* }}} */
 
@@ -363,7 +379,7 @@ static long _php_get_framecount(ffmovie_context *ffmovie_ctx)
     float duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    duration = (float)ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE;
+    duration = _php_get_duration(ffmovie_ctx);
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
     return lrint(frame_rate * duration);
