@@ -12,3 +12,9 @@
 * Decouple frame seek fuctionality from frame get functionality to allow 
   (at least internally) a gotoFrame function that will allow to count frames 
   manually since frame count as reported by ffmpeg is not always reliable.
+
+* Resampling has been changed slightly due to a fix in recent versions
+  of ffmpeg's resample code. Need to use EXPECTREX to test for both md5 
+  possibilities in getFrameResampled regression.
+
+* Add cropping and possibly padding to getFrameResampled()
