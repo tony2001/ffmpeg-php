@@ -55,8 +55,7 @@ foreach(get_class_methods($class) as $method) {
 }
 
 // put some movie files into this array to test the ffmpeg functions
-//$movies = getDirFiles(dirname(__FILE__) . '/test_media');
-$movies = getDirFiles('/home/tkirby/movies/');
+$movies = getDirFiles(dirname(__FILE__) . '/test_media');
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
@@ -86,8 +85,8 @@ foreach($movies as $movie) {
         echo "get frame() $frame" . "\n";
     }
  */    
-//    printf("get frame = %s\n", $mov->getFrame(10));
-//    printf("get frame number = %d\n", $mov->getFrameNumber());
+    printf("get frame = %s\n", $mov->getFrame(10));
+    printf("get frame number = %d\n", $mov->getFrameNumber());
     echo "\n--------------------\n\n";
 }
 
