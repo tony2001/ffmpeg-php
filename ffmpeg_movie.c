@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "php.h"
 #include "php_ini.h"
 #include "php_globals.h"
@@ -447,6 +449,7 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     duration = _php_get_duration(ffmovie_ctx);
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
+    /* TODO: Find a pre C99 replacement for lrint */
     return lrint(frame_rate * duration);
 }
 /* }}} */
