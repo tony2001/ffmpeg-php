@@ -363,7 +363,7 @@ void register_ffmpeg_movie_class(int module_number)
    that requires it is called.
  */
 static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
-        int stream_type, int reload_codec)
+        int stream_type)
 {
     AVCodec *decoder;
     int stream_index;
@@ -380,12 +380,6 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
                     _php_get_filename(ffmovie_ctx));
             return NULL;
         }
-    }
-    
-    if (reload_codec && ffmovie_ctx->codec_ctx[stream_index]) {
-        /* close decoder */
-        avcodec_close(ffmovie_ctx->codec_ctx[stream_index]);
-        ffmovie_ctx->codec_ctx[stream_index] = NULL;
     }
     
     /* check if the codec for this stream is already open */
@@ -698,7 +692,7 @@ static long _php_get_framenumber(ff_movie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx = NULL;
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
     if (!decoder_ctx) {
         return 0;
     }
@@ -738,7 +732,7 @@ static int _php_get_pixelformat(ff_movie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx;
     
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
     if (!decoder_ctx) {
         return 0;
     }
@@ -829,7 +823,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
         return NULL;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type, 0);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
     if (!decoder_ctx) {
         return NULL;
     }
@@ -921,7 +915,7 @@ static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
         return 0;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO, 0);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO);
     if (!decoder_ctx) {
         return 0;
     }
@@ -966,7 +960,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         return NULL;
     }
  
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, 0);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
     if (decoder_ctx == NULL) {
         return NULL;
     }
@@ -988,14 +982,9 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
             _php_open_movie_file(ffmovie_ctx, _php_get_filename(ffmovie_ctx));
         }
  
-#define RELOAD_CODEC 1
-
-        /* re-open decoder */
-        /* TODO: Is this is still needed now that we're not relying on the decoder's frame count */
-        /*(decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, RELOAD_CODEC);
-        if (decoder_ctx == NULL) {
-            return NULL;
-        }*/
+        /* flush decoder buffers here */
+        avcodec_flush_buffers(decoder_ctx);
+        
         ffmovie_ctx->frame_number = 0; 
     }
 
