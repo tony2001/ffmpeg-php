@@ -67,6 +67,8 @@ typedef struct {
     AVFormatContext *fmt_ctx;
     AVCodecContext *codec_ctx;
     AVFrame *rgba_conv_frame;
+    int conv_frame_width;
+    int conv_frame_height;
 } ffmovie_context;
 
 
@@ -726,6 +728,8 @@ PHP_FUNCTION(getAudioBitRate)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
+    // TODO: test if this is an audio only filetype (mp3 ogg...)
+    //       and just return same as getVideoBitRate if it is. 
     audio_stream = _php_get_audio_stream(ffmovie_ctx->fmt_ctx);
     
     audio_codec = avcodec_find_encoder(audio_stream->codec_id);
@@ -737,25 +741,45 @@ PHP_FUNCTION(getAudioBitRate)
 
 /* {{{ _php_get_rgba_conv_frame()
  */
-AVFrame *_php_get_rgba_conv_frame(int width, int height) 
+AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width, 
+        int height) 
 {
     int rgba_frame_size;
     uint8_t *converted_frame_buf;
     AVFrame *conv_frame;
 
-    /* create a temporary picture for conversion to RGBA32 */
-    rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, width, height);
-    
-    conv_frame = avcodec_alloc_frame();
-    
-    if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
-        zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
+    /* free conv buffer and force reallocation if width or height have changed */
+    if (ffmovie_ctx->rgba_conv_frame &&
+            (width != ffmovie_ctx->conv_frame_width ||
+             height != ffmovie_ctx->conv_frame_height)) {
+        if (ffmovie_ctx->rgba_conv_frame) {
+            avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
+            av_free(ffmovie_ctx->rgba_conv_frame);
+        }
     }
 
-    avpicture_fill((AVPicture*)conv_frame, converted_frame_buf, 
-            PIX_FMT_RGBA32, width, height);
+    /* allocate conv buffer or reallocate if width or height have changed */
+    if (!ffmovie_ctx->rgba_conv_frame) {
+        
+        /* create a temporary picture for conversion to RGBA32 */
+        rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, width, height);
 
-    return conv_frame; 
+        conv_frame = avcodec_alloc_frame();
+
+        if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
+            zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
+        }
+
+        ffmovie_ctx->conv_frame_width = width;
+        ffmovie_ctx->conv_frame_height = height;
+        
+        avpicture_fill((AVPicture*)conv_frame, converted_frame_buf, 
+                PIX_FMT_RGBA32, width, height);
+
+        return conv_frame; 
+    } else {
+        return ffmovie_ctx->rgba_conv_frame;
+    }
 }
 /* }}} */
 
@@ -866,7 +890,6 @@ PHP_FUNCTION(getFrame)
         RETURN_FALSE; /* FIXME: Should probably error here */
     }
 
-
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     
     decoded_frame = avcodec_alloc_frame();
@@ -884,7 +907,6 @@ PHP_FUNCTION(getFrame)
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     }
 
-    
     /* read frames looking for wanted_frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
@@ -914,12 +936,9 @@ PHP_FUNCTION(getFrame)
 
                     } else { /* convert frame to RGBA32 */
 
-                        if (!ffmovie_ctx->rgba_conv_frame) {
-                            ffmovie_ctx->rgba_conv_frame = 
-                                _php_get_rgba_conv_frame(decoder_ctx->width, decoder_ctx->height);
-                        }
-
-                        final_frame = ffmovie_ctx->rgba_conv_frame; 
+                        final_frame = _php_get_rgba_conv_frame(ffmovie_ctx,
+                                decoder_ctx->width, 
+                                decoder_ctx->height); 
                         
                         if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
                                     (AVPicture*)decoded_frame, decoder_ctx->pix_fmt, 
