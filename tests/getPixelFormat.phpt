@@ -7,5 +7,5 @@ ffmpeg getPixelFormat test
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
 printf("ffmpeg getPixelFormat(): %s\n", $mov->getPixelFormat());
 ?>
---EXPECTREGEX--
+--EXPECT--
 ffmpeg getPixelFormat(): yuv420p
