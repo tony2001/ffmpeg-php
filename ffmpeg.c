@@ -665,7 +665,7 @@ PHP_FUNCTION(getFrame)
     zval **argv[0], *gd_img_resource;
     gdImage *gd_img;
     int argc, size, got_frame, video_stream, rgba_frame_size;
-    long wanted_frame;
+    long wanted_frame = 0;
     uint8_t *converted_frame_buf = NULL;
     AVPacket packet;
     AVFrame *decoded_frame, converted_frame, *final_frame = NULL;
@@ -675,39 +675,42 @@ PHP_FUNCTION(getFrame)
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
 
-    if(argc != 1) {
+    if(argc > 1) {
         WRONG_PARAM_COUNT;
     }
 
-    /* retrieve arguments */ 
-    if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-        WRONG_PARAM_COUNT;
-    }
-   
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
+    if (argc == 1) {
+        /* retrieve arguments */ 
+        if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+            WRONG_PARAM_COUNT;
+        }
+
+        convert_to_long_ex(argv[0]);
+        wanted_frame = Z_LVAL_PP(argv[0]);
+        
+        /* bounds check wanted frame */
+        if (wanted_frame < 1) {
+            zend_error(E_ERROR, "Frame number must be greater than zero");
+        }
+
+        if (wanted_frame > _php_get_framecount(ffmovie_ctx)) {
+            /* FIXME: rewrite so _php_get_framecount is not called twice */
+            zend_error(E_ERROR, "%s only has %d frames.", 
+                    _php_get_filename(ffmovie_ctx), _php_get_framecount(ffmovie_ctx));
+        }
+    }
+
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
     
     decoded_frame = avcodec_alloc_frame();
-
-    convert_to_long_ex(argv[0]);
-    wanted_frame = Z_LVAL_PP(argv[0]);
-
-    if (wanted_frame < 1) {
-        zend_error(E_ERROR, "Frame number must be greater than zero");
-    }
-    
-    if (wanted_frame > _php_get_framecount(ffmovie_ctx)) {
-        /* FIXME: rewrite so _php_get_framecount is not called twice */
-        zend_error(E_ERROR, "%s only has %d frames.", 
-                _php_get_filename(ffmovie_ctx), _php_get_framecount(ffmovie_ctx));
-    }
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
     
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame < decoder_ctx->frame_number) {
+    if (wanted_frame && wanted_frame < decoder_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
             zend_error(E_ERROR, "Error seeking to begining of video stream");
         }
@@ -728,10 +731,12 @@ PHP_FUNCTION(getFrame)
                     packet.data, packet.size);
 
             if (got_frame) {
-                
-                if ( (decoder_ctx->frame_number - 1) == wanted_frame) {
 
-                    gd_img_resource = _php_get_gd_image(decoder_ctx->width, decoder_ctx->height);
+                /* get wanted frame or next frame in stream if called without
+                   a frame number */
+                if (argc == 0 || decoder_ctx->frame_number == wanted_frame) {
+
+                   gd_img_resource = _php_get_gd_image(decoder_ctx->width, decoder_ctx->height);
 
                     if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
                         zend_error(E_ERROR, "Error creating GD Image");
