@@ -4,7 +4,7 @@
 extern zend_module_entry ffmpeg_module_entry;
 #define phpext_ffmpeg_ptr &ffmpeg_module_entry
 
-#ifdef PHP_WIN32
+#ifdef ZEND_WIN32
 #define PHP_FFMPEG_API __declspec(dllexport)
 #else
 #define PHP_FFMPEG_API
@@ -29,7 +29,7 @@ ZEND_FUNCTION(getComment);
 ZEND_FUNCTION(getTitle);
 ZEND_FUNCTION(getAuthor);
 ZEND_FUNCTION(getCopyright);
-ZEND_FUNCTION(getFrame);
+// BROKEN: ZEND_FUNCTION(getFrame);
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)
