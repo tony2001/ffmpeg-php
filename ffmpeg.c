@@ -413,7 +413,13 @@ static float _php_get_framerate(ffmovie_context *ffmovie_ctx)
     if (!st) {
       return 0.0f;
     }
- 
+
+    /*
+    if (st->codec.frame_rate > 1000 && st->codec.frame_rate_base==1) {
+        st->codec.frame_rate_base = 1000;
+    }
+     */
+
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 }
 /* }}} */
@@ -605,15 +611,15 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
 static long _php_get_frame_number(ffmovie_context *ffmovie_ctx) 
 {
     AVCodecContext *decoder_ctx;
-    int stream_index;
+    int video_stream;
 
-    stream_index = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
+    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
-    if (stream_index < 0) {
+    if (video_stream < 0) {
         return 0;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, stream_index);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     if (decoder_ctx->frame_number <= 0) {
         return 1; /* no frames read yet so return the first */
     } else {
@@ -847,7 +853,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 /* }}} */
 
 
-/* {{{ proto resource getFrame(int frame)
+/* {{{ proto resource getFrame([int frame])
  */
 PHP_FUNCTION(getFrame)
 {
