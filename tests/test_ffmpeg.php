@@ -34,9 +34,7 @@ foreach(get_class_methods($class) as $method) {
 }
 
 // put some movie files into this array to test the ffmpeg functions
-$movies[] = "/home/tkirby/movies/cowbell.wmv"; // movie with sound
-$movies[] = "/var/www/localhost/htdocs/recoded.avi"; // movie no sound
-$movies[] = "//var/www/localhost/htdocs/jimi_hendrix_voodoo_child.mp3"; // movie no sound
+$movies[] = "./test.avi"; // movie with sound
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        

@@ -27,10 +27,25 @@
 #include <inttypes.h>
 #include <math.h>
 
+#include "gd.h"
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_ffmpeg.h"
+
+#define INBUF_SIZE 4096
+
+#define GET_MOVIE_RESOURCE(im) {\
+	zval **tmp;\
+    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"),\
+                (void **)&tmp) == FAILURE) {\
+        zend_error(E_ERROR, "Unable to find movie property");\
+        RETURN_FALSE;\
+    }\
+\
+    ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",\
+            le_ffmpeg_movie);\
+}\
 
 
 static int le_ffmpeg_movie;
@@ -72,10 +87,18 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
  
 	ZEND_FE(getCopyright, NULL)
     ZEND_FALIAS(getcopyright, getCopyright, NULL)
+
 /*
+    ZEND_FE(hasVideo, NULL)
+    ZEND_FALIAS(hasvideo, hasVideo, NULL)
+
+    ZEND_FE(hasAudio, NULL)
+    ZEND_FALIAS(hasaudio, hasAudio, NULL)
+*/
+    
     ZEND_FE(getFrame, NULL)
     ZEND_FALIAS(getframe, getFrame, NULL)
-*/
+
 	{NULL, NULL, NULL}
 };
 
@@ -102,7 +125,7 @@ ZEND_GET_MODULE(ffmpeg)
 #endif
 
 
-static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
     ffmpegInputMovie *input = (ffmpegInputMovie*)rsrc->ptr;    
     
@@ -111,7 +134,7 @@ static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 }
 
 
-static int get_video_stream_index(AVStream *st[])
+static int _php__php_get_video_stream_index(AVStream *st[])
 {
     int i;
     for (i = 0; i < MAX_STREAMS; i++) {
@@ -123,10 +146,23 @@ static int get_video_stream_index(AVStream *st[])
     return -1;
 }
 
-
-static AVStream *get_video_stream(AVStream *st[])
+static int _php_get_audio_stream_index(AVStream *st[])
 {
-    int i = get_video_stream_index(st);
+    int i;
+    for (i = 0; i < MAX_STREAMS; i++) {
+        if (st[i]->codec.codec_type == CODEC_TYPE_AUDIO) {
+            zend_printf("found audio\n");
+            return i;
+        }
+    }
+    // no audio found
+    zend_printf("no found audio\n");
+    return -1;
+}
+
+static AVStream *_php_get_video_stream(AVStream *st[])
+{
+    int i = _php__php_get_video_stream_index(st);
     
     if (i != -1) {
         return st[i];
@@ -137,7 +173,7 @@ static AVStream *get_video_stream(AVStream *st[])
 
 ZEND_MINIT_FUNCTION(ffmpeg)
 {
-	le_ffmpeg_movie = zend_register_list_destructors_ex(php_free_ffmpeg_movie,
+	le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
             NULL, "ffmpeg_movie", module_number);
 
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
@@ -219,48 +255,30 @@ ZEND_FUNCTION(ffmpeg_movie)
 
 ZEND_FUNCTION(getDuration)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
        
     if (ZEND_NUM_ARGS() != 0)  {
 		ZEND_WRONG_PARAM_COUNT();
 	}
- 
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE; 
-    }
     
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie", 
-            le_ffmpeg_movie);
-
+    GET_MOVIE_RESOURCE(im);
+    
     RETURN_DOUBLE((float)im->ic->duration / AV_TIME_BASE);
 }
 
 
 ZEND_FUNCTION(getFrameCount)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
     AVStream *st;
-    AVCodecContext *enc;
     float duration = 0.0, frame_rate = 0.0;
 
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
-    st = get_video_stream(im->ic->streams);
-    enc = &st->codec;
+    st = _php_get_video_stream(im->ic->streams);
 
     duration = (float)im->ic->duration / AV_TIME_BASE;
-    frame_rate = (float)enc->frame_rate / enc->frame_rate_base;
+    frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
     RETURN_LONG(lrint(frame_rate * duration));
 }
@@ -268,76 +286,51 @@ ZEND_FUNCTION(getFrameCount)
 
 ZEND_FUNCTION(getFrameRate)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
     AVStream *st;
     AVCodecContext *enc;
     
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
-    st = get_video_stream(im->ic->streams);
+    st = _php_get_video_stream(im->ic->streams);
     enc = &st->codec;
 
     RETURN_DOUBLE((float)enc->frame_rate / enc->frame_rate_base);
 }
 
 
+static char* _php_get_filename(ffmpegInputMovie *im) {
+    return im->ic->filename;
+}
+
+
 ZEND_FUNCTION(getFileName)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
+    char* filename;
     
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
-    RETURN_STRINGL(im->ic->filename, strlen(im->ic->filename), 1);
+    filename = _php_get_filename(im);
+    RETURN_STRINGL(filename, strlen(filename), 1);
 }
 
 
 ZEND_FUNCTION(getComment)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
 
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
+    GET_MOVIE_RESOURCE(im);
     
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
-
     RETURN_STRINGL(im->ic->comment, strlen(im->ic->comment), 1);
 }
 
 
 ZEND_FUNCTION(getTitle)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
     
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
     RETURN_STRINGL(im->ic->title, strlen(im->ic->title), 1);
 }
@@ -345,17 +338,9 @@ ZEND_FUNCTION(getTitle)
 
 ZEND_FUNCTION(getAuthor)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
     
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
     RETURN_STRINGL(im->ic->author, strlen(im->ic->author), 1);
 }
@@ -363,65 +348,62 @@ ZEND_FUNCTION(getAuthor)
 
 ZEND_FUNCTION(getCopyright)
 {
-	zval **tmp;
     ffmpegInputMovie *im;
     
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-    
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    GET_MOVIE_RESOURCE(im);
 
     RETURN_STRINGL(im->ic->copyright, strlen(im->ic->author), 1);
 }
 
 
-static int seek_video(AVFormatContext *fc, int64_t timestamp)
+static void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *filename) 
 {
-    int result;
+    FILE *f;
+    int i;
 
-    result = av_seek_frame(fc, -1, timestamp);
+    f=fopen(filename,"w");
+    fprintf(f,"P5\n%d %d\n%d\n",xsize,ysize,255);
+    for(i=0;i<ysize;i++)
+        fwrite(buf + i * wrap,1,xsize,f);
+    fclose(f);
+}
 
-    if (result < 0) {
-        return ERROR("av_seek_frame(%lld) failed %d", timestamp, result);
+
+_php_copy_frame_to_gd(AVFrame *pict)
+{
+    zval func;
+    zval retval;
+    zval param;
+
+    if (!zend_hash_exists(EG(function_table), "imagecreatetruecolor", sizeof("imagecreatetruecolor"))) {
+        zend_error(E_ERROR, "ffmpeg getFrame function requires GD\n");
+        return NULL;
     }
+    ZVAL_STRING(&func, "imagecreatetruecolor", 0);
+    INIT_ZVAL(param); 
 
-    return SUCCESS;
+
+    // get imagecreatetruecolor function
+    // call imagecreatetruecolor and get a gdImagePtr resource from gd
+    // fill gdImagePtr with pict data
+    // return gdImagePtr resource 
 }
 
 
-static int64_t calculate_timestamp(AVFormatContext *fc, AVStream *stream, 
-        int64_t frame_number)
-{
-    int64_t timestamp;
-    
-    timestamp =  av_rescale((int64_t) frame_number * stream->r_frame_rate_base,
-            AV_TIME_BASE,
-            stream->r_frame_rate);
-
-    // multiply time base
-    timestamp = av_rescale(timestamp, stream->time_base.num,
-            stream->time_base.den);
-
-    return timestamp;
-}
-
-/*
 ZEND_FUNCTION(getFrame)
 {
-	zval *this, **tmp, **argv[0];
-    int argc, video_index;
-    int64_t timestamp = 0; 
+	zval **argv[0];
+    int argc;
+    int frame, size, got_picture, len;
+    FILE *f;
+    char *outfilename = "outtest.mpg";
+    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
+    char buf[1024];
     AVCodec *codec;
     AVStream *st;
-    AVFrame *picture;
-    AVPacket *pkt;
-    AVCodecContext *enc;
+    AVFrame *pict;
     AVCodecContext *c= NULL;
-
+    
     ffmpegInputMovie *im;
 
     // get the number of arguments 
@@ -436,81 +418,113 @@ ZEND_FUNCTION(getFrame)
         WRONG_PARAM_COUNT;
     }
    
-    this = getThis();
+    GET_MOVIE_RESOURCE(im);
     
-    if (zend_hash_find(Z_OBJPROP_P(this), "ffmpeg_movie", sizeof("ffmpeg_movie"), 
-                (void **)&tmp) == FAILURE) {
-        zend_error(E_ERROR, "Unable to find movie property");
-        RETURN_FALSE;
-    }
-   
-	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
-            le_ffmpeg_movie);
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-    // TODO: change all get_video_stream() to get_video_stream_index
-    //       and add check for negative return value
-    video_index = get_video_stream_index(im->ic->streams);
-    
-    if (video_index < 0) {
-        zend_error(E_ERROR, "Can't find video stream");
-        RETURN_FALSE;
-    }
-    
-    st = im->ic->streams[video_index];
-    enc = &st->codec;
+    printf("Video decoding\n");
 
-    // TODO: add check for frame > frame count
-    
-    // convert frame number to time stamp
-    convert_to_long_ex(argv[0]);
-    timestamp = calculate_timestamp(im->ic, st, Z_LVAL_PP(argv[0]));
+    st = _php_get_video_stream(im->ic->streams);
 
-//    zend_printf("timestamp =  %0.3ld\n", timestamp);
-    // add the stream start time 
-    //if (im->ic->start_time != AV_NOPTS_VALUE)
-    //    timestamp += im->ic->start_time;
-
-    if (av_seek_frame(im->ic, -1, timestamp) < 0) {
-        zend_error(E_ERROR, "%s: could not seek to position %0.3f\n",
-                im->ic->filename, (double)timestamp);
-        RETURN_FALSE;
-    }
-
-    zend_printf("av read frame = %d\n" , av_read_frame(im->ic, pkt));
-    //zend_printf("pkt stream index = %d\n" , pkt->stream_index);
-    //zend_printf("video index = %d\n" , video_index);
-
-    // keep reading frames until we get a packet from the right stream
-    
-    do {
-        int result = av_read_frame(im->ic, pkt);
-        if(result < 0) {
-            zend_error(E_ERROR, "av_read_frame() failed %d", result);
-            RETURN_FALSE;
-        }
-    } while (pkt->stream_index != video_index);
-
-    
-    // find the video decoder 
+    /* find the mpeg1 video decoder */
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec) {
-        zend_error(E_ERROR, "codec not found\n");
-        RETURN_FALSE;
+        fprintf(stderr, "codec not found\n");
+        exit(1);
     }
 
     c = avcodec_alloc_context();
+    pict = avcodec_alloc_frame();
 
-    // open it
+    if(codec->capabilities&CODEC_CAP_TRUNCATED)
+        c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
+
+    /* for some codecs, such as msmpeg4 and mpeg4, width and height
+       MUST be initialized there because these info are not available
+       in the bitstream */
+
+    /* open it */
     if (avcodec_open(c, codec) < 0) {
-        zend_error(E_ERROR, "could not open codec\n");
-        RETURN_FALSE;
+        fprintf(stderr, "could not open codec\n");
+        exit(1);
+    }
+    
+    /* the codec gives us the frame size, in samples */
+    f = fopen(im->ic->filename, "rb");
+    if (!f) {
+        fprintf(stderr, "could not open %s\n", im->ic->filename);
+        exit(1);
+    }
+    
+    convert_to_long_ex(argv[0]);
+    
+    zend_printf("argv[0] == %ld\n", Z_LVAL_PP(argv[0]));
+    
+    frame = 0;
+    for(;;) {
+        size = fread(inbuf, 1, INBUF_SIZE, f);
+        if (size == 0)
+            break;
+
+        /* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
+           and this is the only method to use them because you cannot
+           know the compressed data size before analysing it. 
+
+           BUT some other codecs (msmpeg4, mpeg4) are inherently frame
+           based, so you must call them with all the data for one
+           frame exactly. You must also initialize 'width' and
+           'height' before initializing them. */
+
+        /* NOTE2: some codecs allow the raw parameters (frame size,
+           sample rate) to be changed at any frame. We handle this, so
+           you should also take care of it */
+
+        /* here, we use a stream based decoder (mpeg1video), so we
+           feed decoder and see if it could decode a frame */
+        inbuf_ptr = inbuf;
+        while (size > 0) {
+            len = avcodec_decode_video(c, pict, &got_picture, inbuf_ptr, size);
+            if (len < 0) {
+                fprintf(stderr, "Error while decoding frame %d\n", frame);
+                exit(1);
+            }
+            if (got_picture) {
+                if (frame == Z_LVAL_PP(argv[0])) {
+                    _php_copy_frame_to_gd(pict);
+                    
+                    //pgm_save(pict->data[0], pict->linesize[0], 
+                    //      c->width, c->height, buf);
+                    goto getframe_done;
+                }
+                frame++;
+            }
+            size -= len;
+            inbuf_ptr += len;
+        }
     }
 
-    picture = avcodec_alloc_frame();
+    /* some codecs, such as MPEG, transmit the I and P frame with a
+       latency of one frame. You must do the following to have a
+       chance to get the last frame of the video */
+    len = avcodec_decode_video(c, pict, &got_picture, NULL, 0);
+    if (got_picture) {
+        if (frame == Z_LVAL_PP(argv[0])) {
+            printf("saving last frame %3d\n", frame);
+            _php_copy_frame_to_gd(pict);
+        }
+        frame++;
+    }
+        
 
-    RETURN_LONG(timestamp);
+getframe_done:
+    fclose(f);
+
+    avcodec_close(c);
+    free(c);
+    free(pict);
+    
 }
-*/
 
 /*
  * Local variables:
