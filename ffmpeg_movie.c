@@ -14,7 +14,7 @@
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
                 sizeof("ffmpeg_movie"), (void **)&_tmp_zval) == FAILURE) {\
-        zend_error(E_ERROR, "Unable to find ffmpeg_movie property");\
+        zend_error(E_WARNING, "Invalid ffmpeg_movie object");\
         RETURN_FALSE;\
     }\
 \
@@ -137,7 +137,7 @@ static ff_movie_context* _php_alloc_ffmovie_ctx()
 
 /* {{{ _php_open_movie_file()
  */
-static void _php_open_movie_file(ff_movie_context *ffmovie_ctx, 
+static int _php_open_movie_file(ff_movie_context *ffmovie_ctx, 
         char* filename)
 {
     AVFormatParameters params;
@@ -145,7 +145,7 @@ static void _php_open_movie_file(ff_movie_context *ffmovie_ctx,
     /* open the file with generic libav function */
     if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
                 &params)) {
-        zend_error(E_ERROR, "Can't open movie file %s", filename);
+        return -1;
     }
     
     /* If not enough info to get the stream parameters, we decode the
@@ -154,6 +154,7 @@ static void _php_open_movie_file(ff_movie_context *ffmovie_ctx,
         /* This is not a problem for some formats like .mov */
         /*zend_error(E_WARNING, "Can't find codec parameters for %s", filename); */
     }
+    return 0;
 }
 /* }}} */
 
@@ -182,13 +183,17 @@ PHP_FUNCTION(ffmpeg_movie)
 	ffmovie_ctx = _php_alloc_ffmovie_ctx();
     
     convert_to_string_ex(argv[0]);
-    
-    _php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]));
+
+    if (_php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]))) {
+        zend_error(E_WARNING, "Can't open movie file %s", Z_STRVAL_PP(argv[0]));
+        ZVAL_BOOL(getThis(), 0);
+        RETURN_FALSE;
+    }
 
     /* pass NULL for resource result since we're not returning the resource
-     directly, but adding it to the returned object. */
-	ret = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_movie);
-    
+       directly, but adding it to the returned object. */
+    ret = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_movie);
+
     object_init_ex(getThis(), ffmpeg_movie_class_entry_ptr);
     add_property_resource(getThis(), "ffmpeg_movie", ret);
 }
@@ -742,7 +747,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
         }
         codec_name = buf1;
     }
-
+    
     return codec_name;
 } 
 
