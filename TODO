@@ -1,1 +1,5 @@
-Add option to config.m4 to -rpath path to ffmpeg libs
+* Add option to config.m4 to -rpath path to ffmpeg libs
+
+* Add option to store open ffmpeg_movies as persistant resources. This will
+  allow an script that returns a single frame to be called repeatedly
+  without the performance hit of reopening the movie for each getFrame() call.
