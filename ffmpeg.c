@@ -168,6 +168,8 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
        avpicture_free((AVPicture *)ffmovie_ctx->resample_ctx_frame.frame);
        av_free(ffmovie_ctx->resample_ctx_frame.frame);
     }
+
+    efree(ffmovie_ctx);
 }
 /* }}} */
 
