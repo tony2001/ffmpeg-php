@@ -107,7 +107,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getframeheight,      getFrameHeight,     NULL)
     PHP_FALIAS(getframenumber,      getFrameNumber,     NULL)
     PHP_FALIAS(getpixelformat,      getPixelFormat,     NULL)
-    PHP_FALIAS(getvideobitrate,     getVideoBitRate,    NULL)
+    PHP_FALIAS(getvideobitrate,     getBitRate,    NULL)
     PHP_FALIAS(hasaudio,            hasAudio,           NULL)
 #if HAVE_LIBGD20
     PHP_FALIAS(getframe,            getFrame,           NULL)
@@ -690,9 +690,9 @@ static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getVideoBitrate()
+/* {{{ proto int getBitrate()
  */
-PHP_FUNCTION(getVideoBitRate)
+PHP_FUNCTION(getBitRate)
 {
     int bitrate;
     ffmovie_context *ffmovie_ctx;
