@@ -1,5 +1,14 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.3.5 (11/29/2004):
+    New Features:
+    * Can now be built independently of php sources. (tkirby)
+    * Added ebuild goodness for the Gentoo Type/R crowd 
+      (tkirby - Gentoo User :-)
+
+    Bug Fixes:
+    * Fixed conversion a couple of really stupid conversion bugs in
+      getFrame() and getFrameResampled() (tkirby)
 
 version 0.3.4 (11/28/2004):
     New Features:
@@ -21,7 +30,7 @@ version 0.3.3 (11/25/2004):
     * Added getVideoBitRate() method (tkirby)
     * More optimizations for successive calls to getFrame() (tkirby)
 
-    Bug Fixes
+    Bug Fixes:
     * Don't error if stream params not found since some formats don't need 
       them (tkirby)
     * Return zero if can't get a valid duration for the movie (tkirby)
