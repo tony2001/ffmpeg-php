@@ -16,13 +16,14 @@
 #include "include/gd.h" 
 #endif // HAVE_LIBGD20
 
-#define RGBA_PIXELSTRIDE 4
-
 static zend_class_entry *ffmpeg_frame_class_entry_ptr;
 zend_class_entry ffmpeg_frame_class_entry;
  
 int le_ffmpeg_frame; // not static since it is used in ffmpeg_output_movie
+
+#if HAVE_LIBGD20
 static int le_gd;
+#endif // HAVE_LIBGD20
 
 /* {{{ ffmpeg_frame methods[]
     Methods of the ffmpeg_frame class 
@@ -91,6 +92,8 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 }
 /* }}} */
 
+/* {{{ _php_free_av_frame
+ */
 static void _php_free_av_frame(AVFrame *av_frame)
 {
     if (av_frame) {
@@ -215,7 +218,7 @@ static int _php_crop_frame(ff_frame_context *ff_frame,
 /* }}} */
 
 
-/* {{{ _php_convert_frame()
+/* {{{ _php_resample_frame()
  */
 static int _php_resample_frame(ff_frame_context *ff_frame,
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
