@@ -5,9 +5,10 @@ version 0.3.8z (12/xx/2004)
     * Added getFrameIntoImage() function to reuse the same gd image for speed
       (tkirby)
 
-	Bug Fixes:
-	* Fixed bug in getFrameResampled() argument parsing (tkirby)
-	* Fixed broken alias for getBitRate() function (tkirby)
+    Bug Fixes:
+    * Fixed bug in getFrameResampled() argument parsing (tkirby)
+    * Fixed broken alias for getBitRate() function (tkirby)
+    * Fixed memory leak in gd image allocation function (tkirby)
 
 version 0.3.7a (12/05/2004)
     New Features:
