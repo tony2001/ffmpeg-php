@@ -1142,7 +1142,7 @@ PHP_FUNCTION(getFrame)
  */
 PHP_FUNCTION(getFrameResampled)
 {
-    zval **argv[6], *gd_img_resource;
+    zval **argv[7], *gd_img_resource;
     gdImage *gd_img;
     int argc;
     int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
