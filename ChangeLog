@@ -1,6 +1,18 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
 
+version 0.3.4 (XX/XX/2004):
+    New Features:
+    * Added support for resizing (resample) frames returned from getFrame() 
+      using ffmpeg's resampling which IMHO is better than GD's reampling and 
+      should speed up a bit when returning say a thumbnail sized frame since 
+      less data has to be copied into the GD image.
+    * Initial support for audio only files such as mp3 (tkirby)
+    * getDuration() now works for mp3 files (tkirby)
+    * getVideoBitrate() will return bit rate for mp3 files though this
+      will probably change in the future when more audio specific methods
+      are added (tkirby)
+
 version 0.3.3 (11/25/2004):
     New Features:
     * Added PHP constants for libavcodec version and build numbers (tkirby)
@@ -9,14 +21,14 @@ version 0.3.3 (11/25/2004):
 
     Bug Fixes
     * Don't error if stream params not found since some formats don't need 
-      them. (tkirby)
+      them (tkirby)
     * Return zero if can't get a valid duration for the movie (tkirby)
     * Zero out alpha channel when copying frame to GD so GD will not try to 
       apply alpha when image is passed to gdImageCopyResampled() (tkirby)
     * getFrame() no longer bounds checks the framenumber param against 
-      framecount since framecount may not always be accurate. (tkirby)
+      framecount since framecount may not always be accurate (tkirby)
     * getFrame() now returns false if the wanted frame is not found instead
-      of generating an error. (tkirby)
+      of generating an error (tkirby)
 
 version 0.3.2 (11/22/2004):
     New Features:
@@ -34,7 +46,7 @@ version 0.3.2 (11/22/2004):
 version 0.3.1 (11/19/2004):
     Bug Fixes:
     * Full getFrame() rework, should now work with all ffmpeg 
-      movie types. (tkirby)
+      movie types (tkirby)
 
 version 0.3.0 (11/17/2004):
     New Features:
