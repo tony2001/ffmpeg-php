@@ -60,19 +60,19 @@ $movies = getDirFiles(dirname(__FILE__) . '/test_media');
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
     $mov = new ffmpeg_movie($movie);
-    printf("file name = %s\n", $mov->get_filename());
-    printf("duration = %s seconds\n", $mov->get_duration());
-    printf("frame count = %s\n", $mov->get_framecount());
-    printf("frame rate = %0.3f fps\n", $mov->get_framerate());
-    printf("comment = %s\n", $mov->get_comment());
-    printf("title = %s\n", $mov->get_title());
-    printf("author = %s\n", $mov->get_author());
-    printf("copyright = %s\n", $mov->get_copyright());
-    printf("frame height = %d pixels\n", $mov->get_frameheight());
-    printf("frame width = %d pixels\n", $mov->get_framewidth());
-    printf("has audio = %s\n", $mov->has_audio() == 0 ? 'No' : 'Yes');
-    printf("get pixel format = %s\n", $mov->get_pixelformat());
-    printf("get video bit rate = %d kb/s\n", $mov->get_video_bitrate());
+    printf("file name = %s\n", $mov->getFileName());
+    printf("duration = %s seconds\n", $mov->getDuration());
+    printf("frame count = %s\n", $mov->getFrameCount());
+    printf("frame rate = %0.3f fps\n", $mov->getFrameRate());
+    printf("comment = %s\n", $mov->getComment());
+    printf("title = %s\n", $mov->getTitle());
+    printf("author = %s\n", $mov->getAuthor());
+    printf("copyright = %s\n", $mov->getCopyright());
+    printf("frame height = %d pixels\n", $mov->getFrameHeight());
+    printf("frame width = %d pixels\n", $mov->getFrameWidth());
+    printf("has audio = %s\n", $mov->hasAudio() == 0 ? 'No' : 'Yes');
+    printf("get pixel format = %s\n", $mov->getPixelFormat());
+    printf("get video bit rate = %d kb/s\n", $mov->getVideoBitRate());
 /*    
     while (1) {
         $frame = $mov->getFrame();
@@ -82,8 +82,8 @@ foreach($movies as $movie) {
         echo "get frame() $frame" . "\n";
     }
  */    
-    printf("get frame = %s\n", $mov->get_frame(10));
-    printf("get frame number = %d\n", $mov->get_framenumber());
+    printf("get frame = %s\n", $mov->getFrame(10));
+    printf("get frame number = %d\n", $mov->getFrameNumber());
     echo "\n--------------------\n\n";
 }
 
