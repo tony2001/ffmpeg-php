@@ -488,12 +488,13 @@ zval* _php_get_gd_image(int w, int h)
 zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img, 
         int width, int height) 
 {
-    int x, y;
+    int x, y, row_start;
     int *data = (int*)av_pict->data[0];
 
     for (y = 0; y < height; y++) {
+        row_start = y * height;
         for (x = 0; x < width; x++) {
-            gdImageSetPixel(gd_img, x, y, data[y * height + x]); 
+            gdImageSetPixel(gd_img, x, y, data[row_start + x]); 
         }
     }
 }
