@@ -128,7 +128,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.2", /* version number for ffmpeg-php */
+	"0.3.1", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
