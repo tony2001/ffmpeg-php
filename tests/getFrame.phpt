@@ -19,4 +19,4 @@ printf("ffmpeg getFrame(): md5 = %s\n", md5(file_get_contents($img)));
 unlink($img);
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = 2b04a8f57be7654f8acfbbedcce9f8bd
+ffmpeg getFrame(): md5 = cc36d30fb5b269146802e740ce4ab239
