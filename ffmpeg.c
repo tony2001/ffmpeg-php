@@ -563,7 +563,7 @@ PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *gd_img;
-    int argc, frame, size, got_frame, video_stream, rgba_frame_size;
+    int argc, size, got_frame, video_stream, rgba_frame_size;
     long wanted_frame;
     uint8_t *converted_frame_buf = NULL;
     AVCodec *codec;
@@ -628,15 +628,16 @@ PHP_FUNCTION(getFrame)
     }
 
     /* read frames looking for wanted_frame */ 
-    frame = 1;
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
+        
         if (packet.stream_index == video_stream) {
             avcodec_decode_video(codec_ctx, decoded_frame, &got_frame,
                     packet.data, packet.size);
 
             if (got_frame) {
-                if (frame == wanted_frame) {
+
+                if ((codec_ctx->frame_number -1) == wanted_frame) {
 
                     gd_img_resource = _php_get_gd_image(codec_ctx->width, codec_ctx->height);
 
@@ -680,7 +681,6 @@ PHP_FUNCTION(getFrame)
 
         /* free the packet allocated by av_read_frame */
         av_free_packet(&packet);
-        frame++;
     }
     
     avcodec_close(codec_ctx);
