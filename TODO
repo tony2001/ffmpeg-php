@@ -2,9 +2,6 @@
   allow a script that returns frames as images to be called repeatedly
   without the performance hit of reopening the movie for each getFrame() call.
 
-* include bundled gd headers to allow ffmpeg-php to be built without needing
-  the php sources.
-
 * Try to use av_seek_frame before reverting to sequential reads, this will speed
   up getFrame() on formats that support seeking.
 
