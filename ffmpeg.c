@@ -552,16 +552,13 @@ PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
-    int argc, frame, size, got_picture, len;
+    int argc, frame, size, got_frame, len, st;
     long wanted_frame;
-    FILE *f;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     uint8_t *tmp_buf = NULL;
-    char buf[1024];
     AVCodec *codec;
-    AVStream *st;
+    AVPacket packet;
     AVFrame *src, tmp_pict, *av_pict;
-    AVCodecContext *c= NULL;
+    AVCodecContext *codec_ctx = NULL;
     
     ffmpeg_movie_context *ffmovie_ctx;
 
@@ -579,44 +576,29 @@ PHP_FUNCTION(getFrame)
    
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    /* set end of buffer to 0 (this ensures that no overreading happens for
-       damaged mpeg streams) */
-    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-    st = _php_get_video_stream(ffmovie_ctx->ic);
-    if (!st) {
+    st = _php_get_stream_index(ffmovie_ctx->ic, CODEC_TYPE_VIDEO);
+    if (st < 0) {
         zend_error(E_ERROR, "Video stream not found in %s",
                 _php_get_filename(ffmovie_ctx));
     }
 
     /* find the decoder */
-    codec = avcodec_find_decoder(st->codec.codec_id);
+    codec = avcodec_find_decoder(ffmovie_ctx->ic->streams[st]->codec.codec_id);
     if (!codec) {
         zend_error(E_ERROR, "Codec not found for %s", 
                 _php_get_filename(ffmovie_ctx));
     }
 
-    c = avcodec_alloc_context();
+    codec_ctx = avcodec_alloc_context();
     src = avcodec_alloc_frame();
 
-    if(codec->capabilities&CODEC_CAP_TRUNCATED)
-        c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
-
     /* open it */
-    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open(codec_ctx, codec) < 0) {
         // TODO: must clean up before erroring
         zend_error(E_ERROR, "Could not open codec for %s", 
                 _php_get_filename(ffmovie_ctx));
     }
 
-    /* the codec gives us the frame size, in samples */
-    f = fopen(ffmovie_ctx->ic->filename, "rb");
-    if (!f) {
-        // TODO: must clean up before erroring
-        zend_error(E_ERROR, "Could not open %s", 
-                _php_get_filename(ffmovie_ctx));
-    }
-    
     convert_to_long_ex(argv[0]);
     wanted_frame = Z_LVAL_PP(argv[0]);
 
@@ -630,42 +612,37 @@ PHP_FUNCTION(getFrame)
         zend_error(E_WARNING, "%s only has %d frames, getting last frame.", 
                 _php_get_filename(ffmovie_ctx), wanted_frame);
     }
-    
-    frame = 0;
-    for(;;) {
-        size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (size == 0) {
-            break;
-        }
 
-        inbuf_ptr = inbuf;
-        while (size > 0) {
-            len = avcodec_decode_video(c, src, &got_picture, inbuf_ptr, size);
-            if (len < 0) {
-                // TODO: must clean up before erroring
-                zend_error(E_ERROR, "Error while decoding frame %d of %s", 
-                        frame, _php_get_filename(ffmovie_ctx));
-            }
-            if (got_picture) {
+    // Read frames looking for wanted_frame 
+    frame = 1;
+    while (av_read_frame(ffmovie_ctx->ic, &packet)>=0)
+    {
+        // Is this a packet from the video stream?
+        if (packet.stream_index==st)
+        {
+            // Decode video frame
+            avcodec_decode_video(codec_ctx, src, &got_frame,
+                    packet.data, packet.size);
+
+            // Did we get a video frame?
+            if (got_frame)
+            {
                 if (frame == wanted_frame) {
                     goto found_frame;
                 }
-                frame++;
             }
-            size -= len;
-            inbuf_ptr += len;
         }
-    }
 
-    /* if we didn't find wanted_frame then use last frame */
-    len = avcodec_decode_video(c, src, &got_picture, NULL, 0);
-    if (!got_picture) {
-       // TODO: last call to avcodec_decode_video should not return a 
-       // partial frame do error
+        // Free the packet that was allocated by av_read_frame
+        av_free_packet(&packet);
+        frame++;
     }
-        
+    
+    zend_error(E_ERROR, "Couldn't find frame %d in %s", wanted_frame,
+            _php_get_filename(ffmovie_ctx));
+
 found_frame:
-    gd_img_resource = _php_get_gd_image(c->width, c->height);
+    gd_img_resource = _php_get_gd_image(codec_ctx->width, codec_ctx->height);
     
     if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
        zend_error(E_ERROR, "Error creating GD Image");
@@ -675,22 +652,24 @@ found_frame:
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
    
     /* make sure frame data is RGBA32 */
-    if (c->pix_fmt != PIX_FMT_RGBA32) {
+    if (codec_ctx->pix_fmt != PIX_FMT_RGBA32) {
         int size;
 
-        /* create temporary picture */
-        size = avpicture_get_size(PIX_FMT_RGBA32, c->width, c->height);
-        tmp_buf = av_malloc(size);
-        if (!tmp_buf) {
-            return;
+        /* create a temporary picture for conversion to RGBA32 */
+        size = avpicture_get_size(PIX_FMT_RGBA32, codec_ctx->width, 
+                codec_ctx->height);
+
+        if (! (tmp_buf = av_malloc(size)) ) {
+            zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
         }
 
         av_pict = &tmp_pict;
         avpicture_fill((AVPicture*)av_pict, tmp_buf, PIX_FMT_RGBA32, 
-                c->width, c->height);
+                codec_ctx->width,codec_ctx->height);
 
         if (img_convert((AVPicture*)av_pict, PIX_FMT_RGBA32,
-                    (AVPicture*)src, c->pix_fmt, c->width, c->height) < 0) {
+                    (AVPicture*)src, codec_ctx->pix_fmt, codec_ctx->width,
+                    codec_ctx->height) < 0) {
             zend_error(E_ERROR, "Error converting frame");
         }
         
@@ -698,44 +677,10 @@ found_frame:
         av_pict = src;
     }
 
-    _php_rgba32_to_gd_image((int*)av_pict->data[0], im, c->width, c->height);
+    _php_rgba32_to_gd_image((int*)av_pict->data[0], im,codec_ctx->width,codec_ctx->height);
 
-    /* DEBUG: This block writss an sgi image of the choosen frame to
-       disk as out.sgi using libavformat instead of GD.
-    {
-        int err;
-        char *fn = "out.sgi";
-        AVImageFormat *image_fmt;
-        AVImageInfo img_info;
-        ByteIOContext pb;
-        for(image_fmt = first_image_format; image_fmt != NULL;
-                image_fmt = image_fmt->next) {
-            if (strncmp(image_fmt->name, "sgi", 3) == 0) {
-                break;
-            }
-        }
-
-        img_info.pict.data[0] = av_pict->data[0];
-        img_info.pict.linesize[0] = av_pict->linesize[0];
-        img_info.pix_fmt = PIX_FMT_RGBA32;
-        img_info.width = c->width;
-        img_info.height = c->height;
-        img_info.interleaved = 0;
-
-        // open the file with generic libav function 
-        err = url_fopen(&pb, fn, URL_RDWR);
-        if (err < 0) {
-            fprintf(stderr, "Could not open %s %d\n", fn, err);
-            exit(-8);
-        }
-        url_setbufsize(&pb, 4096);
-        image_fmt->img_write(&pb, &img_info);
-    }
-     */
-    
-    fclose(f);
-    avcodec_close(c);
-    av_free(c);
+    avcodec_close(codec_ctx);
+    av_free(codec_ctx);
     av_free(tmp_buf);
     av_free(src);
    
