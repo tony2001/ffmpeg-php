@@ -854,7 +854,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
         int crop_left, int crop_right)
 {
-    int got_frame, video_stream, non_resize_crop;
+    int got_frame, video_stream, non_resize_crop = 0;
     enum PixelFormat target_pixfmt;
     AVPacket packet;
     AVCodecContext *decoder_ctx;
@@ -960,6 +960,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                         final_frame = resampled_frame;
                     }
                    
+                    
                     if (non_resize_crop) {
                         avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
                                 PIX_FMT_RGBA32, wanted_width, wanted_height);
