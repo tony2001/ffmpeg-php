@@ -18,7 +18,7 @@ if (php_sapi_name() != 'cgi') {
 
 // load extension
 if(!extension_loaded($extension)) {
-    dl($extension_soname) or die("Can't load extension $extension_fullname");
+    dl($extension_soname) or die("Can't load extension $extension_fullname\n");
 }
 
 // print available functions and aliases

@@ -9,7 +9,7 @@ $extension_fullname = PHP_EXTENSION_DIR . '.' . $extension_soname;
 
 // load extension
 if(!extension_loaded($extension)) {
-    dl($extension_soname) or die("Extension $extension is not compiled into PHP");
+    dl($extension_soname) or die("Extension $extension is not compiled into PHP\n");
 }
 ?>
 --FILE--
