@@ -1030,7 +1030,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 /* }}} */
 
 
-/* {{{ proto resource getFrame([int frame])
+/* {{{ proto resource getFrame([int frame [, int crop_top [, int crop_bottom [, int crop_left [, int crop_right ]]]]])
  */
 PHP_FUNCTION(getFrame)
 {
@@ -1139,7 +1139,7 @@ PHP_FUNCTION(getFrame)
 /* }}} */
 
 
-/* {{{ proto resource getFrameResampled(int width, int height [,int frame])
+/* {{{ proto resource getFrameResampled(int width, int height [, int frame [, int crop_top [, int crop_bottom [, int crop_left [, int crop_right ]]]]])
  */
 PHP_FUNCTION(getFrameResampled)
 {
