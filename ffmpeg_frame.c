@@ -108,7 +108,7 @@ static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
-register_ffmpeg_frame_class(int module_number) {
+void register_ffmpeg_frame_class(int module_number) {
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
 
     le_ffmpeg_frame = zend_register_list_destructors_ex(_php_free_ffmpeg_frame,
@@ -364,7 +364,6 @@ int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, int height
 PHP_FUNCTION(toGDImage)
 {
     ff_frame_context *ff_frame;
-    zval *gd_img_resource;
     gdImage *gd_img;
 
     GET_FRAME_RESOURCE(ff_frame);
@@ -503,7 +502,6 @@ PHP_FUNCTION(crop)
 {
     zval ***argv;
     ff_frame_context *ff_frame;
-    int wanted_width = 0, wanted_height = 0;
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
 
     GET_FRAME_RESOURCE(ff_frame);
