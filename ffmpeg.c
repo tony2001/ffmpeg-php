@@ -509,46 +509,6 @@ PHP_FUNCTION(getFrameHeight)
 /* }}} */
 
 
-/* {{{ _php_get_gd_image()
- */
-zval* _php_get_gd_image(int w, int h)
-{
-    zval *function_name, *width, *height;
-    zval **params[2];
-    zval *return_value;
-    zend_function *func;
-    char *function_cname = "imagecreatetruecolor";
-    
-    if (zend_hash_find(EG(function_table), function_cname, 
-                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
-        zend_error(E_ERROR, "Error can't find %s function", function_cname);
-    }
-    
-    MAKE_STD_ZVAL(function_name);
-    MAKE_STD_ZVAL(width);
-    MAKE_STD_ZVAL(height);
-
-    ZVAL_STRING(function_name, function_cname, 1);
-    ZVAL_LONG(width, w);
-    ZVAL_LONG(height, h);
-
-    params[0] = &width;
-    params[1] = &height;
-    
-    if(call_user_function_ex(EG(function_table), NULL, function_name, 
-               &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
-        zend_error(E_ERROR, "Error calling %s function", function_cname);
-   }
-
-   FREE_ZVAL(function_name); 
-   FREE_ZVAL(width); 
-   FREE_ZVAL(height); 
-
-   return return_value;
-}
-/* }}} */
-
-
 /* {{{ _php_get_codec_ctx() 
    Opens codecs and gets codec context. Always call this to get a pointer to 
    the codec context. This allows to postpone codec init until a function
@@ -660,6 +620,46 @@ PHP_FUNCTION(hasAudio)
 }
 
 #if HAVE_LIBGD20
+
+/* {{{ _php_get_gd_image()
+ */
+zval* _php_get_gd_image(int w, int h)
+{
+    zval *function_name, *width, *height;
+    zval **params[2];
+    zval *return_value;
+    zend_function *func;
+    char *function_cname = "imagecreatetruecolor";
+    
+    if (zend_hash_find(EG(function_table), function_cname, 
+                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
+        zend_error(E_ERROR, "Error can't find %s function", function_cname);
+    }
+    
+    MAKE_STD_ZVAL(function_name);
+    MAKE_STD_ZVAL(width);
+    MAKE_STD_ZVAL(height);
+
+    ZVAL_STRING(function_name, function_cname, 1);
+    ZVAL_LONG(width, w);
+    ZVAL_LONG(height, h);
+
+    params[0] = &width;
+    params[1] = &height;
+    
+    if(call_user_function_ex(EG(function_table), NULL, function_name, 
+               &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
+        zend_error(E_ERROR, "Error calling %s function", function_cname);
+   }
+
+   FREE_ZVAL(function_name); 
+   FREE_ZVAL(width); 
+   FREE_ZVAL(height); 
+
+   return return_value;
+}
+/* }}} */
+
 
 /* {{{ _php_rgba32_to_gd_image()
  */
