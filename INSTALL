@@ -1,26 +1,57 @@
-1. copy the ffmpeg extension into your the php sources extensions directory
+INSTALLATION INSTRUCTIONS:
 
-cp ffmpeg /path/to/php-4.3.9RC1/ext
+These instructions are for Linux since I don't have windows.
 
-2. build php if not already built
+1. Unpack the archive and copy the ffmpeg extension directory into your the php sources extensions directory
 
-3. cd into /path/to/php-4.3.9RC1/ext/ffmpeg
+        tar -xjf ffmpeg-php.X.XX.tar.gz
+        cp ffmpeg /path/to/php-4.3.9RC1/ext
 
-4. run phpize to build configuration files
+2. Build php if not already built (See the file INSTALL in your php source directory)
 
-4. ./configure && make
+3. cd into the ffmpeg extension directory
 
-5. become root
+        cd /path/to/php-4.3.9RC1/ext/ffmpeg
 
-6. type make install
+4. Run phpize to build configuration files
 
-7. put /tests/test_ffmpeg.php under your web root somewhere.
+        phpize
 
-8. load test_ffmpeg.php into your browser.
+4. Configure and build
+
+        ./configure && make
+
+5. Become root
+
+        su root
+
+6. Install the shared extension
+
+        make install
+
+7. Put /tests/test_ffmpeg.php under your web root somewhere.
+
+8. Load test_ffmpeg.php into your browser.
 
 RESULTS: You should get a listing of the functions provided by the ffmpeg-php 
          module
 
-TROUBLESHOOTING: This INSTALL doc is very preliminary, I spent about 45 
-         seconds writing this and even less time testing it. If you get 
-         stuck, shoot me an email and I'll try to help.
+NOTE: These instructions bulid ffmpeg-php as a shared library extension. You
+must explicitly load it in your php script using dl(). If you want to install
+ffmpeg-php as part of the php binary then add... 
+
+        --with-ffmpeg=yes 
+        
+...to your php configure line and rebulid php. Alternately you can just add...
+
+        extension=ffmpeg.so
+
+...to your php.ini file to automatically load the shared extension when php is 
+started.
+
+
+TROUBLESHOOTING:
+
+This INSTALL doc is very preliminary, I spent about 45 
+seconds writing this and even less time testing it. If you get 
+stuck, shoot me an email and I'll try to help.
