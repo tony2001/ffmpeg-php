@@ -30,6 +30,8 @@ PHP_FUNCTION(getComment);
 PHP_FUNCTION(getTitle);
 PHP_FUNCTION(getAuthor);
 PHP_FUNCTION(getCopyright);
+PHP_FUNCTION(getFrameWidth);
+PHP_FUNCTION(getFrameHeight);
 PHP_FUNCTION(getFrameAsGDImage);
 
 #ifdef ZTS

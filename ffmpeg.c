@@ -90,6 +90,12 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 	PHP_FE(getCopyright, NULL)
     PHP_FALIAS(getcopyright, getCopyright, NULL)
 
+    PHP_FE(getFrameWidth, NULL)
+    PHP_FALIAS(getframewidth, getFrameWidth, NULL)
+
+    PHP_FE(getFrameHeight, NULL)
+    PHP_FALIAS(getframeheight, getFrameHeight, NULL)
+
     PHP_FE(getFrameAsGDImage, NULL)
     PHP_FALIAS(getframeasgdimage, getFrameAsGDImage, NULL)
 
@@ -396,6 +402,45 @@ PHP_FUNCTION(getCopyright)
 }
 /* }}} */
 
+/* {{{ _php_get_framewidth()
+ */
+static float _php_get_framewidth(ffmpeg_movie_context *im)
+{
+    AVStream *st = _php_get_video_stream(im->ic->streams);
+
+    return st->codec.width;
+}
+/* }}} */
+
+
+/* {{{ resource getFrameWidth()
+ */
+PHP_FUNCTION(getFrameWidth) {
+    ffmpeg_movie_context *im;
+    GET_MOVIE_RESOURCE(im);
+    RETURN_LONG(_php_get_framewidth(im));
+}
+
+
+/* {{{ _php_get_frameheight()
+ */
+static float _php_get_frameheight(ffmpeg_movie_context *im)
+{
+    AVStream *st = _php_get_video_stream(im->ic->streams);
+
+    return st->codec.height;
+}
+/* }}} */
+
+
+/* {{{ resource getFrameHeight()
+ */
+PHP_FUNCTION(getFrameHeight) {
+    ffmpeg_movie_context *im;
+    GET_MOVIE_RESOURCE(im);
+    RETURN_LONG(_php_get_frameheight(im));
+}
+
 
 /* {{{ _php_get_gd_image()
  */
@@ -552,19 +597,19 @@ found_frame:
     
     ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);\
-
-    avpicture_fill((AVPicture*)&pict1, (uint8_t *)im->tpixels, PIX_FMT_RGBA32, 
+/*
+    avpicture_fill((AVPicture*)&pict1, (uint8_t *)*(im->tpixels), PIX_FMT_RGBA32, 
             c->width, c->height);
-    /*
-       if (c->pix_fmt != PIX_FMT_RGBA32) {
-       if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
-       (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
-       }
-       } else {
-       img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
-       c->width, c->height);
-       }
-     */
+
+    if (c->pix_fmt != PIX_FMT_RGBA32) {
+        if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
+                    (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
+        }
+    } else {
+        img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
+                c->width, c->height);
+    }
+*/
     // write frame data into gdImagePtr
     // return gd_img_resource
 
