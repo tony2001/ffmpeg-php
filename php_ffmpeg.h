@@ -20,30 +20,6 @@ PHP_RINIT_FUNCTION(ffmpeg);
 PHP_RSHUTDOWN_FUNCTION(ffmpeg);
 PHP_MINFO_FUNCTION(ffmpeg);
 
-/* movie constructor */
-PHP_FUNCTION(ffmpeg_movie);
-
-/* movie methods */
-PHP_FUNCTION(getDuration);
-PHP_FUNCTION(getFrameCount);
-PHP_FUNCTION(getFrameRate);
-PHP_FUNCTION(getFileName);
-PHP_FUNCTION(getComment);
-PHP_FUNCTION(getTitle);
-PHP_FUNCTION(getAuthor);
-PHP_FUNCTION(getCopyright);
-PHP_FUNCTION(getFrameWidth);
-PHP_FUNCTION(getFrameHeight);
-PHP_FUNCTION(getFrameNumber);
-PHP_FUNCTION(getPixelFormat);
-PHP_FUNCTION(getBitRate);
-PHP_FUNCTION(hasAudio);
-
-#if HAVE_LIBGD20
-PHP_FUNCTION(getFrame);
-PHP_FUNCTION(getFrameResampled);
-PHP_FUNCTION(getFrameIntoImage);
-#endif /* HAVE_LIBGD20 */
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)

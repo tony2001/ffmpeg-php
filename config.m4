@@ -28,7 +28,7 @@ if test "$PHP_FFMPEG" != "no"; then
   PHP_ADD_LIBRARY_WITH_PATH(avformat, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
   PHP_ADD_INCLUDE($FFMPEG_INCDIR)
 
-  PHP_NEW_EXTENSION(ffmpeg, ffmpeg.c, $ext_shared)
+  PHP_NEW_EXTENSION(ffmpeg, ffmpeg.c ffmpeg_movie.c ffmpeg_frame.c, $ext_shared)
   PHP_SUBST(FFMPEG_SHARED_LIBADD)
   AC_DEFINE(HAVE_FFMPEG_PHP,1,[ ])
     
