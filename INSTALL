@@ -1,6 +1,6 @@
 INSTALLATION INSTRUCTIONS:
 
-These instructions are for Linux since I don't have windows.
+These instructions are for Linux since I don't have windows. If you sucessfully build on windows let me know how you did it and I'll updated the instructions.
 
 1. Unpack the archive and copy the ffmpeg extension directory into your the php sources extensions directory
 
@@ -44,7 +44,7 @@ ffmpeg-php as part of the php binary then add...
         --with-ffmpeg=yes 
 
         NOTE: I haven't tested building ffmpeg-php into php let me know if
-              you run into problem.
+              you run into problems.
         
 ...to your php configure line and rebulid php. Alternately you can just add...
 
