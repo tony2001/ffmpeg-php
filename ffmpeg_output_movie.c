@@ -63,7 +63,7 @@ static void _php_open_movie_file(ff_output_movie_context *ff_output_movie,
     AVFormatParameters params;
 
     /* open the file with generic libav function */
-    if (av_open_output_file(&(ff_output_movie->fmt_ctx), filename, NULL, 0, 
+    if (av_open_input_file(&(ff_output_movie->fmt_ctx), filename, NULL, 0, 
                 &params)) {
         zend_error(E_ERROR, "Can't open movie file %s", filename);
     }
