@@ -89,11 +89,10 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 static void _php_free_av_frame(AVFrame *av_frame)
 {
     if (av_frame) {
-        /* FIXME: causes double free
         if (av_frame->data[0]) {
             av_free(av_frame->data[0]);
+            av_frame->data[0] = NULL;
         }
-        */
         av_free(av_frame);
     }
 }
@@ -322,12 +321,14 @@ int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int heigh
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if (gdImageBoundsSafe(dest, x, y)) {
+		
+			// FIXME: don't do bounds check until we fix the gd.h incompatiblity problem 
+			//if (gdImageBoundsSafe(dest, x, y)) {
                 /* copy pixel to gdimage buffer zeroing the alpha channel */
                 dest->tpixels[y][x] = src[x] & 0x00ffffff;
-            } else {
-                return -1;
-            }
+            //} else {
+            //    return -1;
+            //}
         }
         src += width;
     }
@@ -345,11 +346,11 @@ int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, int height
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if (gdImageBoundsSafe(src, x, y)) {
+            //if (gdImageBoundsSafe(src, x, y)) {
                 dest[x] = src->tpixels[y][x];
-            } else {
+            /*} else {
                 return -1;
-            }
+            }*/
         }
         dest += width;
     }
@@ -377,8 +378,11 @@ PHP_FUNCTION(toGDImage)
 
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
 
-    _php_avframe_to_gd_image(ff_frame->av_frame, gd_img, 
-            ff_frame->width, ff_frame->height);
+    if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img,
+            ff_frame->width, ff_frame->height)) {
+        // don't error until we fix the gdImageBounds problem with older GD
+        //zend_error(E_ERROR, "failed to convert frame to gd image");
+    }
 }
 /* }}} */
 
@@ -398,7 +402,6 @@ _php_read_frame_from_file(ff_frame_context *ff_frame, char* filename)
     err = av_open_input_file(&ic, filename, NULL, 0, ap);
     if (err < 0) {
         zend_error(E_ERROR, "Can't open image file %d, %d", err, AVERROR_NOFMT);
-        exit(1);
     }
 
     
@@ -628,7 +631,7 @@ PHP_FUNCTION(resize)
             convert_to_long_ex(argv[2]);
             crop_top = Z_LVAL_PP(argv[2]);
 
-            /*  crop top  must be even number for lavc cropping */
+            /*  crop top must be even number for lavc cropping */
             if (crop_top % 2) {
                 php_error_docref(NULL TSRMLS_CC, E_ERROR,
                         "Crop top must be an even number");
