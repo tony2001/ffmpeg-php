@@ -1,23 +1,24 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.4.1 (01/06/2005)
+version 0.4.1 (01/08/2005)
     New Features:
     * Added getVideoCodec(), getAudioCodec() and getAudioChannels() functions
-	  per feature request #1097373 (tkirby)
-	* Added constructor for ffmpeg_frame that allows to create from a GD
-	  image. This won't be all that useful until encoding support is added.
-	  (tkirby)
+      per feature request #1097373 (tkirby)
+    * Added constructor for ffmpeg_frame that allows to create from a GD
+      image. This won't be all that useful until encoding support is added.
+      (tkirby)
 
-	Bug Fixes:
-	* Fixed incorrect error reporting in get_decoder (tkirby)
-	* Don't error if decoder can't be found, just warn (tkirby)
-	* Fixed nasty memory leak in free ffmpeg_frame (tkirby)
+    Bug Fixes:
+    * Fixed incorrect error reporting in get_decoder (tkirby)
+    * Don't error if decoder can't be found, just warn (tkirby)
+    * Fixed nasty memory leak in free ffmpeg_frame (tkirby)
+    * Code cleanup (tkirby)
 
 version 0.4.0a "Festivus" (12/23/2004)
     New Features:
-	* Added ffmpeg_frame object to encapsulate frame specific methods. This
-	  cleans up the explosion of getFrame methods and makes eventual encoding
-	  support easier (tkirby)
+    * Added ffmpeg_frame object to encapsulate frame specific methods. This
+      cleans up the explosion of getFrame methods and makes eventual encoding
+      support easier (tkirby)
 
     Bug Fixes:
     * Fixed bug where image resampling context was not getting freed
