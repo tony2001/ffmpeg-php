@@ -1,4 +1,12 @@
-ChangeLog for smbfs.
+ChangeLog for ffmpeg-php.
+
+
+2004-11-17 Todd Kirby <doubleshot at pacbell dot net>
+
+	* Second alpha release.
+        * full getFrame() rework, should now work correctly with all ffmpeg
+              movie types.
+
 
 2004-11-17 Todd Kirby <doubleshot at pacbell dot net>
 
