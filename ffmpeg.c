@@ -108,8 +108,8 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getframeheight, getFrameHeight, NULL)
 
 #if HAVE_LIBGD20
-    PHP_FE(getFrameAsGDImage, NULL)
-    PHP_FALIAS(getframeasgdimage, getFrameAsGDImage, NULL)
+    PHP_FE(getFrame, NULL)
+    PHP_FALIAS(getframe, getFrame, NULL)
 #endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
@@ -545,9 +545,9 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 
 #if HAVE_LIBGD20
 
-/* {{{ proto resource getFrameAsGDImage(int frame)
+/* {{{ proto resource getFrame(int frame)
  */
-PHP_FUNCTION(getFrameAsGDImage)
+PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;

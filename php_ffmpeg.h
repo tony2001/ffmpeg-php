@@ -34,7 +34,7 @@ PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
 
 #if HAVE_LIBGD20
-PHP_FUNCTION(getFrameAsGDImage);
+PHP_FUNCTION(getFrame);
 #endif /* HAVE_LIBGD20 */
 
 #ifdef ZTS
