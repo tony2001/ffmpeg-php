@@ -7,7 +7,7 @@ version 0.3.5 (11/29/2004):
       (tkirby - Gentoo User :-)
 
     Bug Fixes:
-    * Fixed conversion a couple of really stupid conversion bugs in
+    * Fixed a couple of really stupid conversion bugs in
       getFrame() and getFrameResampled() (tkirby)
 
 version 0.3.4 (11/28/2004):
