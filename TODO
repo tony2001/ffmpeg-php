@@ -1,7 +1,6 @@
 Add option to config.m4 to -rpath path to ffmpeg libs
-Add check for system GD library and/or bundled GD library to config.m4
 
-new getFrame symantics
+new getFrame semantics
    noarg getFrame gets the next frame from a movie or if the video stream 
    isn't opened then opens codec and retrives the first frame
 
