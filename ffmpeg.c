@@ -153,11 +153,7 @@ static AVStream *_php_get_video_stream(AVStream *st[])
 {
     int i = _php_get_stream_index(st, CODEC_TYPE_VIDEO);
     
-    if (i < 0) {
-        return NULL;
-    }
-
-    return st[i];
+    return i < 0 ? NULL : st[i];
 }
 /* }}} */
 
@@ -215,13 +211,13 @@ static void _php_open_movie_file(ffmpeg_movie_context *im, char* filename)
 
     /* open the file with generic libav function */
     if (av_open_input_file(&(im->ic), filename, NULL, 0, &params)) {
-        zend_error(E_ERROR, "Can't open movie file");
+        zend_error(E_ERROR, "Can't open movie file %s", filename);
     }
     
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. */
     if (av_find_stream_info(im->ic)) {
-        zend_error(E_ERROR, "Can't find codec parameters for movie\n");
+        zend_error(E_ERROR, "Can't find codec parameters for %s", filename);
     }
 }
 /* }}} */
@@ -270,10 +266,6 @@ PHP_FUNCTION(getDuration)
 {
     ffmpeg_movie_context *im;
        
-    if (ZEND_NUM_ARGS() != 0)  {
-		PHP_WRONG_PARAM_COUNT();
-	}
-    
     GET_MOVIE_RESOURCE(im);
     
     RETURN_DOUBLE((float)im->ic->duration / AV_TIME_BASE);
@@ -407,26 +399,42 @@ PHP_FUNCTION(getCopyright)
 
 /* {{{ _php_copy_frame_to_gd()
  */
-void _php_copy_frame_to_gd(AVFrame *pict)
+zval* _php_get_gd_image(AVFrame *pict, int w, int h)
 {
-    zval *function;
-    zval **retval;
-    zval param;
+    zval *function_name, *width, *height;
+    zval **params[2]; // Creates array of parameters with 2 elements allocated.
+    zval *return_value;
+    zend_function *func;
+    char *function_cname = "imagecreatetruecolor";
     
-    MAKE_STD_ZVAL(function);
-
-    ZVAL_STRING(function, "imagecreatetruecolor", 1);
-
-    if (call_user_function_ex(CG(function_table), NULL, function, 
-                retval, 0, 0, 1, NULL TSRMLS_CC) == FAILURE) {
-        zend_error(E_ERROR, "err");
+    //zend_printf("width = %d; height = %d\n", w, h);
+    
+    if (zend_hash_find(EG(function_table), function_cname, 
+                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
+        zend_error(E_ERROR, "Error can't find %s function", function_cname);
     }
+    
+    MAKE_STD_ZVAL(function_name);
+    MAKE_STD_ZVAL(width);
+    MAKE_STD_ZVAL(height);
 
+    ZVAL_STRING(function_name, function_cname, 1);
+    ZVAL_LONG(width, w);
+    ZVAL_LONG(height, h);
 
-    /* get imagecreatetruecolor function
-       call imagecreatetruecolor and get a gdImagePtr resource from gd
-       fill gdImagePtr with pict data
-       return gdImagePtr resource  */
+    params[0] = &width;
+    params[1] = &height;
+    
+    if(call_user_function_ex(EG(function_table), NULL, function_name, 
+               &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
+        zend_error(E_ERROR, "Error calling %s function", function_cname);
+   }
+
+   FREE_ZVAL(function_name); 
+   FREE_ZVAL(width); 
+   FREE_ZVAL(height); 
+
+   return return_value;
 }
 /* }}} */
 
@@ -435,19 +443,18 @@ void _php_copy_frame_to_gd(AVFrame *pict)
  */
 PHP_FUNCTION(getFrameAsGDImage)
 {
-	zval **argv[0];
-    int argc;
-    int frame, size, got_picture, len;
+	zval **argv[0], *gd_img_resource;
+    gdImagePtr im;
+    int argc, frame, size, got_picture, len, img_id;
     FILE *f;
-    char *outfilename = "outtest.mpg";
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     char buf[1024];
     AVCodec *codec;
     AVStream *st;
-    AVFrame *pict;
+    AVFrame *pict, pict1;
     AVCodecContext *c= NULL;
     
-    ffmpeg_movie_context *im;
+    ffmpeg_movie_context *ffmovie_ctx;
 
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
@@ -461,17 +468,23 @@ PHP_FUNCTION(getFrameAsGDImage)
         WRONG_PARAM_COUNT;
     }
    
-    GET_MOVIE_RESOURCE(im);
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    /* set end of buffer to 0 (this ensures that no overreading happens for
+       damaged mpeg streams) */
     memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-    st = _php_get_video_stream(im->ic->streams);
+    st = _php_get_video_stream(ffmovie_ctx->ic->streams);
+    if (!st) {
+        zend_error(E_ERROR, "Video stream not found in %s",
+                _php_get_filename(ffmovie_ctx));
+    }
 
     /* find the mpeg1 video decoder */
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec) {
-        zend_error(E_ERROR, "codec not found\n");
+        zend_error(E_ERROR, "Codec not found for %s", 
+                _php_get_filename(ffmovie_ctx));
     }
 
     c = avcodec_alloc_context();
@@ -482,13 +495,17 @@ PHP_FUNCTION(getFrameAsGDImage)
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
-        zend_error(E_ERROR, "could not open codec\n");
+        // TODO: must clean up before erroring
+        zend_error(E_ERROR, "Could not open codec for %s", 
+                _php_get_filename(ffmovie_ctx));
     }
-    
+
     /* the codec gives us the frame size, in samples */
-    f = fopen(im->ic->filename, "rb");
+    f = fopen(ffmovie_ctx->ic->filename, "rb");
     if (!f) {
-        zend_error(E_ERROR, "could not open %s\n", im->ic->filename);
+        // TODO: must clean up before erroring
+        zend_error(E_ERROR, "Could not open %s", 
+                _php_get_filename(ffmovie_ctx));
     }
     
     convert_to_long_ex(argv[0]);
@@ -503,12 +520,13 @@ PHP_FUNCTION(getFrameAsGDImage)
         while (size > 0) {
             len = avcodec_decode_video(c, pict, &got_picture, inbuf_ptr, size);
             if (len < 0) {
-                zend_error(E_ERROR, "Error while decoding frame %d\n", frame);
+                // TODO: must clean up before erroring
+                zend_error(E_ERROR, "Error while decoding frame %d of %s", 
+                        frame, _php_get_filename(ffmovie_ctx));
             }
             if (got_picture) {
                 if (frame == Z_LVAL_PP(argv[0])) {
-                    _php_copy_frame_to_gd(pict);
-                    goto getframe_done;
+                    goto found_frame;
                 }
                 frame++;
             }
@@ -523,19 +541,44 @@ PHP_FUNCTION(getFrameAsGDImage)
     len = avcodec_decode_video(c, pict, &got_picture, NULL, 0);
     if (got_picture) {
         if (frame == Z_LVAL_PP(argv[0])) {
-            _php_copy_frame_to_gd(pict);
+            goto found_frame;
         }
         frame++;
     }
         
 
-getframe_done:
-    fclose(f);
+found_frame:
+    gd_img_resource = _php_get_gd_image(pict, c->width, c->height);
+    
+    if (gd_img_resource->type != IS_RESOURCE) {
+       zend_printf("it's a resource alright\n");
+    }
+    
+    ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
+    ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);\
 
+    zend_printf("gd_img_ptr = %p\n", im);
+
+    avpicture_fill((AVPicture*)&pict1, (uint8_t *)im->tpixels, PIX_FMT_RGBA32, 
+            c->width, c->height);
+/*
+    if (c->pix_fmt != PIX_FMT_RGBA32) {
+        if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
+                    (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
+        }
+    } else {
+        img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
+                c->width, c->height);
+    }
+   */
+    // write frame data into gdImagePtr
+    // return gd_img_resource
+
+    fclose(f);
     avcodec_close(c);
     free(c);
     free(pict);
-    
+
 }
 /* }}} */
 
