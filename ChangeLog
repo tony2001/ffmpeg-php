@@ -1,5 +1,14 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.0_alpha (12/xx/2004)
+    New Features:
+	* Added ffmpeg_frame object to encapsulate frame specific methods. This
+	  cleans up the explosion of getFrame methods and makes eventual encoding
+	  support easier (tkirby)
+
+	Bug Fixes:
+	* Fixed bug where image resampling context was not getting freed.
+	
 version 0.3.8a (12/15/2004)
     New Features:
     * Added getFrameIntoImage() function to reuse the same gd image for speed
