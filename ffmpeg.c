@@ -35,6 +35,7 @@
 
 #include "php_ffmpeg.h"
 
+#define FFMPEG_PHP_VERSION "0.4.1"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -48,7 +49,7 @@ zend_module_entry ffmpeg_module_entry = {
     NULL,
     PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-    "0.4.1", /* version number for ffmpeg-php */
+    FFMPEG_PHP_VERSION, 
 #endif
     STANDARD_MODULE_PROPERTIES
 };
@@ -98,8 +99,8 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 PHP_MINFO_FUNCTION(ffmpeg)
 {
     php_info_print_table_start();
-    php_info_print_table_header(2, "ffmpeg support", "enabled");
-    /* TODO: print ffmpeg-php version and lavc version and build numbers here */
+    php_info_print_table_header(2, "ffmpeg support (ffmpeg-php)", "enabled");
+    php_info_print_table_row(2, "ffmpeg-php version", FFMPEG_PHP_VERSION);
     php_info_print_table_end();
 }
 /* }}} */
