@@ -6,6 +6,8 @@ cp ffmpeg /path/to/php-4.3.9RC1/ext
 
 3. cd into /path/to/php-4.3.9RC1/ext/ffmpeg
 
+4. run phpize to build configuration files
+
 4. ./configure && make
 
 5. become root
