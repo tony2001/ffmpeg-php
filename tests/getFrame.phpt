@@ -16,7 +16,7 @@ $gd_image = $mov->getFrame(73);
 imagepng($gd_image, $img);
 // generate md5 of file
 printf("ffmpeg getFrame(): md5 = %s\n", md5(file_get_contents($img)));
-unlink($img);
+//unlink($img);
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = cc36d30fb5b269146802e740ce4ab239 
+ffmpeg getFrame(): md5 = 2b04a8f57be7654f8acfbbedcce9f8bd 
