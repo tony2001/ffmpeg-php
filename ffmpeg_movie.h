@@ -24,9 +24,13 @@ PHP_FUNCTION(getBitRate);
 PHP_FUNCTION(hasAudio);
 PHP_FUNCTION(getFrame);
 PHP_FUNCTION(getVideoCodec);
+PHP_FUNCTION(getAudioCodec);
+PHP_FUNCTION(getAudioChannels);
 
 typedef struct {
     AVFormatContext *fmt_ctx;
+
+    /* FIXME: This should be array of codec contexts, 1 per stream */
     AVCodecContext *codec_ctx;
 } ff_movie_context;
 

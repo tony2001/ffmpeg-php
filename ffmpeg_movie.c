@@ -38,6 +38,8 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(hasaudio,            hasAudio,           NULL)
     PHP_FALIAS(getframe,            getFrame,           NULL)
     PHP_FALIAS(getvideocodec,       getVideoCodec,      NULL)
+    PHP_FALIAS(getaudiocodec,       getAudioCodec,      NULL)
+    PHP_FALIAS(getaudiochannels,    getAudioChannels,   NULL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -215,16 +217,19 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
     if (stream_index < 0) {
         // FIXME: Find a way to do this without the if statement
         if (stream_type == CODEC_TYPE_VIDEO) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Can't find video stream in %s", 
+            zend_error(E_WARNING, "Can't find video stream in %s", 
                     _php_get_filename(ffmovie_ctx));
+            return NULL;
         } else {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Can't find audio stream in %s", 
+            zend_error(E_WARNING, "Can't find audio stream in %s", 
                     _php_get_filename(ffmovie_ctx));
+            return NULL;
         }
     }
 
+
+    /* FIXME: This will break if  and audio function is called before 
+       getFrame since the audio codec will get set as the decoder to use */
     if (!ffmovie_ctx->codec_ctx) {
    
         ffmovie_ctx->codec_ctx = 
@@ -472,9 +477,12 @@ PHP_FUNCTION(getFrameHeight)
  */
 static long _php_get_framenumber(ff_movie_context *ffmovie_ctx) 
 {
-    AVCodecContext *decoder_ctx;
+    AVCodecContext *decoder_ctx = NULL;
 
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    if (!decoder_ctx) {
+        return 0;
+    }
 
     if (decoder_ctx->frame_number <= 0) {
         return 1; /* no frames read yet so return the first */
@@ -490,10 +498,17 @@ static long _php_get_framenumber(ff_movie_context *ffmovie_ctx)
 PHP_FUNCTION(getFrameNumber)
 {
     ff_movie_context *ffmovie_ctx;
+    int frame_number = 0;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_LONG(_php_get_framenumber(ffmovie_ctx));
+    frame_number =_php_get_framenumber(ffmovie_ctx);
+   
+    if (frame_number) {
+        RETURN_LONG(frame_number);
+    } else {
+        RETURN_FALSE;
+    }
 }
 /* }}} */
 
@@ -505,6 +520,9 @@ static int _php_get_pixelformat(ff_movie_context *ffmovie_ctx)
     AVCodecContext *decoder_ctx;
     
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    if (!decoder_ctx) {
+        return 0;
+    }
 
     return decoder_ctx->pix_fmt;
 }
@@ -578,20 +596,23 @@ PHP_FUNCTION(hasAudio)
 /* {{{ _php_get_video_codec()
    Returns a frame from the movie.
  */
-static char* _php_get_video_codec(ff_movie_context *ffmovie_ctx)
+static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
 {
-    AVCodecContext *decoder_ctx;
+    AVCodecContext *decoder_ctx = NULL;
     AVCodec *p = NULL;
     const char *codec_name;
     char buf1[32];
-    int video_stream;
+    int stream;
 
-    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_VIDEO);
-    if (video_stream < 0) {
+    stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, type);
+    if (stream < 0) {
         return NULL;
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
+    if (!decoder_ctx) {
+        return NULL;
+    }
 
     p = avcodec_find_decoder(decoder_ctx->codec_id);
 
@@ -636,7 +657,7 @@ PHP_FUNCTION(getVideoCodec)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    codec_name = _php_get_video_codec(ffmovie_ctx);
+    codec_name = (char*)_php_get_codec_name(ffmovie_ctx, CODEC_TYPE_VIDEO);
  
     if (codec_name) {
         RETURN_STRINGL(codec_name, strlen(codec_name), 1);
@@ -647,13 +668,76 @@ PHP_FUNCTION(getVideoCodec)
 /* }}} */
 
 
+/* {{{ proto int getVideoCodec()
+ */
+PHP_FUNCTION(getAudioCodec)
+{
+    ff_movie_context *ffmovie_ctx;
+    char *codec_name;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    codec_name = (char*)_php_get_codec_name(ffmovie_ctx, CODEC_TYPE_AUDIO);
+ 
+    if (codec_name) {
+        RETURN_STRINGL(codec_name, strlen(codec_name), 1);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+
+/* {{{ _php_get_audio_channels()
+   Returns a frame from the movie.
+ */
+static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
+{
+    AVCodecContext *decoder_ctx = NULL;
+    AVCodec *p = NULL;
+    int stream;
+
+    stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_AUDIO);
+    if (stream < 0) {
+        return 0;
+    }
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO);
+    if (!decoder_ctx) {
+        return 0;
+    }
+
+    return decoder_ctx->channels;
+} 
+
+
+
+/* {{{ proto int getVideoCodec()
+ */
+PHP_FUNCTION(getAudioChannels)
+{
+    ff_movie_context *ffmovie_ctx;
+    int channels;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    channels = _php_get_audio_channels(ffmovie_ctx);
+ 
+    if (channels) {
+        RETURN_LONG(channels);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
 
 /* {{{ _php_getframe()
    Returns a frame from the movie.
  */
 static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 {
-    AVCodecContext *decoder_ctx;
+    AVCodecContext *decoder_ctx = NULL;
     AVPacket packet;
     AVFrame *frame = NULL;
     int got_frame; 
@@ -665,6 +749,9 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
     }
  
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    if (decoder_ctx == NULL) {
+        return NULL;
+    }
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
     if (wanted_frame && wanted_frame <= ffmovie_ctx->codec_ctx->frame_number) {
@@ -677,6 +764,9 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 
         /* re-open decoder */
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+        if (decoder_ctx == NULL) {
+            return NULL;
+        }
     }
 
     frame = avcodec_alloc_frame();
