@@ -35,7 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.4.2.1"
+#define FFMPEG_PHP_VERSION "0.4.3.0"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -91,6 +91,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
+    // TODO: Free persistent movies
     return SUCCESS;
 }
 /* }}} */
