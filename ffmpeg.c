@@ -899,7 +899,6 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         int wanted_width, int wanted_height)
 {
     int got_frame, video_stream;
-    int resample = 0;
     enum PixelFormat target_pixfmt;
     AVPacket packet;
     AVCodecContext *decoder_ctx;
@@ -943,12 +942,10 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                    a frame number */
                 if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
 
+                    /* is resampling needed */
                     if (wanted_height != decoder_ctx->height ||
                             wanted_width != decoder_ctx->width) {
-                        resample = 1;
-                    }
-
-                    if (resample) {
+                        
                         /* convert to PIX_FMT_YUV420P required for resampling */
                         if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
                             
@@ -959,7 +956,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
                                         (AVPicture *)decoded_frame, decoder_ctx->pix_fmt, 
                                         decoder_ctx->width, decoder_ctx->height) < 0) {
-                                // TODO: Handle conversion error here
+                                zend_error(E_ERROR, "Error converting for resampling");
                             }
                             
                         } else {
@@ -970,7 +967,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                                 wanted_width, wanted_height,
                                 decoder_ctx->width, decoder_ctx->height);
                         
-                        resampled_frame = av_malloc(sizeof(AVFrame));
+                        resampled_frame = av_malloc(sizeof (AVFrame));
                         
                         avpicture_alloc( (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
                                 wanted_width, wanted_height);
@@ -978,7 +975,9 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                         img_resample(img_resample_ctx, 
                                 (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
 
-                        avpicture_free((AVPicture*)yuv_frame);
+                        if (yuv_frame != decoded_frame) {
+                            avpicture_free((AVPicture*)yuv_frame);
+                        }
                         av_free(yuv_frame);
 
                         target_pixfmt = PIX_FMT_YUV420P;
@@ -999,7 +998,10 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             zend_error(E_ERROR, "Can't convert frame");
                         }
 
-                        avpicture_free((AVPicture*)resampled_frame);
+                        /* FIXME: glibc detected *** double free or corruption (out): 0x0823fdb0 */
+                        if (resampled_frame != decoded_frame) {
+                            avpicture_free((AVPicture*)resampled_frame);
+                        }
                         av_free(resampled_frame);
                     } else {
                         final_frame = resampled_frame;
