@@ -146,6 +146,7 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
     ffmpeg_movie_context *ffmovie_ctx = (ffmpeg_movie_context*)rsrc->ptr;    
     
     av_close_input_file(ffmovie_ctx->fmt_ctx);
+    av_free(ffmovie_ctx->fmt_ctx);
 	efree(ffmovie_ctx);
 }
 /* }}} */
