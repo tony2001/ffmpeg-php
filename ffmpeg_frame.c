@@ -29,15 +29,20 @@ static int le_gd;
 */
 zend_function_entry ffmpeg_frame_class_methods[] = {
    
+#if HAVE_LIBGD20
     /* contructor */
     PHP_FE(ffmpeg_frame, NULL)
+#endif // HAVE_LIBGD20
 
     /* methods */
     PHP_FALIAS(getwidth,       getWidth,      NULL)
     PHP_FALIAS(getheight,      getHeight,     NULL)
     PHP_FALIAS(resize,         resize,        NULL)
     PHP_FALIAS(crop,           crop,          NULL)
+#if HAVE_LIBGD20
     PHP_FALIAS(togdimage,      toGDImage,     NULL)
+#endif // HAVE_LIBGD20
+
 
 	{NULL, NULL, NULL}
 };
@@ -109,7 +114,10 @@ static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
 
 void register_ffmpeg_frame_class(int module_number) {
+#if HAVE_LIBGD20
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
+#endif // HAVE_LIBGD20
+
 
     le_ffmpeg_frame = zend_register_list_destructors_ex(_php_free_ffmpeg_frame,
             NULL, "ffmpeg_frame", module_number);
@@ -386,8 +394,6 @@ PHP_FUNCTION(toGDImage)
 }
 /* }}} */
 
-#endif /* HAVE_LIBGD20 */
-
 
 /* {{{ proto object _php_read_frame_from_file(mixed)
  */
@@ -469,6 +475,8 @@ PHP_FUNCTION(ffmpeg_frame)
     }
 }
 /* }}} */
+
+#endif /* HAVE_LIBGD20 */
 
 
 /* {{{ proto int getWidth()

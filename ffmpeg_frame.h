@@ -9,7 +9,10 @@ PHP_FUNCTION(getWidth);
 PHP_FUNCTION(getHeight);
 PHP_FUNCTION(resize);
 PHP_FUNCTION(crop);
+
+#if HAVE_LIBGD20
 PHP_FUNCTION(toGDImage);
+#endif // HAVE_LIBGD20
 
 typedef struct {
     AVFrame *av_frame;
