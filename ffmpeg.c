@@ -50,7 +50,7 @@
         RETURN_FALSE;\
     }\
 \
-    ZEND_FETCH_RESOURCE(im, ffmpeg_movie_context*, _tmp_zval, -1,\
+    ZEND_FETCH_RESOURCE(im, ffmovie_context*, _tmp_zval, -1,\
             "ffmpeg_movie", le_ffmpeg_movie);\
 }\
 
@@ -66,7 +66,8 @@ zend_class_entry ffmpeg_movie_class_entry;
 typedef struct {
     AVFormatContext *fmt_ctx;
     AVCodecContext *codec_ctx;
-} ffmpeg_movie_context;
+    AVFrame *rgba_conv_frame;
+} ffmovie_context;
 
 
 /* {{{ ffmpeg_movie methods[]
@@ -136,7 +137,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.3.2", /* version number for ffmpeg-php */
+	"0.3.3", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -150,7 +151,7 @@ ZEND_GET_MODULE(ffmpeg)
  */
 static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
-    ffmpeg_movie_context *ffmovie_ctx = (ffmpeg_movie_context*)rsrc->ptr;    
+    ffmovie_context *ffmovie_ctx = (ffmovie_context*)rsrc->ptr;    
 
     if (ffmovie_ctx->codec_ctx) {
         avcodec_close(ffmovie_ctx->codec_ctx);
@@ -158,6 +159,13 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
     av_close_input_file(ffmovie_ctx->fmt_ctx);
 
+    /* if format conversion was done in getFrame, its buffer
+       will need to be freed */
+    if (ffmovie_ctx->rgba_conv_frame) {
+       avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
+       av_free(ffmovie_ctx->rgba_conv_frame);
+    }
+    
 	efree(ffmovie_ctx);
 }
 /* }}} */
@@ -170,7 +178,8 @@ static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
     int i;
     
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
-        if (fmt_ctx->streams[i] && fmt_ctx->streams[i]->codec.codec_type == type) {
+        if (fmt_ctx->streams[i] && 
+                fmt_ctx->streams[i]->codec.codec_type == type) {
             return i;
         }
     }
@@ -249,7 +258,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
 
 /* {{{ _php_open_movie_file()
  */
-static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx, 
+static void _php_open_movie_file(ffmovie_context *ffmovie_ctx, 
         char* filename)
 {
     AVFormatParameters params;
@@ -271,13 +280,14 @@ static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx,
 
 /* {{{ _php_alloc_ffmovie_ctx()
  */
-static ffmpeg_movie_context* _php_alloc_ffmovie_ctx()
+static ffmovie_context* _php_alloc_ffmovie_ctx()
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
-    ffmovie_ctx = emalloc(sizeof(ffmpeg_movie_context));
+    ffmovie_ctx = emalloc(sizeof(ffmovie_context));
     ffmovie_ctx->fmt_ctx = NULL;
     ffmovie_ctx->codec_ctx = NULL;
+    ffmovie_ctx->rgba_conv_frame = NULL;
     return ffmovie_ctx;
 }
 /* }}} */
@@ -290,7 +300,7 @@ PHP_FUNCTION(ffmpeg_movie)
 {
     int argc, ret;
     zval **argv[0];
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
@@ -324,7 +334,7 @@ PHP_FUNCTION(ffmpeg_movie)
  */
 PHP_FUNCTION(getDuration)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
        
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
@@ -335,7 +345,7 @@ PHP_FUNCTION(getDuration)
 
 /* {{{ _php_get_framecount()
  */
-static long _php_get_framecount(ffmpeg_movie_context *ffmovie_ctx)
+static long _php_get_framecount(ffmovie_context *ffmovie_ctx)
 {
     float duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
@@ -352,7 +362,7 @@ static long _php_get_framecount(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFrameCount)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     RETURN_LONG(_php_get_framecount(ffmovie_ctx));
 }
@@ -361,7 +371,7 @@ PHP_FUNCTION(getFrameCount)
 
 /* {{{ _php_get_framerate()
  */
-static float _php_get_framerate(ffmpeg_movie_context *ffmovie_ctx)
+static float _php_get_framerate(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
@@ -374,7 +384,7 @@ static float _php_get_framerate(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFrameRate)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -385,7 +395,7 @@ PHP_FUNCTION(getFrameRate)
 
 /* {{{ _php_get_filename()
  */
-static char* _php_get_filename(ffmpeg_movie_context *ffmovie_ctx)
+static char* _php_get_filename(ffmovie_context *ffmovie_ctx)
 {
     return ffmovie_ctx->fmt_ctx->filename;
 }
@@ -396,7 +406,7 @@ static char* _php_get_filename(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFileName)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     char* filename;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
@@ -411,7 +421,7 @@ PHP_FUNCTION(getFileName)
  */
 PHP_FUNCTION(getComment)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
@@ -425,7 +435,7 @@ PHP_FUNCTION(getComment)
  */
 PHP_FUNCTION(getTitle)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -439,7 +449,7 @@ PHP_FUNCTION(getTitle)
  */
 PHP_FUNCTION(getAuthor)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -453,7 +463,7 @@ PHP_FUNCTION(getAuthor)
  */
 PHP_FUNCTION(getCopyright)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -464,7 +474,7 @@ PHP_FUNCTION(getCopyright)
 
 /* {{{ _php_get_framewidth()
  */
-static float _php_get_framewidth(ffmpeg_movie_context *ffmovie_ctx)
+static float _php_get_framewidth(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
@@ -477,7 +487,7 @@ static float _php_get_framewidth(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFrameWidth)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
@@ -487,7 +497,7 @@ PHP_FUNCTION(getFrameWidth)
 
 /* {{{ _php_get_frameheight()
  */
-static float _php_get_frameheight(ffmpeg_movie_context *ffmovie_ctx)
+static float _php_get_frameheight(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
@@ -500,7 +510,7 @@ static float _php_get_frameheight(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFrameHeight)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -514,7 +524,7 @@ PHP_FUNCTION(getFrameHeight)
    the codec context. This allows to postpone codec init until a function
    that requires it is called.
  */
-static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ctx)
+static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx)
 {
     int video_stream;
     AVCodec *decoder;
@@ -528,7 +538,8 @@ static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ct
                     _php_get_filename(ffmovie_ctx));
         }
         
-        ffmovie_ctx->codec_ctx = &ffmovie_ctx->fmt_ctx->streams[video_stream]->codec;
+        ffmovie_ctx->codec_ctx = 
+            &ffmovie_ctx->fmt_ctx->streams[video_stream]->codec;
         
         /* find the decoder */
         decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
@@ -551,7 +562,7 @@ static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ct
 
 /* {{{ _php_get_frame_number()
  */
-static long _php_get_frame_number(ffmpeg_movie_context *ffmovie_ctx) 
+static long _php_get_frame_number(ffmovie_context *ffmovie_ctx) 
 {
     AVCodecContext *decoder_ctx;
 
@@ -569,7 +580,7 @@ static long _php_get_frame_number(ffmpeg_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getFrameNumber)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
@@ -580,7 +591,7 @@ PHP_FUNCTION(getFrameNumber)
 
 /* {{{ _php_get_pixelformat()
  */
-static const char* _php_get_pixelformat(ffmpeg_movie_context *ffmovie_ctx)
+static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx;
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
@@ -595,7 +606,7 @@ static const char* _php_get_pixelformat(ffmpeg_movie_context *ffmovie_ctx)
 PHP_FUNCTION(getPixelFormat)
 {
     const char *fmt;
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
    
@@ -612,12 +623,37 @@ PHP_FUNCTION(getPixelFormat)
  */
 PHP_FUNCTION(hasAudio)
 {
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
+
+
+AVFrame *_php_get_rgba_conv_frame(int width, int height) 
+{
+    int rgba_frame_size;
+    uint8_t *converted_frame_buf;
+    AVFrame *conv_frame;
+
+    /* create a temporary picture for conversion to RGBA32 */
+    rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, width, height);
+    
+    conv_frame = avcodec_alloc_frame();
+    
+    if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
+        zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
+    }
+
+    avpicture_fill((AVPicture*)conv_frame, converted_frame_buf, 
+            PIX_FMT_RGBA32, width, height);
+
+    return conv_frame; 
+}
+
+
+
 
 #if HAVE_LIBGD20
 
@@ -690,10 +726,9 @@ PHP_FUNCTION(getFrame)
     gdImage *gd_img;
     int argc, size, got_frame, video_stream, rgba_frame_size;
     long wanted_frame = 0;
-    uint8_t *converted_frame_buf = NULL;
     AVPacket packet;
     AVFrame *decoded_frame, converted_frame, *final_frame = NULL;
-    ffmpeg_movie_context *ffmovie_ctx;
+    ffmovie_context *ffmovie_ctx;
     AVCodecContext *decoder_ctx;
 
     /* get the number of arguments */
@@ -760,14 +795,15 @@ PHP_FUNCTION(getFrame)
                    a frame number */
                 if (argc == 0 || decoder_ctx->frame_number == wanted_frame) {
 
-                   gd_img_resource = _php_get_gd_image(decoder_ctx->width, decoder_ctx->height);
+                    gd_img_resource = _php_get_gd_image(decoder_ctx->width, decoder_ctx->height);
 
                     if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
                         zend_error(E_ERROR, "Error creating GD Image");
                     }
 
                     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
-                    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
+                    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, 
+                            &gd_img_resource, -1, "Image", le_gd);
 
                     /* make sure frame data is RGBA32 */
                     if (decoder_ctx->pix_fmt == PIX_FMT_RGBA32) {
@@ -775,18 +811,13 @@ PHP_FUNCTION(getFrame)
 
                     } else { /* convert frame to RGBA32 */
 
-                        /* create a temporary picture for conversion to RGBA32 */
-                        rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, decoder_ctx->width, 
-                                decoder_ctx->height);
-
-                        if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
-                            zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
+                        if (!ffmovie_ctx->rgba_conv_frame) {
+                            ffmovie_ctx->rgba_conv_frame = 
+                                _php_get_rgba_conv_frame(decoder_ctx->width, decoder_ctx->height);
                         }
 
-                        final_frame = &converted_frame;
-                        avpicture_fill((AVPicture*)final_frame, converted_frame_buf, 
-                                PIX_FMT_RGBA32, decoder_ctx->width,decoder_ctx->height);
-
+                        final_frame = ffmovie_ctx->rgba_conv_frame; 
+                        
                         if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
                                     (AVPicture*)decoded_frame, decoder_ctx->pix_fmt, 
                                     decoder_ctx->width, decoder_ctx->height) < 0) {
@@ -796,10 +827,6 @@ PHP_FUNCTION(getFrame)
 
                     _php_rgba32_to_gd_image((int*)final_frame->data[0], gd_img, decoder_ctx->width,
                             decoder_ctx->height);
-
-                    if (converted_frame_buf) {
-                        av_free(converted_frame_buf);
-                    }
 
                     /* free wanted frame packet */
                     av_free_packet(&packet);
