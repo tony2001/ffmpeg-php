@@ -1314,6 +1314,19 @@ PHP_FUNCTION(getFrameIntoImage)
                 "First parameter must be a truecolor gd image.");
     }
 
+    wanted_width = gdImageSX(gd_img);
+    wanted_height = gdImageSY(gd_img);
+
+	if (wanted_width % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Image width must be an even number for ffmpeg based resampling.");
+	}
+ 
+	if (wanted_width % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Image height must be an even number for ffmpeg based resampling.");
+	}
+
     /* check for optional frame number arg */
     if (argc >= 2) {
         convert_to_long_ex(argv[1]);
@@ -1367,10 +1380,7 @@ PHP_FUNCTION(getFrameIntoImage)
                     "Crop right must be an even number");
         }
     }
-
-    wanted_width = gdImageSX(gd_img);
-    wanted_height = gdImageSY(gd_img);
-    
+   
     frame = _php_getframe(ffmovie_ctx, wanted_frame, 
             wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
