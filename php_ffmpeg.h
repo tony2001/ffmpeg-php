@@ -32,6 +32,7 @@ PHP_FUNCTION(getAuthor);
 PHP_FUNCTION(getCopyright);
 PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
+PHP_FUNCTION(getFrameNumber);
 
 #if HAVE_LIBGD20
 PHP_FUNCTION(getFrame);
