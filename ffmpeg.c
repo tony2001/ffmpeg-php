@@ -886,7 +886,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame && wanted_frame < decoder_ctx->frame_number) {
+    if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
             zend_error(E_ERROR, "Error seeking to begining of video stream");
         }
