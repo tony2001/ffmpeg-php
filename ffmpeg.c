@@ -892,13 +892,14 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
         int crop_left, int crop_right)
 {
-    int got_frame, video_stream;
+    int got_frame, video_stream, non_resize_crop = 0;
     enum PixelFormat target_pixfmt;
     AVPacket packet;
     AVCodecContext *decoder_ctx;
     ImgReSampleContext *img_resample_ctx;
     AVFrame *decoded_frame, *final_frame = NULL;
     AVFrame *yuv_frame, *resampled_frame;
+    AVFrame *picture_crop_temp;
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
@@ -936,9 +937,18 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                    a frame number */
                 if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
 
-                    /* is resampling needed */
-                    if (wanted_height != decoder_ctx->height ||
-                            wanted_width != decoder_ctx->width) {
+                    if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
+                            (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
+                    {
+                        /* not resampling so just point to the decoded frame */
+                        resampled_frame = decoded_frame;
+                        target_pixfmt = decoder_ctx->pix_fmt;
+                        
+                        if (crop_top || crop_bottom || crop_left || crop_right) {
+                            non_resize_crop = 1;
+                        }
+
+                    } else { /* resampling is needed */
                         
                         /* convert to PIX_FMT_YUV420P required for resampling */
                         if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
@@ -977,11 +987,9 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                         av_free(yuv_frame);
 
                         target_pixfmt = PIX_FMT_YUV420P;
-                    } else {
-                        target_pixfmt = decoder_ctx->pix_fmt;
-                        resampled_frame = decoded_frame;
                     }
-
+                    
+                    /* always return rgba so convert if needed */
                     if (target_pixfmt != PIX_FMT_RGBA32) {
 
                         final_frame = _php_get_rgba_conv_frame(ffmovie_ctx,
@@ -1000,7 +1008,29 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                     } else {
                         final_frame = resampled_frame;
                     }
-                    
+
+                    if (non_resize_crop) {
+                        picture_crop_temp  = av_malloc(sizeof(AVFrame));
+                       
+                        /* FIXME: 
+                           this will cause memory leak when non resize cropping
+                           until the frame allocation optimzations are in place
+                          */
+                        avpicture_fill((AVPicture*)picture_crop_temp, NULL, 
+                                PIX_FMT_RGBA32, wanted_width, wanted_height);
+                        picture_crop_temp->data[0] = final_frame->data[0] +
+                            (crop_top * final_frame->linesize[0]) + crop_left;
+
+                        picture_crop_temp->linesize[0] = final_frame->linesize[0];
+
+                        /* 
+                           this looks like we're losing track of the original
+                           final frame allocated above, but the original gets
+                           freed automatically at script exit
+                         */
+                        final_frame = picture_crop_temp;
+                    }
+
                     /* free wanted frame packet */
                     av_free_packet(&packet);
                     break; 
