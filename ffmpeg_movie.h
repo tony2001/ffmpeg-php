@@ -16,6 +16,10 @@ PHP_FUNCTION(getComment);
 PHP_FUNCTION(getTitle);
 PHP_FUNCTION(getAuthor);
 PHP_FUNCTION(getCopyright);
+PHP_FUNCTION(getAlbum);
+PHP_FUNCTION(getGenre);
+PHP_FUNCTION(getTrackNumber);
+PHP_FUNCTION(getYear);
 PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
 PHP_FUNCTION(getFrameNumber);
@@ -27,10 +31,8 @@ PHP_FUNCTION(getVideoCodec);
 PHP_FUNCTION(getAudioCodec);
 PHP_FUNCTION(getAudioChannels);
 
-
 typedef struct {
     AVFormatContext *fmt_ctx;
-
     AVCodecContext *codec_ctx[MAX_STREAMS];
 } ff_movie_context;
 

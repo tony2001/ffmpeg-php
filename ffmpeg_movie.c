@@ -41,7 +41,12 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 	PHP_FALIAS(getcomment,          getComment,         NULL)
 	PHP_FALIAS(gettitle,            getTitle,           NULL)
     PHP_FALIAS(getauthor,           getAuthor,          NULL)
+    PHP_FALIAS(getartist,           getAuthor,          NULL)
 	PHP_FALIAS(getcopyright,        getCopyright,       NULL)
+    PHP_FALIAS(getalbum,            getAlbum,           NULL)
+    PHP_FALIAS(getgenre,            getGenre,           NULL)
+    PHP_FALIAS(getyear,             getYear,            NULL)
+    PHP_FALIAS(gettracknumber,      getTrackNumber,     NULL)
     PHP_FALIAS(getframewidth,       getFrameWidth,      NULL)
     PHP_FALIAS(getframeheight,      getFrameHeight,     NULL)
     PHP_FALIAS(getframenumber,      getFrameNumber,     NULL)
@@ -297,6 +302,7 @@ PHP_FUNCTION(getComment)
 
 
 /* {{{ proto string getTitle()
+ * Return title field from movie or title ID3 tag from an MP3 file.
  */
 PHP_FUNCTION(getTitle)
 {
@@ -310,7 +316,8 @@ PHP_FUNCTION(getTitle)
 /* }}} */
 
 
-/* {{{ proto string getAuthor()
+/* {{{ proto string getAuthor() or getArtist()
+ * Return author field from a movie or artist ID3 tag from am MP3 files.
  */
 PHP_FUNCTION(getAuthor)
 {
@@ -334,6 +341,62 @@ PHP_FUNCTION(getCopyright)
 
     RETURN_STRINGL(ffmovie_ctx->fmt_ctx->copyright,
             strlen(ffmovie_ctx->fmt_ctx->copyright), 1);
+}
+/* }}} */
+
+
+/* {{{ proto string getAlbum()
+ *  Return ID3 album field from an mp3 file
+ */
+PHP_FUNCTION(getAlbum)
+{
+    ff_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->album,
+            strlen(ffmovie_ctx->fmt_ctx->album), 1);
+}
+/* }}} */
+
+/* {{{ proto string getGenre()
+ *  Return ID3 genre field from an mp3 file
+ */
+PHP_FUNCTION(getGenre)
+{
+    ff_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->genre,
+            strlen(ffmovie_ctx->fmt_ctx->genre), 1);
+}
+/* }}} */
+
+
+/* {{{ proto int getTrackNumber()
+ *  Return ID3 track field from an mp3 file
+ */
+PHP_FUNCTION(getTrackNumber)
+{
+    ff_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+    
+    RETURN_LONG(ffmovie_ctx->fmt_ctx->track);
+}
+/* }}} */
+
+/* {{{ proto int getYear()
+ *  Return ID3 year field from an mp3 file
+ */
+PHP_FUNCTION(getYear)
+{
+    ff_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+    
+    RETURN_LONG(ffmovie_ctx->fmt_ctx->year);
 }
 /* }}} */
 
