@@ -1,5 +1,3 @@
-* Test building into php binary
-
 * Add option to config.m4 to -rpath path to ffmpeg libs
 
 * Add option to store open ffmpeg_movies as persistant resources. This will
