@@ -619,13 +619,13 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
         /* find the decoder */
         decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
         if (!decoder) {
-            zend_error(E_ERROR, "Codec not found for %s", 
+            zend_error(E_ERROR, "Could not finder decoder for %s", 
                     _php_get_filename(ffmovie_ctx));
         }
 
         /* open the decoder */
         if (avcodec_open(ffmovie_ctx->codec_ctx, decoder) < 0) {
-            zend_error(E_ERROR, "Could not open codec for %s", 
+            zend_error(E_ERROR, "Could not open codec for %s",
                     _php_get_filename(ffmovie_ctx));
         }
     }
@@ -816,7 +816,7 @@ static void _php_free_decoder_ctx_frame(ffmovie_context *ffmovie_ctx) {
  * For debugging frame conversions
  * TODO: add img conversion to allow other pix_fmts than PIX_FMT_RGBA32
  */
-void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
+static void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
 {
     int err;
     AVImageFormat *image_fmt;
@@ -858,10 +858,13 @@ zval* _php_get_gd_image(int w, int h)
     zval **params[2];
     zval *return_value;
     zend_function *func;
-    char *function_cname = "imagecreatetruecolor";
+    char *function_cname = "_imagecreatetruecolor";
 
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
+        php_error_docref1(NULL, function_cname TSRMLS_CC,
+                E_ERROR, "Can't find function");
+
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
     }
 
@@ -1037,7 +1040,8 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                            I know, this looks like we're losing track of the 
                            original final frame allocated above, but the 
                            original is a context frame which gets freed 
-                           automatically at script exit.
+                           automatically at when the ffmpeg_movie resource 
+                           is freed.
                          */
                         final_frame = &ffmovie_ctx->crop_ctx_frame;
                     }
@@ -1093,7 +1097,8 @@ PHP_FUNCTION(getFrame)
 
         /* bounds check wanted frame */
         if (wanted_frame < 1) {
-            zend_error(E_ERROR, "Frame number must be greater than zero");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                    "Frame number must be greater than zero");
         }
     }
 
@@ -1108,7 +1113,8 @@ PHP_FUNCTION(getFrame)
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
         if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
-            zend_error(E_ERROR, "Error creating GD Image");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Error creating GD Image");
         }
 
         ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
@@ -1164,12 +1170,14 @@ PHP_FUNCTION(getFrameResampled)
 
     /* bounds check wanted width */
     if (wanted_width < 1) {
-        zend_error(E_ERROR, "Frame width must be greater than zero");
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Frame width must be greater than zero");
     }
 
     /* wanted width must be even number for lavc resample */
     if (wanted_width % 2) {
-        zend_error(E_ERROR, "Frame width must be an even number");
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Frame width must be an even number");
     }
 
     /* height arg */
@@ -1178,12 +1186,14 @@ PHP_FUNCTION(getFrameResampled)
 
     /* bounds check wanted height */
     if (wanted_height < 1) {
-        zend_error(E_ERROR, "Frame height must be greater than zero");
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Frame height must be greater than zero");
     }
 
     /* wanted height must be even number for lavc resample */
     if (wanted_height % 2) {
-        zend_error(E_ERROR, "Frame height must be an even number");
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Frame height must be an even number");
     }
 
     /* check for optional frame number arg */
@@ -1193,7 +1203,8 @@ PHP_FUNCTION(getFrameResampled)
 
         /* bounds check wanted frame */
         if (wanted_frame < 1) {
-            zend_error(E_ERROR, "Frame number must be greater than zero");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Frame number must be greater than zero");
         }
     }
 
@@ -1204,7 +1215,8 @@ PHP_FUNCTION(getFrameResampled)
 
         /*  crop top  must be even number for lavc cropping */
         if (crop_top % 2) {
-            zend_error(E_ERROR, "Crop top must be an even number");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop top must be an even number");
         }
     }
 
@@ -1215,7 +1227,8 @@ PHP_FUNCTION(getFrameResampled)
         
         /*  crop bottom must be even number for lavc cropping */
         if (crop_bottom % 2) {
-            zend_error(E_ERROR, "Crop bottom must be an even number");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop bottom must be an even number");
         }
     }
 
@@ -1226,7 +1239,8 @@ PHP_FUNCTION(getFrameResampled)
 
         /*  crop left must be even number for lavc cropping */
         if (crop_left % 2) {
-            zend_error(E_ERROR, "Crop left must be an even number");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop left must be an even number");
         }
     }
 
@@ -1237,7 +1251,8 @@ PHP_FUNCTION(getFrameResampled)
 
         /*  crop right must be even number for lavc cropping */
         if (crop_right % 2) {
-            zend_error(E_ERROR, "Crop right must be an even number");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Crop right must be an even number");
         }
     }
 
@@ -1250,7 +1265,8 @@ PHP_FUNCTION(getFrameResampled)
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
         if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
-            zend_error(E_ERROR, "Error creating GD Image");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Error creating GD Image");
         }
 
         ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
