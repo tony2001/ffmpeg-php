@@ -22,6 +22,7 @@
     #include "config.h"
 #endif
 
+#include <assert.h>
 #include <avcodec.h>
 #include <avformat.h>
 #include <inttypes.h>
@@ -444,7 +445,7 @@ PHP_FUNCTION(getFrameHeight) {
 
 /* {{{ _php_get_gd_image()
  */
-zval* _php_get_gd_image(AVFrame *pict, int w, int h)
+zval* _php_get_gd_image(int w, int h)
 {
     zval *function_name, *width, *height;
     zval **params[2];
@@ -482,19 +483,37 @@ zval* _php_get_gd_image(AVFrame *pict, int w, int h)
 /* }}} */
 
 
+/* {{{ _php_avpicture_to_gd_image()
+ */
+zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img, 
+        int width, int height) 
+{
+    int x, y;
+    int *data = (int*)av_pict->data[0];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            gdImageSetPixel(gd_img, x, y, data[y * height + x]); 
+        }
+    }
+}
+/* }}} */
+
+
 /* {{{ proto resource getFrameAsGDImage(int frame)
  */
 PHP_FUNCTION(getFrameAsGDImage)
 {
 	zval **argv[0], *gd_img_resource;
-    gdImagePtr im;
+    gdImage *im;
     int argc, frame, size, got_picture, len, img_id;
     FILE *f;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     char buf[1024];
     AVCodec *codec;
     AVStream *st;
-    AVFrame *pict, pict1;
+    AVFrame *src;
+    AVPicture tmp, *av_pict;
     AVCodecContext *c= NULL;
     
     ffmpeg_movie_context *ffmovie_ctx;
@@ -523,7 +542,7 @@ PHP_FUNCTION(getFrameAsGDImage)
                 _php_get_filename(ffmovie_ctx));
     }
 
-    /* find the mpeg1 video decoder */
+    /* find the decoder */
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec) {
         zend_error(E_ERROR, "Codec not found for %s", 
@@ -531,7 +550,7 @@ PHP_FUNCTION(getFrameAsGDImage)
     }
 
     c = avcodec_alloc_context();
-    pict = avcodec_alloc_frame();
+    src = avcodec_alloc_frame();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
         c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
@@ -561,7 +580,7 @@ PHP_FUNCTION(getFrameAsGDImage)
 
         inbuf_ptr = inbuf;
         while (size > 0) {
-            len = avcodec_decode_video(c, pict, &got_picture, inbuf_ptr, size);
+            len = avcodec_decode_video(c, src, &got_picture, inbuf_ptr, size);
             if (len < 0) {
                 // TODO: must clean up before erroring
                 zend_error(E_ERROR, "Error while decoding frame %d of %s", 
@@ -579,7 +598,7 @@ PHP_FUNCTION(getFrameAsGDImage)
     }
 
     /* get last frame */
-    len = avcodec_decode_video(c, pict, &got_picture, NULL, 0);
+    len = avcodec_decode_video(c, src, &got_picture, NULL, 0);
     if (got_picture) {
         if (frame == Z_LVAL_PP(argv[0])) {
             goto found_frame;
@@ -587,37 +606,49 @@ PHP_FUNCTION(getFrameAsGDImage)
         frame++;
     }
         
-
 found_frame:
-    gd_img_resource = _php_get_gd_image(pict, c->width, c->height);
+    gd_img_resource = _php_get_gd_image(c->width, c->height);
     
-    if (gd_img_resource->type != IS_RESOURCE) {
+    if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
        zend_error(E_ERROR, "Error creating GD Image");
     }
     
     ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
-    ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);\
-/*
-    avpicture_fill((AVPicture*)&pict1, (uint8_t *)*(im->tpixels), PIX_FMT_RGBA32, 
-            c->width, c->height);
+    ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);
 
+    
+    /* make sure frame data is RGBA32 */
     if (c->pix_fmt != PIX_FMT_RGBA32) {
-        if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
-                    (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
-        }
-    } else {
-        img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
+        avpicture_alloc(&tmp, PIX_FMT_RGBA32, c->width, c->height);
+       
+        /*
+        avpicture_fill(&tmp, (uint8_t *)im, PIX_FMT_RGBA32, 
                 c->width, c->height);
+         */
+        
+        if (img_convert(&tmp, PIX_FMT_RGBA32,
+                    (AVPicture*)src, c->pix_fmt, c->width, c->height) < 0) {
+        }
+        av_pict = &tmp;
+    } else {
+        av_pict = (AVPicture*)src;
     }
-*/
-    // write frame data into gdImagePtr
-    // return gd_img_resource
+
+    _php_avpicture_to_gd_image(av_pict, im, c->width, c->height);
 
     fclose(f);
     avcodec_close(c);
     av_free(c);
-    av_free(pict);
+    
+    // TODO: check if we should free using avpicture_free or not.
+    av_free(src);
+   
+    /* FIXME
+    if (tmp.data[0]) {
+        avpicture_free(&tmp);
+    }*/
 
+    RETURN_RESOURCE(gd_img_resource->value.lval);
 }
 /* }}} */
 
