@@ -552,7 +552,7 @@ PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
-    int argc, frame, size, got_frame, st;
+    int argc, frame, size, got_frame, st, rgba_frame_size;
     long wanted_frame;
     uint8_t *converted_frame_buf = NULL;
     AVCodec *codec;
@@ -653,7 +653,6 @@ found_frame:
    
     /* make sure frame data is RGBA32 */
     if (codec_ctx->pix_fmt != PIX_FMT_RGBA32) {
-        int rgba_frame_size;
 
         /* create a temporary picture for conversion to RGBA32 */
         rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, codec_ctx->width, 
