@@ -284,7 +284,7 @@ static void _php_open_movie_file(ffmovie_context *ffmovie_ctx,
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. */
     if (av_find_stream_info(ffmovie_ctx->fmt_ctx)) {
-        /* This is not a problem for some formats */
+        /* This is not a problem for some formats like .mov */
         /*zend_error(E_WARNING, "Can't find codec parameters for %s", filename); */
     }
 }
