@@ -11,7 +11,7 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 
 function print_image_md5($gd_image) {
     if ($gd_image) {
-        $img = sprintf("%s/tmp.png", dirname(__FILE__), $frame);
+        $img = sprintf("%s/tmp.png", dirname(__FILE__));
         imagepng($gd_image, $img);
         // generate md5 of file
         printf("%s\n", md5(file_get_contents($img)));
