@@ -1,7 +1,11 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.4.2,2 (03/01/2005)
+version 0.4.3 (03/12/2005)
     Bug Fixes
+    * Added ability to open movies as persistent resources. This greatly
+      increases speed of repeately accessing the same movie from separate
+      php scripts. This is still somewhat experimental so don't use it
+      unless you have a specific need (tkirby)
     * Increased strictness of compiler warnings to catch issues like
       undefined symbol errors. (tkirby)
     * Track frame number within ffmpeg-php since the frame_number variable
@@ -9,6 +13,9 @@ version 0.4.2,2 (03/01/2005)
       3GP movies. (tkirby)
     * Fixed bug #1099229 - Stride problems if ffmpeg_frame is resized upwards
       (tkirby)
+    * Functions now use safe_emalloc() to avoid possible integer overflows 
+      (tkirby)
+    * Changed lrint() to a macro to allow compiling on Windows (tkirby)
 
 version 0.4.2.1 (02/15/2005)
     Bug Fixes
