@@ -134,7 +134,7 @@ static void _php_open_movie_file(ff_movie_context *ffmovie_ctx,
 PHP_FUNCTION(ffmpeg_movie)
 {
     int argc, ret;
-    zval **argv[0];
+    zval **argv[1];
     ff_movie_context *ffmovie_ctx;
     
     /* get the number of arguments */
