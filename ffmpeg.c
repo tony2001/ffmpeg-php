@@ -44,7 +44,6 @@ typedef struct {
 zend_function_entry ffmpeg_php_functions[] = {
 	ZEND_FE(ffmpeg_movie_open, NULL)
     ZEND_FALIAS(ffmpeg_movie, ffmpeg_movie_open, NULL)
-	ZEND_FE(get_funcs, NULL)
 	{NULL, NULL, NULL}
 };
 
