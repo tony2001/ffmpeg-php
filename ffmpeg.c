@@ -35,12 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-/* FIXME: make this work without the ../../ when compiling standalone */
-#if HAVE_GD_BUNDLED
-  #include "../../ext/gd/libgd/gd.h"
-#else
-  #include "gd.h"
-#endif
+#include "gd.h"
 
 #define GET_MOVIE_RESOURCE(im) {\
 	zval **_tmp_zval;\
