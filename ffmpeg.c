@@ -152,11 +152,12 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
 /* {{{ _php_get_stream_index()
  */
-static int _php_get_stream_index(AVStream *st[], int type)
+static int _php_get_stream_index(AVFormatContext *ic, int type)
 {
     int i;
-    for (i = 0; i < MAX_STREAMS; i++) {
-        if (st[i]->codec.codec_type == type) {
+    
+    for (i = 0; i < ic->nb_streams; i++) {
+        if (ic->streams[i] && ic->streams[i]->codec.codec_type == type) {
             return i;
         }
     }
@@ -168,11 +169,11 @@ static int _php_get_stream_index(AVStream *st[], int type)
 
 /* {{{ _php_get_video_stream()
  */
-static AVStream *_php_get_video_stream(AVStream *st[])
+static AVStream *_php_get_video_stream(AVFormatContext *ic)
 {
-    int i = _php_get_stream_index(st, CODEC_TYPE_VIDEO);
+    int i = _php_get_stream_index(ic, CODEC_TYPE_VIDEO);
     
-    return i < 0 ? NULL : st[i];
+    return i < 0 ? NULL : ic->streams[i];
 }
 /* }}} */
 
@@ -297,7 +298,7 @@ PHP_FUNCTION(getDuration)
 static long _php_get_framecount(ffmpeg_movie_context *im)
 {
     float duration = 0.0, frame_rate = 0.0;
-    AVStream *st = _php_get_video_stream(im->ic->streams);
+    AVStream *st = _php_get_video_stream(im->ic);
 
     duration = (float)im->ic->duration / AV_TIME_BASE;
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
@@ -322,7 +323,7 @@ PHP_FUNCTION(getFrameCount)
  */
 static float _php_get_framerate(ffmpeg_movie_context *im)
 {
-    AVStream *st = _php_get_video_stream(im->ic->streams);
+    AVStream *st = _php_get_video_stream(im->ic);
 
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 }
@@ -419,7 +420,7 @@ PHP_FUNCTION(getCopyright)
  */
 static float _php_get_framewidth(ffmpeg_movie_context *im)
 {
-    AVStream *st = _php_get_video_stream(im->ic->streams);
+    AVStream *st = _php_get_video_stream(im->ic);
 
     return st->codec.width;
 }
@@ -439,7 +440,7 @@ PHP_FUNCTION(getFrameWidth) {
  */
 static float _php_get_frameheight(ffmpeg_movie_context *im)
 {
-    AVStream *st = _php_get_video_stream(im->ic->streams);
+    AVStream *st = _php_get_video_stream(im->ic);
 
     return st->codec.height;
 }
@@ -551,7 +552,7 @@ PHP_FUNCTION(getFrameAsGDImage)
        damaged mpeg streams) */
     memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
-    st = _php_get_video_stream(ffmovie_ctx->ic->streams);
+    st = _php_get_video_stream(ffmovie_ctx->ic);
     if (!st) {
         zend_error(E_ERROR, "Video stream not found in %s",
                 _php_get_filename(ffmovie_ctx));
