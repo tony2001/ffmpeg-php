@@ -54,6 +54,7 @@
             "ffmpeg_movie", le_ffmpeg_movie);\
 }\
 
+#define RGBA_PIXELSTRIDE 4
 
 static int le_ffmpeg_movie;
 
@@ -762,7 +763,7 @@ static void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filenam
     ByteIOContext pb;
     for (image_fmt = first_image_format; image_fmt != NULL;
             image_fmt = image_fmt->next) {
-        if (strncmp(image_fmt->name, "sgi", 3) == 0) {
+        if (strncmp(image_fmt->name, "png", 3) == 0) {
             break;
         }
     }
@@ -794,8 +795,10 @@ zval* _php_get_gd_image(int w, int h)
 {
     zval *function_name, *width, *height;
     zval **argv[2];
+    zval *return_value;
+    zend_function *func;
+    
     zval *retval;
-    //zend_function *func;
     char *function_cname = "imagecreatetruecolor";
     
     /*
@@ -834,22 +837,25 @@ zval* _php_get_gd_image(int w, int h)
 /* }}} */
 
 
-/* {{{ _php_rgba32_to_gd_image()
+/* {{{ _php_avframe_to_gd_image()
  */
-int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height) 
+int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height) 
 {
     int x, y;
-
+    uint8_t *src = frame->data[0];
+    
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             if (gdImageBoundsSafe(dest, x, y)) {
                 /* copy frame to gdimage buffer zeroing the alpha channel */
-                dest->tpixels[y][x] = src[x] & 0x00ffffff;
+                dest->tpixels[y][x] = 
+                    *(int*)(src + (x * RGBA_PIXELSTRIDE)) & 0x00ffffff;
             } else {
                 return -1;
             }
         }
-        src += width;
+
+        src += frame->linesize[0];
     }
     return 0;
 }
@@ -857,7 +863,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 
 
 /* {{{ _php_getframe()
-   Returns a frame from the movie. Caller is reponsible for freeing the frame
+   Returns a frame from the movie.
  */
 AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
@@ -892,6 +898,20 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     }
 
+    if (crop_top || crop_bottom) {
+        if (crop_top + crop_bottom >= decoder_ctx->height) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Vertical cropping is outside the range of the original image");
+        }
+    }
+
+    if (crop_left || crop_right) {
+        if (crop_left + crop_right >= decoder_ctx->width) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Horizontal cropping is outside the range of the original image");
+        }
+    }
+
     /* read frames looking for wanted_frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
@@ -905,18 +925,6 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                    a frame number */
                 if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
                     
-                    
-                    zend_printf("\nww: %d, dw: %d wh: %d  dh: %d\n", wanted_width, 
-                            decoder_ctx->width, wanted_height,decoder_ctx->height);
-                    zend_printf("ct: %d  cb: %d cl: %d cr: %d\n\n", 
-                            crop_top, crop_bottom,
-                            crop_left, crop_right);
-
-                    zend_printf("dcw: %d  dch: %d\n\n", 
-                            decoder_ctx->width - (crop_left + crop_right),
-                            decoder_ctx->height - (crop_top + crop_bottom));
-
-
                     if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
                             (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
                     {
@@ -926,11 +934,12 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 
                         if (crop_top || crop_bottom || crop_left || crop_right) {
                             non_resize_crop = 1;
+                            wanted_width = decoder_ctx->width; // FIXME: hack
+                            wanted_height = decoder_ctx->height; // FIXME: hack
                         }
 
                     } else { /* resampling is needed */
 
-                        zend_printf("RESIZE\n");//DEBUG
                         /* convert to PIX_FMT_YUV420P required for resampling */
                         if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
 
@@ -981,17 +990,14 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                     } else {
                         final_frame = resampled_frame;
                     }
-                   
-#define RGBA_PIXELSTRIDE 4
                     
                     if (non_resize_crop) {
-                        zend_printf("NON RESIZE CROP\n");//DEBUG
-                        zend_printf("linesize = %d\n", final_frame->linesize[0]);//DEBUG
+
                         avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
                                 PIX_FMT_RGBA32, wanted_width, wanted_height);
-                        ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0] +
-                            (crop_top * final_frame->linesize[0]) + 
-                            (crop_left * RGBA_PIXELSTRIDE);
+                        ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0]
+                            + (crop_top * final_frame->linesize[0])
+                                  + (crop_left * RGBA_PIXELSTRIDE);
 
                         ffmovie_ctx->crop_ctx_frame.linesize[0] = final_frame->linesize[0];
 
@@ -1066,12 +1072,11 @@ PHP_FUNCTION(get_frame)
 
     if (frame) {
 
-		//dump_img_to_sgi(frame, , wanted_width, wanted_height, "/tmp/test.sgi")
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
         
-        _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
+        _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
 
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
@@ -1202,14 +1207,13 @@ PHP_FUNCTION(get_frame_resampled)
     frame = _php_getframe(ffmovie_ctx, wanted_frame, 
             wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
-#define Z_REFCOUNT_PP(a) ((*a)->refcount)
+    
     if (frame) {
-        int ret;
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
 
-        _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
+        _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
 
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
