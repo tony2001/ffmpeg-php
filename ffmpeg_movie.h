@@ -23,6 +23,7 @@ PHP_FUNCTION(getPixelFormat);
 PHP_FUNCTION(getBitRate);
 PHP_FUNCTION(hasAudio);
 PHP_FUNCTION(getFrame);
+PHP_FUNCTION(getVideoCodec);
 
 typedef struct {
     AVFormatContext *fmt_ctx;

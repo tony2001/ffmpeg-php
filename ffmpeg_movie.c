@@ -37,6 +37,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getbitrate,          getBitRate,         NULL)
     PHP_FALIAS(hasaudio,            hasAudio,           NULL)
     PHP_FALIAS(getframe,            getFrame,           NULL)
+    PHP_FALIAS(getvideocodec,       getVideoCodec,      NULL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -213,7 +214,7 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
     stream_index = _php_get_stream_index(ffmovie_ctx->fmt_ctx, stream_type);
     if (stream_index < 0) {
         // FIXME: Find a way to do this without the if statement
-        if (stream_type = CODEC_TYPE_VIDEO) {
+        if (stream_type == CODEC_TYPE_VIDEO) {
             php_error_docref(NULL TSRMLS_CC, E_ERROR,
                     "Can't find video stream in %s", 
                     _php_get_filename(ffmovie_ctx));
@@ -572,6 +573,79 @@ PHP_FUNCTION(hasAudio)
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
 /* }}} */
+
+
+/* {{{ _php_get_video_codec()
+   Returns a frame from the movie.
+ */
+static char* _php_get_video_codec(ff_movie_context *ffmovie_ctx)
+{
+    AVCodecContext *decoder_ctx;
+    AVCodec *p = NULL;
+    const char *codec_name;
+    char buf1[32];
+    int video_stream;
+
+    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_VIDEO);
+    if (video_stream < 0) {
+        return NULL;
+    }
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+
+    p = avcodec_find_decoder(decoder_ctx->codec_id);
+
+    /* Copied from libavcodec/utils.c::avcodec_string */
+    if (p) {
+        codec_name = p->name;
+        if (decoder_ctx->codec_id == CODEC_ID_MP3) {
+            if (decoder_ctx->sub_id == 2)
+                codec_name = "mp2";
+            else if (decoder_ctx->sub_id == 1)
+                codec_name = "mp1";
+        }
+    } else if (decoder_ctx->codec_id == CODEC_ID_MPEG2TS) {
+        /* fake mpeg2 transport stream codec (currently not registered) */
+        codec_name = "mpeg2ts";
+    } else if (decoder_ctx->codec_name[0] != '\0') {
+        codec_name = decoder_ctx->codec_name;
+    } else {
+        /* output avi tags */
+        if (decoder_ctx->codec_type == CODEC_TYPE_VIDEO) {
+            snprintf(buf1, sizeof(buf1), "%c%c%c%c",
+                    decoder_ctx->codec_tag & 0xff,
+                    (decoder_ctx->codec_tag >> 8) & 0xff,
+                    (decoder_ctx->codec_tag >> 16) & 0xff,
+                    (decoder_ctx->codec_tag >> 24) & 0xff);
+        } else {
+            snprintf(buf1, sizeof(buf1), "0x%04x", decoder_ctx->codec_tag);
+        }
+        codec_name = buf1;
+    }
+
+    return codec_name;
+} 
+
+
+/* {{{ proto int getVideoCodec()
+ */
+PHP_FUNCTION(getVideoCodec)
+{
+    ff_movie_context *ffmovie_ctx;
+    char *codec_name;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    codec_name = _php_get_video_codec(ffmovie_ctx);
+ 
+    if (codec_name) {
+        RETURN_STRINGL(codec_name, strlen(codec_name), 1);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
 
 
 /* {{{ _php_getframe()
