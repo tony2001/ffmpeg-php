@@ -226,8 +226,10 @@ void register_ffmpeg_movie_class(int module_number) {
 /* }}} */
 
 
-/* {{{ _php_get_decoder_context() 
-   Opens codecs and gets codec context. Always call this to get a pointer to 
+#define REOPEN_DECODER 1
+
+/* {{{ __php_get_decoder_context() 
+   Opens decoders and gets codec context. Always call this to get a pointer to 
    the codec context. This allows to postpone codec init until a function
    that requires it is called.
  */
@@ -615,6 +617,7 @@ PHP_FUNCTION(hasAudio)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
+	// FIXME: Warning about int to pointer cast or some such
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
 /* }}} */
@@ -782,7 +785,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
     /* Rewind to the beginning of the stream if wanted frame already passed */
     if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
-            zend_error(E_ERROR, "Error seeking to begining of video stream");
+            zend_error(E_ERROR, "Error seeking to beginning of video stream");
         }
  
 #define RELOAD_CODEC 1
@@ -790,7 +793,6 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         /* re-open decoder */
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, RELOAD_CODEC);
         if (decoder_ctx == NULL) {
-            //zend_printf("reload");
             return NULL;
         }
     }
