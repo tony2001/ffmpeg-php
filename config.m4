@@ -22,6 +22,7 @@ if test "$PHP_FFMPEG" != "no"; then
   if test -z "$FFMPEG_DIR"; then
     AC_MSG_RESULT(Cannot find ffmpeg)
   else
+    dnl For debugging
     AC_MSG_RESULT(...ffmpeg libs found in $FFMPEG_DIR)
   fi
 
