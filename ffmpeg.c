@@ -91,7 +91,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getcopyright, getCopyright, NULL)
 
     PHP_FE(getFrameAsGDImage, NULL)
-    PHP_FALIAS(getframe, getFrameAsGDImage, NULL)
+    PHP_FALIAS(getframeasgdimage, getFrameAsGDImage, NULL)
 
 	{NULL, NULL, NULL}
 };
@@ -397,17 +397,15 @@ PHP_FUNCTION(getCopyright)
 /* }}} */
 
 
-/* {{{ _php_copy_frame_to_gd()
+/* {{{ _php_get_gd_image()
  */
 zval* _php_get_gd_image(AVFrame *pict, int w, int h)
 {
     zval *function_name, *width, *height;
-    zval **params[2]; // Creates array of parameters with 2 elements allocated.
+    zval **params[2];
     zval *return_value;
     zend_function *func;
     char *function_cname = "imagecreatetruecolor";
-    
-    //zend_printf("width = %d; height = %d\n", w, h);
     
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
@@ -535,9 +533,7 @@ PHP_FUNCTION(getFrameAsGDImage)
         }
     }
 
-    /* some codecs, such as MPEG, transmit the I and P frame with a
-       latency of one frame. You must do the following to have a
-       chance to get the last frame of the video */
+    /* get last frame */
     len = avcodec_decode_video(c, pict, &got_picture, NULL, 0);
     if (got_picture) {
         if (frame == Z_LVAL_PP(argv[0])) {
@@ -561,23 +557,23 @@ found_frame:
 
     avpicture_fill((AVPicture*)&pict1, (uint8_t *)im->tpixels, PIX_FMT_RGBA32, 
             c->width, c->height);
-/*
-    if (c->pix_fmt != PIX_FMT_RGBA32) {
-        if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
-                    (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
-        }
-    } else {
-        img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
-                c->width, c->height);
-    }
-   */
+    /*
+       if (c->pix_fmt != PIX_FMT_RGBA32) {
+       if (img_convert((AVPicture*)&pict1, PIX_FMT_RGBA32,
+       (AVPicture*)pict, c->pix_fmt, c->width, c->height) < 0) {
+       }
+       } else {
+       img_copy((AVPicture*)&pict1, (AVPicture*)pict, PIX_FMT_RGBA32, 
+       c->width, c->height);
+       }
+     */
     // write frame data into gdImagePtr
     // return gd_img_resource
 
     fclose(f);
     avcodec_close(c);
-    free(c);
-    free(pict);
+    av_free(c);
+    av_free(pict);
 
 }
 /* }}} */
