@@ -1,4 +1,5 @@
 <?
+
 $module = 'ffmpeg';
 
 // load extension
@@ -37,7 +38,7 @@ $movies = array( "/home/tkirby/movies/cowbell.wmv" );
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
-    $mov = ffmpeg_movie($movie);
+    $mov = new ffmpeg_movie($movie);
     printf("file name = %s\n", $mov->getFileName());
     printf("duration = %s\n", $mov->getDuration());
     printf("frame count = %s\n", $mov->getFrameCount());
@@ -46,7 +47,7 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
-    //printf("get frame = %d\n", $mov->getFrame(1));
+//    printf("get frame = %d\n", $mov->getFrame(1));
     echo "\n--------------------\n\n";
 }
 
