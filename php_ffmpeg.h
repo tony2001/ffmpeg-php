@@ -42,6 +42,7 @@ PHP_FUNCTION(hasAudio);
 #if HAVE_LIBGD20
 PHP_FUNCTION(getFrame);
 PHP_FUNCTION(getFrameResampled);
+PHP_FUNCTION(getFrameIntoImage);
 #endif /* HAVE_LIBGD20 */
 
 #ifdef ZTS
