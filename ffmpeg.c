@@ -40,11 +40,18 @@ typedef struct {
 } ffmpegInputMovie;
 
 
-// Every user visible function must have an entry in ffmpeg_movie_functions
-zend_function_entry ffmpeg_movie_functions[] = {
+// Every user visible function must have an entry in ffmpeg_php_functions
+zend_function_entry ffmpeg_php_functions[] = {
 	ZEND_FE(ffmpeg_movie_open, NULL)
     ZEND_FALIAS(ffmpeg_movie, ffmpeg_movie_open, NULL)
-    
+	ZEND_FE(get_funcs, NULL)
+	{NULL, NULL, NULL}
+};
+
+
+// Methods of the ffmpeg_movie class 
+zend_function_entry ffmpeg_movie_class_methods[] = {
+   
 	ZEND_FE(getDuration, NULL)
     ZEND_FALIAS(getduration, getDuration, NULL)
 
@@ -69,9 +76,8 @@ zend_function_entry ffmpeg_movie_functions[] = {
 	ZEND_FE(getCopyright, NULL)
     ZEND_FALIAS(getcopyright, getCopyright, NULL)
 
-// FIXME:
-//    ZEND_FE(getFrame, NULL)
-//    ZEND_FALIAS(getframe, getFrame, NULL)
+    ZEND_FE(getFrame, NULL)
+    ZEND_FALIAS(getframe, getFrame, NULL)
 
 	{NULL, NULL, NULL}
 };
@@ -81,7 +87,7 @@ zend_module_entry ffmpeg_module_entry = {
 	STANDARD_MODULE_HEADER,
 #endif
 	"ffmpeg",
-	ffmpeg_movie_functions,
+	ffmpeg_php_functions,
 	ZEND_MINIT(ffmpeg),
 	ZEND_MSHUTDOWN(ffmpeg),
 	NULL,
@@ -108,13 +114,25 @@ static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 }
 
 
-static AVStream *get_video_stream_index(AVStream *st[])
+static int get_video_stream_index(AVStream *st[])
 {
     int i;
     for (i = 0; i < MAX_STREAMS; i++) {
         if (st[i]->codec.codec_type == CODEC_TYPE_VIDEO) {
-            return st[i];
+            return i;
         }
+    }
+    // no video found
+    return -1;
+}
+
+
+static AVStream *get_video_stream(AVStream *st[])
+{
+    int i = get_video_stream_index(st);
+    
+    if (i != -1) {
+        return st[i];
     }
     return NULL;
 }
@@ -192,7 +210,7 @@ ZEND_FUNCTION(ffmpeg_movie_open)
 	ret = ZEND_REGISTER_RESOURCE(NULL, im, le_ffmpeg_movie);
     
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
-            ffmpeg_movie_functions);
+            ffmpeg_movie_class_methods);
 
     ce = zend_register_internal_class(&ffmpeg_movie_class_entry TSRMLS_CC);
     
@@ -240,7 +258,7 @@ ZEND_FUNCTION(getFrameCount)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    st = get_video_stream_index(im->ic->streams);
+    st = get_video_stream(im->ic->streams);
     enc = &st->codec;
 
     duration = (float)im->ic->duration / AV_TIME_BASE;
@@ -266,7 +284,7 @@ ZEND_FUNCTION(getFrameRate)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    st = get_video_stream_index(im->ic->streams);
+    st = get_video_stream(im->ic->streams);
     enc = &st->codec;
 
     RETURN_DOUBLE((float)enc->frame_rate / enc->frame_rate_base);
@@ -362,7 +380,7 @@ ZEND_FUNCTION(getCopyright)
     RETURN_STRINGL(im->ic->copyright, strlen(im->ic->author), 1);
 }
 
-/*
+
 static int seek_video(AVFormatContext *fc, int64_t timestamp)
 {
     int result;
@@ -377,41 +395,27 @@ static int seek_video(AVFormatContext *fc, int64_t timestamp)
 }
 
 
-static int64_t calculate_timestamp(int64_t frame_number)
+static int64_t calculate_timestamp(AVFormatContext *fc, AVStream *stream, 
+        int64_t frame_number)
 {
-    AVStream *stream;
     int64_t timestamp;
-
-    stream = format_context->streams[video_index];
-
+    
     timestamp =  av_rescale((int64_t) frame_number * stream->r_frame_rate_base,
             AV_TIME_BASE,
             stream->r_frame_rate);
 
-    if (add_start_time) {
-        timestamp += format_context->start_time;
-    }
-
-
-    if (multiply_time_base) {
-        timestamp = av_rescale(timestamp, stream->time_base.num,
-                stream->time_base.den);
-    }
-
-    if (divide_time_base) {
-        timestamp = av_rescale(timestamp, stream->time_base.den,
-                stream->time_base.num);
-    }
+    // multiply time base
+    timestamp = av_rescale(timestamp, stream->time_base.num,
+            stream->time_base.den);
 
     return timestamp;
 }
-*/
 
-/* BROKEN 
+
 ZEND_FUNCTION(getFrame)
 {
 	zval *this, **tmp, **argv[0];
-    int argc;
+    int argc, video_index;
     int64_t timestamp = 0; 
     AVCodec *codec;
     AVStream *st;
@@ -445,54 +449,70 @@ ZEND_FUNCTION(getFrame)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    st = get_video_stream_index(im->ic->streams);
+    // TODO: change all get_video_stream() to get_video_stream_index
+    //       and add check for negative return value
+    video_index = get_video_stream_index(im->ic->streams);
+    
+    if (video_index < 0) {
+        zend_error(E_ERROR, "Can't find video stream");
+        RETURN_FALSE;
+    }
+    
+    st = im->ic->streams[video_index];
     enc = &st->codec;
+
+    // TODO: add check for frame > frame count
     
     // convert frame number to time stamp
     convert_to_long_ex(argv[0]);
-    //calculate_timestamp(argv[0]);
+    timestamp = calculate_timestamp(im->ic, st, Z_LVAL_PP(argv[0]));
 
-    // TODO: add check for frame > frame count
-
-    timestamp =  av_rescale((int64_t) Z_LVAL_PP(argv[0]) * 
-        st->r_frame_rate_base, AV_TIME_BASE, st->r_frame_rate);
-
-    
-//    timestamp = (AV_TIME_BASE * Z_LVAL_PP(argv[0])) / 
-//        (enc->frame_rate/enc->frame_rate_base);
-
+//    zend_printf("timestamp =  %0.3ld\n", timestamp);
     // add the stream start time 
-    if (im->ic->start_time != AV_NOPTS_VALUE)
-        timestamp += im->ic->start_time;
+    //if (im->ic->start_time != AV_NOPTS_VALUE)
+    //    timestamp += im->ic->start_time;
 
     if (av_seek_frame(im->ic, -1, timestamp) < 0) {
-        zend_printf("%s: could not seek to position %0.3f\n",
-                im->ic->filename, (double)timestamp / AV_TIME_BASE);
+        zend_error(E_ERROR, "%s: could not seek to position %0.3f\n",
+                im->ic->filename, (double)timestamp);
         RETURN_FALSE;
     }
 
-    av_read_frame(im->ic, pkt);
+    zend_printf("av read frame = %d\n" , av_read_frame(im->ic, pkt));
+    //zend_printf("pkt stream index = %d\n" , pkt->stream_index);
+    //zend_printf("video index = %d\n" , video_index);
 
+    // keep reading frames until we get a packet from the right stream
+    /*
+    do {
+        int result = av_read_frame(im->ic, pkt);
+        if(result < 0) {
+            zend_error(E_ERROR, "av_read_frame() failed %d", result);
+            RETURN_FALSE;
+        }
+    } while (pkt->stream_index != video_index);
+*/
     
     // find the video decoder 
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec) {
-        zend_printf("codec not found\n");
+        zend_error(E_ERROR, "codec not found\n");
         RETURN_FALSE;
     }
 
     c = avcodec_alloc_context();
-    picture = avcodec_alloc_frame();
 
     // open it
-    if (avcodec_open(c, codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        exit(1);
+/*    if (avcodec_open(c, codec) < 0) {
+        zend_error(E_ERROR, "could not open codec\n");
+        RETURN_FALSE;
     }
 
-    RETURN_TRUE;
-}
+    picture = avcodec_alloc_frame();
 */
+    RETURN_LONG(timestamp);
+}
+
 
 /*
  * Local variables:

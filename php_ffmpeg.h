@@ -21,6 +21,7 @@ ZEND_RSHUTDOWN_FUNCTION(ffmpeg);
 ZEND_MINFO_FUNCTION(ffmpeg);
 
 ZEND_FUNCTION(ffmpeg_movie_open);
+
 ZEND_FUNCTION(getDuration);
 ZEND_FUNCTION(getFrameCount);
 ZEND_FUNCTION(getFrameRate);
@@ -29,7 +30,7 @@ ZEND_FUNCTION(getComment);
 ZEND_FUNCTION(getTitle);
 ZEND_FUNCTION(getAuthor);
 ZEND_FUNCTION(getCopyright);
-// BROKEN: ZEND_FUNCTION(getFrame);
+ZEND_FUNCTION(getFrame);
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)
