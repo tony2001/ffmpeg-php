@@ -56,8 +56,6 @@
 
 #define RGBA_PIXELSTRIDE 4
 
-static int le_ffmpeg_movie_classp; 
-
 static int le_ffmpeg_movie;
 
 static int le_gd;
