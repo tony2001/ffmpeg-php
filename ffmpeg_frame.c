@@ -337,7 +337,10 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, in
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
 		
-			// FIXME: don't do bounds check until we fix the gd.h incompatiblity problem 
+			// FIXME: gdImageBoundsSafe is implemented as a macro in the gd library
+            //        bundled with php and as a function in other gd libraries.
+            //        The macro and the function are incompatible so diable this
+            //        until I can come up with a way to work around the problem.
 			//if (gdImageBoundsSafe(dest, x, y)) {
                 /* copy pixel to gdimage buffer zeroing the alpha channel */
                 dest->tpixels[y][x] = src[x] & 0x00ffffff;
