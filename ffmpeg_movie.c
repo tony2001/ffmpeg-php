@@ -680,7 +680,7 @@ PHP_FUNCTION(getFrame)
                     "Error allocating ffmpeg_frame resource");
         }
 
-        /* TODO: Provide function(s) for setting these */
+        /* TODO: Provide function(s) for setting these in ffmpeg_frame */
         ff_frame->width = _php_get_framewidth(ffmovie_ctx);
         ff_frame->height = _php_get_frameheight(ffmovie_ctx);
         ff_frame->pixel_format = _php_get_pixelformat(ffmovie_ctx);
