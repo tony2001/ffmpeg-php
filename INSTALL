@@ -1,4 +1,3 @@
-
 1. copy the ffmpeg extension into your the php sources extensions directory
 
 cp ffmpeg /path/to/php-4.3.9RC1/ext
@@ -13,8 +12,13 @@ cp ffmpeg /path/to/php-4.3.9RC1/ext
 
 6. type make install
 
-7. put test_ffmpeg.php under your web root somewhere
+7. put /tests/test_ffmpeg.php under your web root somewhere.
 
 8. load test_ffmpeg.php into your browser.
 
-RESULTS: You should get a listing of the functions provided by the ffmpeg-php module
+RESULTS: You should get a listing of the functions provided by the ffmpeg-php 
+         module
+
+TROUBLESHOOTING: This INSTALL doc is very preliminary, I spent about 45 
+         seconds writing this and even less time testing it. If you get 
+         stuck, shoot me an email and I'll try to help.
