@@ -22,13 +22,13 @@ zend_class_entry ffmpeg_frame_class_entry;
 static int le_ffmpeg_frame;
 static int le_gd;
 
-/* {{{ ffmpeg_movie methods[]
-    Methods of the ffmpeg_movie class 
+/* {{{ ffmpeg_frame methods[]
+    Methods of the ffmpeg_frame class 
 */
 zend_function_entry ffmpeg_frame_class_methods[] = {
    
     /* contructor */
-    //PHP_FE(ffmpeg_movie, NULL)
+    //PHP_FE(ffmpeg_frame, NULL)
 
     /* methods */
     PHP_FALIAS(getwidth,       getWidth,      NULL)
@@ -36,6 +36,7 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
     PHP_FALIAS(resize,         resize,        NULL)
     PHP_FALIAS(crop,           crop,          NULL)
     PHP_FALIAS(togdimage,      toGDImage,     NULL)
+
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -95,7 +96,7 @@ static void _php_free_av_frame(AVFrame *av_frame)
     }
 }
 
-/* {{{ _php_free_ffmpeg_movie
+/* {{{ _php_free_ffmpeg_frame
  */
 static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
@@ -115,117 +116,10 @@ register_ffmpeg_frame_class(int module_number) {
     INIT_CLASS_ENTRY(ffmpeg_frame_class_entry, "ffmpeg_frame", 
             ffmpeg_frame_class_methods);
 
-    /* register ffmpeg movie class */
+    /* register ffmpeg frame class */
     ffmpeg_frame_class_entry_ptr = 
         zend_register_internal_class(&ffmpeg_frame_class_entry TSRMLS_CC);
 }
-
-
-#if HAVE_LIBGD20
-
-/* {{{ _php_get_gd_image()
- */
-int _php_get_gd_image(int w, int h)
-{
-    zval *function_name, *width, *height;
-    zval **argv[2];
-    zend_function *func;
-    zval *retval;
-    char *function_cname = "imagecreatetruecolor";
-    int ret;
-   
-    if (zend_hash_find(EG(function_table), function_cname, 
-                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
-        zend_error(E_ERROR, "Error can't find %s function", function_cname);
-    }
-
-    MAKE_STD_ZVAL(function_name);
-    MAKE_STD_ZVAL(width);
-    MAKE_STD_ZVAL(height);
-
-    ZVAL_STRING(function_name, function_cname, 0);
-    ZVAL_LONG(width, w);
-    ZVAL_LONG(height, h);
-
-    argv[0] = &width;
-    argv[1] = &height;
-
-    if (call_user_function_ex(EG(function_table), NULL, function_name, 
-                &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
-        zend_error(E_ERROR, "Error calling %s function", function_cname);
-    }
-    
-    FREE_ZVAL(function_name); 
-    FREE_ZVAL(width); 
-    FREE_ZVAL(height); 
-    
-    if (!retval || retval->type != IS_RESOURCE) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Error creating GD Image");
-    }
-
-    ret = retval->value.lval;
-    zend_list_addref(ret); 
-    if (retval) {
-        zval_ptr_dtor(&retval);
-    }
-
-
-    return ret;
-}
-/* }}} */
-
-
-/* {{{ _php_avframe_to_gd_image()
- */
-int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height) 
-{
-    int x, y;
-    uint8_t *src = frame->data[0];
-    
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            if (gdImageBoundsSafe(dest, x, y)) {
-                /* copy frame to gdimage buffer zeroing the alpha channel */
-                dest->tpixels[y][x] = 
-                    *(int*)(src + (x * RGBA_PIXELSTRIDE)) & 0x00ffffff;
-            } else {
-                return -1;
-            }
-        }
-
-        src += frame->linesize[0];
-    }
-    return 0;
-}
-/* }}} */
-
-#endif /* HAVE_LIBGD20 */
-
-/* {{{ proto int getWidth()
- */
-PHP_FUNCTION(getWidth)
-{
-    ff_frame_context *ff_frame_ctx;
-
-    GET_FRAME_RESOURCE(ff_frame_ctx);
-    
-    RETURN_LONG(ff_frame_ctx->width);
-}
-/* }}} */
-
-
-/* {{{ proto int getHeight()
- */
-PHP_FUNCTION(getHeight)
-{
-    ff_frame_context *ff_frame_ctx;
-
-    GET_FRAME_RESOURCE(ff_frame_ctx);
-    
-    RETURN_LONG(ff_frame_ctx->height);
-}
-/* }}} */
 
 
 /* {{{ _php_convert_frame()
@@ -362,6 +256,141 @@ static int _php_resample_frame(ff_frame_context *ff_frame_ctx,
     return 0;
 }
 /* }}} */
+
+#if HAVE_LIBGD20
+
+/* {{{ _php_get_gd_image()
+ */
+int _php_get_gd_image(int w, int h)
+{
+    zval *function_name, *width, *height;
+    zval **argv[2];
+    zend_function *func;
+    zval *retval;
+    char *function_cname = "imagecreatetruecolor";
+    int ret;
+   
+    if (zend_hash_find(EG(function_table), function_cname, 
+                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
+        zend_error(E_ERROR, "Error can't find %s function", function_cname);
+    }
+
+    MAKE_STD_ZVAL(function_name);
+    MAKE_STD_ZVAL(width);
+    MAKE_STD_ZVAL(height);
+
+    ZVAL_STRING(function_name, function_cname, 0);
+    ZVAL_LONG(width, w);
+    ZVAL_LONG(height, h);
+
+    argv[0] = &width;
+    argv[1] = &height;
+
+    if (call_user_function_ex(EG(function_table), NULL, function_name, 
+                &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
+        zend_error(E_ERROR, "Error calling %s function", function_cname);
+    }
+    
+    FREE_ZVAL(function_name); 
+    FREE_ZVAL(width); 
+    FREE_ZVAL(height); 
+    
+    if (!retval || retval->type != IS_RESOURCE) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Error creating GD Image");
+    }
+
+    ret = retval->value.lval;
+    zend_list_addref(ret); 
+    if (retval) {
+        zval_ptr_dtor(&retval);
+    }
+
+
+    return ret;
+}
+/* }}} */
+
+
+/* {{{ _php_avframe_to_gd_image()
+ */
+int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height) 
+{
+    int x, y;
+    uint8_t *src = frame->data[0];
+    
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if (gdImageBoundsSafe(dest, x, y)) {
+                /* copy frame to gdimage buffer zeroing the alpha channel */
+                dest->tpixels[y][x] = 
+                    *(int*)(src + (x * RGBA_PIXELSTRIDE)) & 0x00ffffff;
+            } else {
+                return -1;
+            }
+        }
+
+        src += frame->linesize[0];
+    }
+    return 0;
+}
+/* }}} */
+
+
+/* {{{ proto resource toGDImage()
+ */
+PHP_FUNCTION(toGDImage)
+{
+    ff_frame_context *ff_frame_ctx;
+    zval *gd_img_resource;
+    gdImage *gd_img;
+    
+    GET_FRAME_RESOURCE(ff_frame_ctx);
+
+    /* convert to PIX_FMT_YUV420P required for resampling */
+    _php_convert_frame(ff_frame_ctx, PIX_FMT_RGBA32);
+
+    return_value->value.lval = _php_get_gd_image(ff_frame_ctx->width, 
+            ff_frame_ctx->height);
+
+    return_value->type = IS_RESOURCE;
+
+    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
+
+    _php_avframe_to_gd_image(ff_frame_ctx->av_frame, gd_img, 
+            ff_frame_ctx->width, ff_frame_ctx->height);
+}
+/* }}} */
+
+#endif /* HAVE_LIBGD20 */
+
+
+
+/* {{{ proto int getWidth()
+ */
+PHP_FUNCTION(getWidth)
+{
+    ff_frame_context *ff_frame_ctx;
+
+    GET_FRAME_RESOURCE(ff_frame_ctx);
+    
+    RETURN_LONG(ff_frame_ctx->width);
+}
+/* }}} */
+
+
+/* {{{ proto int getHeight()
+ */
+PHP_FUNCTION(getHeight)
+{
+    ff_frame_context *ff_frame_ctx;
+
+    GET_FRAME_RESOURCE(ff_frame_ctx);
+    
+    RETURN_LONG(ff_frame_ctx->height);
+}
+/* }}} */
+
 
 
 /* {{{ proto boolean crop([, int crop_top [, int crop_bottom [, int crop_left [, int crop_right ]]]])
@@ -553,30 +582,6 @@ PHP_FUNCTION(resize)
 /* }}} */
 
 
-/* {{{ proto resource toGDImage()
- */
-PHP_FUNCTION(toGDImage)
-{
-    ff_frame_context *ff_frame_ctx;
-    zval *gd_img_resource;
-    gdImage *gd_img;
-    
-    GET_FRAME_RESOURCE(ff_frame_ctx);
-
-    /* convert to PIX_FMT_YUV420P required for resampling */
-    _php_convert_frame(ff_frame_ctx, PIX_FMT_RGBA32);
-
-    return_value->value.lval = _php_get_gd_image(ff_frame_ctx->width, 
-            ff_frame_ctx->height);
-
-    return_value->type = IS_RESOURCE;
-
-    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
-
-    _php_avframe_to_gd_image(ff_frame_ctx->av_frame, gd_img, 
-            ff_frame_ctx->width, ff_frame_ctx->height);
-}
-/* }}} */
 
 
 /*
