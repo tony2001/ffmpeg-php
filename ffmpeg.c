@@ -456,6 +456,33 @@ PHP_FUNCTION(getFrameHeight) {
 }
 
 
+/* {{{ _php_get_pixelformat()
+ */
+/*
+   static float _php_get_pixelformat(ffmpeg_movie_context *im)
+{
+    AVStream *st = _php_get_video_stream(im->ic);
+    zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
+    return st->codec.height;
+}
+*/
+/* }}} */
+
+
+/* {{{ proto int getPixelFormat()
+ */
+/*
+PHP_FUNCTION(getPixelFormat) {
+    ffmpeg_movie_context *im;
+    char *fmt;
+    GET_MOVIE_RESOURCE(im);
+   
+    fmt = _php_get_pixelformat(im);
+    RETURN_STRINGL(fmt, strlen(fmt), 1);
+}
+*/
+
+
 /* {{{ _php_get_gd_image()
  */
 zval* _php_get_gd_image(int w, int h)
@@ -496,21 +523,23 @@ zval* _php_get_gd_image(int w, int h)
 /* }}} */
 
 
-/* {{{ _php_avpicture_to_gd_image()
+/* {{{ _php_rgba32_to_gd_image()
  */
-zval* _php_avpicture_to_gd_image(AVPicture *av_pict, gdImagePtr gd_img, 
-        int width, int height) 
+int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height) 
 {
-    int x, y, row_start;
-    int *data = (int*)av_pict->data[0];
+    int x, y;
 
     for (y = 0; y < height; y++) {
-        row_start = y * width;
-        //zend_printf("writing %d to row %d\n", data[row_start], row_start);
         for (x = 0; x < width; x++) {
-            gdImageSetPixel(gd_img, x, y, data[row_start + x]); 
+            if (gdImageBoundsSafe(dest, x, y)) {
+                dest->tpixels[y][x] = src[x];
+            } else {
+                return -1;
+            }
         }
+        src += width;
     }
+    return 0;
 }
 /* }}} */
 
@@ -525,11 +554,11 @@ PHP_FUNCTION(getFrameAsGDImage)
     int argc, frame, size, got_picture, len;
     FILE *f;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
+    uint8_t *tmp_buf = NULL;
     char buf[1024];
     AVCodec *codec;
     AVStream *st;
-    AVFrame *src;
-    AVPicture tmp_pict, *av_pict;
+    AVFrame *src, tmp_pict, *av_pict;
     AVCodecContext *c= NULL;
     
     ffmpeg_movie_context *ffmovie_ctx;
@@ -633,36 +662,73 @@ found_frame:
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
    
-    zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
     /* make sure frame data is RGBA32 */
     if (c->pix_fmt != PIX_FMT_RGBA32) {
-        zend_printf("w: %d, h: %d\n", c->width, c->height);
-        avpicture_alloc(&tmp_pict, PIX_FMT_RGBA32, c->width, c->height);
-       
-        if (img_convert(&tmp_pict, PIX_FMT_RGBA32,
+        int size;
+
+        /* create temporary picture */
+        size = avpicture_get_size(PIX_FMT_RGBA32, c->width, c->height);
+        tmp_buf = av_malloc(size);
+        if (!tmp_buf) {
+            return;
+        }
+
+        av_pict = &tmp_pict;
+        avpicture_fill((AVPicture*)av_pict, tmp_buf, PIX_FMT_RGBA32, 
+                c->width, c->height);
+
+        if (img_convert((AVPicture*)av_pict, PIX_FMT_RGBA32,
                     (AVPicture*)src, c->pix_fmt, c->width, c->height) < 0) {
             zend_error(E_ERROR, "Error converting frame");
         }
         
-        av_pict = &tmp_pict;
     } else {
-        av_pict = (AVPicture*)src;
+        av_pict = src;
     }
 
-    _php_avpicture_to_gd_image(av_pict, im, c->width, c->height);
+    _php_rgba32_to_gd_image((int*)av_pict->data[0], im, c->width, c->height);
 
+    /* DEBUG: This block writss an sgi image of the choosen frame to
+       disk as out.sgi using libavformat instead of GD.
+    {
+        int err;
+        char *fn = "out.sgi";
+        AVImageFormat *image_fmt;
+        AVImageInfo img_info;
+        ByteIOContext pb;
+        for(image_fmt = first_image_format; image_fmt != NULL;
+                image_fmt = image_fmt->next) {
+            if (strncmp(image_fmt->name, "sgi", 3) == 0) {
+                break;
+            }
+        }
+
+        img_info.pict.data[0] = av_pict->data[0];
+        img_info.pict.linesize[0] = av_pict->linesize[0];
+        img_info.pix_fmt = PIX_FMT_RGBA32;
+        img_info.width = c->width;
+        img_info.height = c->height;
+        img_info.interleaved = 0;
+
+        // open the file with generic libav function 
+        err = url_fopen(&pb, fn, URL_RDWR);
+        if (err < 0) {
+            fprintf(stderr, "Could not open %s %d\n", fn, err);
+            exit(-8);
+        }
+        url_setbufsize(&pb, 4096);
+        image_fmt->img_write(&pb, &img_info);
+    }
+     */
+    
     fclose(f);
     avcodec_close(c);
     av_free(c);
+    av_free(tmp_buf);
     
     // TODO: check if we should free using avpicture_free or not.
     av_free(src);
    
-    /* FIXME
-    if (tmp.data[0]) {
-        avpicture_free(&tmp_pict);
-    }*/
-
     RETURN_RESOURCE(gd_img_resource->value.lval);
 }
 /* }}} */
