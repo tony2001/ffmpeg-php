@@ -1,40 +1,42 @@
 <?
+/*
+ * This test script is not part of the automatic regression tests. It serves
+ * as a simple manual test script and an example of the syntax for calling
+ * the ffmpeg-php functions
+ * 
+ * To run it from the command line type 'php -q ffmpeg_test.php'or from a 
+ * browser * copy this file into your web root and point your browser at it.
+ */
 
-$module = 'ffmpeg';
+$extension = 'ffmpeg';
+$extension_soname = $extension . '.' . PHP_SHLIB_SUFFIX;
+$extension_fullname = PHP_EXTENSION_DIR . '.' . $extension_soname;
 
-// load extension
-if(!extension_loaded($module)) {
-    dl($module . "." . PHP_SHLIB_SUFFIX);
-}
-
-if (!extension_loaded($module)) {
-    die("Module $module is not compiled into PHP");
-}
-
-// check to see if run buy php cgi
-$cgi = ((substr(php_sapi_name(), 0, 3) == 'cgi')) ? true : false;
-
-if (!$cgi) {
+if (php_sapi_name() != 'cgi') {
     echo '<pre>';
 }
 
-echo "\nFunctions available in the $module extension:<br>\n";
-// print available functions and aliases
-$functions = get_extension_funcs($module);
+// load extension
+if(!extension_loaded($extension)) {
+    dl($extension_soname) or die("Can't load extension $extension_fullname");
+}
 
-foreach($functions as $func) {
+// print available functions and aliases
+echo "\nFunctions available in $extension_fullname extension:\n";
+foreach(get_extension_funcs($extension) as $func) {
     echo $func."\n";
 }
 
 $class = "ffmpeg_movie";
-echo "\nMethods available in class $class:<br>\n";
-$movie_methods = get_class_methods($class);
-foreach($movie_methods as $method) {
+echo "\nMethods available in class $class:\n";
+foreach(get_class_methods($class) as $method) {
     echo $method."\n";
 }
 
 // put some movie files into this array to test the ffmpeg functions
-$movies = array( "/home/tkirby/movies/cowbell.wmv" );
+$movies[] = "/home/tkirby/movies/cowbell.wmv"; // movie with sound
+$movies[] = "/var/www/localhost/htdocs/recoded.avi"; // movie no sound
+$movies[] = "//var/www/localhost/htdocs/jimi_hendrix_voodoo_child.mp3"; // movie no sound
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
@@ -47,11 +49,13 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
+//    printf("has video = %s\n", $mov->hasVideo());
+//    printf("has audio = %s\n", $mov->hasAudio());
 //    printf("get frame = %d\n", $mov->getFrame(1));
     echo "\n--------------------\n\n";
 }
 
-if (!$cgi) {
+if (php_sapi_name() != 'cgi') {
     echo '</pre>';
 }
 
