@@ -1,8 +1,1 @@
 Add option to config.m4 to -rpath path to ffmpeg libs
-
-new getFrame semantics
-   noarg getFrame gets the next frame from a movie or if the video stream 
-   isn't opened then opens codec and retrives the first frame
-
-   onearg getFrame opens codecs if they're not opened and gets the frame 
-   specified in the parameter
