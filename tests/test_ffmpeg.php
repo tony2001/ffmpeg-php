@@ -8,9 +8,14 @@
  * browser * copy this file into your web root and point your browser at it.
  */
 
-$extension = 'ffmpeg';
-$extension_soname = $extension . '.' . PHP_SHLIB_SUFFIX;
-$extension_fullname = PHP_EXTENSION_DIR . '.' . $extension_soname;
+$extension = "ffmpeg";
+$extension_soname = $extension . "." . PHP_SHLIB_SUFFIX;
+$extension_fullname = PHP_EXTENSION_DIR . "/" . $extension_soname;
+
+// load extension
+if (!extension_loaded($extension)) {
+    dl($extension_soname) or die("Can't load extension $extension_fullname\n");
+}
 
 
 function getDirFiles($dirPath)
@@ -31,11 +36,6 @@ function getDirFiles($dirPath)
 
 if (php_sapi_name() != 'cgi') {
     echo '<pre>';
-}
-
-// load extension
-if(!extension_loaded($extension)) {
-    dl($extension_soname) or die("Can't load extension $extension_fullname\n");
 }
 
 // print available functions and aliases
