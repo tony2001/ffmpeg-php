@@ -577,7 +577,10 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 #if HAVE_LIBGD20
 
 
-/* {{{ _php_get_codec_ctx()
+/* {{{ _php_get_codec_ctx() 
+   Opens codecs and gets codec context. Always call this to get a pointer to 
+   the codec context. This allows to postpone codec init until a function
+   that requires it is called.
  */
 static AVCodecContext* _php_get_decoder_context(ffmpeg_movie_context *ffmovie_ctx)
 {
@@ -623,7 +626,6 @@ PHP_FUNCTION(getFrame)
     int argc, size, got_frame, video_stream, rgba_frame_size;
     long wanted_frame;
     uint8_t *converted_frame_buf = NULL;
-    AVCodec *decoder;
     AVPacket packet;
     AVFrame *decoded_frame, converted_frame, *final_frame = NULL;
     ffmpeg_movie_context *ffmovie_ctx;
@@ -644,7 +646,6 @@ PHP_FUNCTION(getFrame)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
-    decoder = decoder_ctx->codec;
     
     decoded_frame = avcodec_alloc_frame();
 
