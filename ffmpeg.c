@@ -35,7 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.4.1"
+#define FFMPEG_PHP_VERSION "0.4.2"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -77,6 +77,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
     register_ffmpeg_output_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
+
+    REGISTER_STRING_CONSTANT("FFMPEG_VERSION_NUMBER", FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", avcodec_build(), CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
@@ -101,6 +103,8 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_start();
     php_info_print_table_header(2, "ffmpeg support (ffmpeg-php)", "enabled");
     php_info_print_table_row(2, "ffmpeg-php version", FFMPEG_PHP_VERSION);
+    php_info_print_table_row(2, "libavcodec version", LIBAVCODEC_IDENT);
+    php_info_print_table_row(2, "libavformat version", LIBAVFORMAT_IDENT);
     php_info_print_table_end();
 }
 /* }}} */
