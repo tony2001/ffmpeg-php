@@ -151,7 +151,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.3.3", /* version number for ffmpeg-php */
+	"0.3.4", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -323,12 +323,12 @@ PHP_FUNCTION(ffmpeg_movie)
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
 
-    if(argc != 1) {
+    ifx(argc != 1) {
         WRONG_PARAM_COUNT;
     }
 
     /* argument count is correct, now retrieve arguments */
-    if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
         WRONG_PARAM_COUNT;
     }
   
@@ -802,7 +802,7 @@ void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
     AVImageFormat *image_fmt;
     AVImageInfo img_info;
     ByteIOContext pb;
-    for(image_fmt = first_image_format; image_fmt != NULL;
+    for (image_fmt = first_image_format; image_fmt != NULL;
             image_fmt = image_fmt->next) {
         if (strncmp(image_fmt->name, "sgi", 3) == 0) {
             break;
@@ -839,12 +839,12 @@ zval* _php_get_gd_image(int w, int h)
     zval *return_value;
     zend_function *func;
     char *function_cname = "imagecreatetruecolor";
-    
+
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
     }
-    
+
     MAKE_STD_ZVAL(function_name);
     MAKE_STD_ZVAL(width);
     MAKE_STD_ZVAL(height);
@@ -855,17 +855,17 @@ zval* _php_get_gd_image(int w, int h)
 
     params[0] = &width;
     params[1] = &height;
-    
-    if(call_user_function_ex(EG(function_table), NULL, function_name, 
-               &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
+
+    if (call_user_function_ex(EG(function_table), NULL, function_name, 
+                &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
         zend_error(E_ERROR, "Error calling %s function", function_cname);
-   }
+    }
 
-   FREE_ZVAL(function_name); 
-   FREE_ZVAL(width); 
-   FREE_ZVAL(height); 
+    FREE_ZVAL(function_name); 
+    FREE_ZVAL(width); 
+    FREE_ZVAL(height); 
 
-   return return_value;
+    return return_value;
 }
 /* }}} */
 
@@ -1018,7 +1018,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         av_free_packet(&packet);
     }
 
-    if(final_frame) {
+    if (final_frame) {
         return final_frame;
     } else {
         av_free(decoded_frame);
@@ -1041,7 +1041,7 @@ PHP_FUNCTION(getFrame)
 
     argc = ZEND_NUM_ARGS();
 
-    if(argc > 1) {
+    if (argc > 1) {
         WRONG_PARAM_COUNT;
     }
 
@@ -1049,7 +1049,7 @@ PHP_FUNCTION(getFrame)
 
     if (argc > 0) {
         /* retrieve arguments */ 
-        if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+        if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
             WRONG_PARAM_COUNT;
         }
         
@@ -1104,14 +1104,14 @@ PHP_FUNCTION(getFrameResampled)
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
 
-    if(argc > 3 || argc < 2) {
+    if (argc > 3 || argc < 2) {
         WRONG_PARAM_COUNT;
     }
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     /* retrieve arguments */ 
-    if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
         WRONG_PARAM_COUNT;
     }
 
