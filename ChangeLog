@@ -1,16 +1,18 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
 
-version 0.3.4 (XX/XX/2004):
+version 0.3.4 (11/28/2004):
     New Features:
-    * Added support for resizing (resample) frames returned from getFrame() 
+    * Added new method getFrameResampled() which return a frame resized
       using ffmpeg's resampling which IMHO is better than GD's reampling and 
-      should speed up a bit when returning say a thumbnail sized frame since 
-      less data has to be copied into the GD image.
+      will speed up greatly returning say a thumbnail sized frame since less 
+      data has to be copied into the returned GD image. The only caveat to
+      ffmpeg based resampling is that the width and height of the resized
+      image must be even numbers (tkirby)
     * Initial support for audio only files such as mp3 (tkirby)
     * getDuration() now works for mp3 files (tkirby)
     * getVideoBitrate() will return bit rate for mp3 files though this
-      will probably change in the future when more audio specific methods
+      will change in the future when more audio specific methods
       are added (tkirby)
 
 version 0.3.3 (11/25/2004):
