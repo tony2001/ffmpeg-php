@@ -66,7 +66,8 @@ static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
 typedef struct {
-    AVFormatContext* fmt_ctx;
+    AVFormatContext *fmt_ctx;
+    /*AVCodecContext *codec_ctx;*/
 } ffmpeg_movie_context;
 
 
@@ -142,10 +143,10 @@ ZEND_GET_MODULE(ffmpeg)
  */
 static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
-    ffmpeg_movie_context *input = (ffmpeg_movie_context*)rsrc->ptr;    
+    ffmpeg_movie_context *ffmovie_ctx = (ffmpeg_movie_context*)rsrc->ptr;    
     
-    av_close_input_file(input->fmt_ctx);
-	efree(input);
+    av_close_input_file(ffmovie_ctx->fmt_ctx);
+	efree(ffmovie_ctx);
 }
 /* }}} */
 
@@ -222,6 +223,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
 }
 /* }}} */
 
+
 /* {{{ _php_open_movie_file()
  */
 static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx, 
@@ -230,7 +232,8 @@ static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx,
     AVFormatParameters params;
 
     /* open the file with generic libav function */
-    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, &params)) {
+    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
+                &params)) {
         zend_error(E_ERROR, "Can't open movie file %s", filename);
     }
     
@@ -265,6 +268,8 @@ PHP_FUNCTION(ffmpeg_movie)
     }
   
 	ffmovie_ctx = emalloc(sizeof(ffmpeg_movie_context));
+    
+    ffmovie_ctx->fmt_ctx = (AVFormatContext *)av_alloc_format_context();
     
     convert_to_string_ex(argv[0]);
     
@@ -549,6 +554,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 /* }}} */
 
 #if HAVE_LIBGD20
+
 
 /* {{{ proto resource getFrame(int frame)
  */
