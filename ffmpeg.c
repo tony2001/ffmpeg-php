@@ -35,7 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-/* FIXME: make this work without the ../../ when compiling standalone  */
+/* FIXME: make this work without the ../../ when compiling standalone */
 #if HAVE_GD_BUNDLED
   #include "../../ext/gd/libgd/gd.h"
 #else
@@ -66,7 +66,7 @@ static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
 typedef struct {
-    AVFormatContext* ic;
+    AVFormatContext* fmt_ctx;
 } ffmpeg_movie_context;
 
 
@@ -144,7 +144,7 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
     ffmpeg_movie_context *input = (ffmpeg_movie_context*)rsrc->ptr;    
     
-    av_close_input_file(input->ic);
+    av_close_input_file(input->fmt_ctx);
 	efree(input);
 }
 /* }}} */
@@ -152,12 +152,12 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
 /* {{{ _php_get_stream_index()
  */
-static int _php_get_stream_index(AVFormatContext *ic, int type)
+static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
 {
     int i;
     
-    for (i = 0; i < ic->nb_streams; i++) {
-        if (ic->streams[i] && ic->streams[i]->codec.codec_type == type) {
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        if (fmt_ctx->streams[i] && fmt_ctx->streams[i]->codec.codec_type == type) {
             return i;
         }
     }
@@ -230,13 +230,13 @@ static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx,
     AVFormatParameters params;
 
     /* open the file with generic libav function */
-    if (av_open_input_file(&(ffmovie_ctx->ic), filename, NULL, 0, &params)) {
+    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, &params)) {
         zend_error(E_ERROR, "Can't open movie file %s", filename);
     }
     
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. */
-    if (av_find_stream_info(ffmovie_ctx->ic)) {
+    if (av_find_stream_info(ffmovie_ctx->fmt_ctx)) {
         zend_error(E_ERROR, "Can't find codec parameters for %s", filename);
     }
 }
@@ -288,7 +288,7 @@ PHP_FUNCTION(getDuration)
        
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    RETURN_DOUBLE((float)ffmovie_ctx->ic->duration / AV_TIME_BASE);
+    RETURN_DOUBLE((float)ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE);
 }
 /* }}} */
 
@@ -298,9 +298,9 @@ PHP_FUNCTION(getDuration)
 static long _php_get_framecount(ffmpeg_movie_context *ffmovie_ctx)
 {
     float duration = 0.0, frame_rate = 0.0;
-    AVStream *st = _php_get_video_stream(ffmovie_ctx->ic);
+    AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    duration = (float)ffmovie_ctx->ic->duration / AV_TIME_BASE;
+    duration = (float)ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE;
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
     return lrint(frame_rate * duration);
@@ -323,7 +323,7 @@ PHP_FUNCTION(getFrameCount)
  */
 static float _php_get_framerate(ffmpeg_movie_context *ffmovie_ctx)
 {
-    AVStream *st = _php_get_video_stream(ffmovie_ctx->ic);
+    AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 }
@@ -345,7 +345,7 @@ PHP_FUNCTION(getFrameRate)
  */
 static char* _php_get_filename(ffmpeg_movie_context *ffmovie_ctx)
 {
-    return ffmovie_ctx->ic->filename;
+    return ffmovie_ctx->fmt_ctx->filename;
 }
 /* }}} */
 
@@ -373,7 +373,8 @@ PHP_FUNCTION(getComment)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    RETURN_STRINGL(ffmovie_ctx->ic->comment, strlen(ffmovie_ctx->ic->comment), 1);
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->comment,
+            strlen(ffmovie_ctx->fmt_ctx->comment), 1);
 }
 /* }}} */
 
@@ -386,7 +387,8 @@ PHP_FUNCTION(getTitle)
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_STRINGL(ffmovie_ctx->ic->title, strlen(ffmovie_ctx->ic->title), 1);
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->title,
+            strlen(ffmovie_ctx->fmt_ctx->title), 1);
 }
 /* }}} */
 
@@ -399,7 +401,8 @@ PHP_FUNCTION(getAuthor)
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_STRINGL(ffmovie_ctx->ic->author, strlen(ffmovie_ctx->ic->author), 1);
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->author,
+            strlen(ffmovie_ctx->fmt_ctx->author), 1);
 }
 /* }}} */
 
@@ -412,7 +415,8 @@ PHP_FUNCTION(getCopyright)
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_STRINGL(ffmovie_ctx->ic->copyright, strlen(ffmovie_ctx->ic->author), 1);
+    RETURN_STRINGL(ffmovie_ctx->fmt_ctx->copyright,
+            strlen(ffmovie_ctx->fmt_ctx->copyright), 1);
 }
 /* }}} */
 
@@ -420,7 +424,7 @@ PHP_FUNCTION(getCopyright)
  */
 static float _php_get_framewidth(ffmpeg_movie_context *ffmovie_ctx)
 {
-    AVStream *st = _php_get_video_stream(ffmovie_ctx->ic);
+    AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
     return st->codec.width;
 }
@@ -440,7 +444,7 @@ PHP_FUNCTION(getFrameWidth) {
  */
 static float _php_get_frameheight(ffmpeg_movie_context *ffmovie_ctx)
 {
-    AVStream *st = _php_get_video_stream(ffmovie_ctx->ic);
+    AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
     return st->codec.height;
 }
@@ -462,7 +466,7 @@ PHP_FUNCTION(getFrameHeight) {
 /*
    static float _php_get_pixelformat(ffmpeg_movie_context *im)
 {
-    AVStream *st = _php_get_video_stream(im->ic);
+    AVStream *st = _php_get_video_stream(im->fmt_ctx);
     zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
     return st->codec.height;
 }
@@ -576,7 +580,9 @@ PHP_FUNCTION(getFrame)
    
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    video_stream = _php_get_stream_index(ffmovie_ctx->ic, CODEC_TYPE_VIDEO);
+    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
+            CODEC_TYPE_VIDEO);
+
     if (video_stream < 0) {
         zend_error(E_ERROR, "Video stream not found in %s",
                 _php_get_filename(ffmovie_ctx));
@@ -584,7 +590,8 @@ PHP_FUNCTION(getFrame)
 
     /* find the decoder */
     codec = avcodec_find_decoder(
-            ffmovie_ctx->ic->streams[video_stream]->codec.codec_id);
+            ffmovie_ctx->fmt_ctx->streams[video_stream]->codec.codec_id);
+
     if (!codec) {
         zend_error(E_ERROR, "Codec not found for %s", 
                 _php_get_filename(ffmovie_ctx));
@@ -615,7 +622,7 @@ PHP_FUNCTION(getFrame)
 
     /* read frames looking for wanted_frame */ 
     frame = 1;
-    while (av_read_frame(ffmovie_ctx->ic, &packet) >= 0) {
+    while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
         if (packet.stream_index == video_stream) {
             avcodec_decode_video(codec_ctx, decoded_frame, &got_frame,
