@@ -1,29 +1,34 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+
 version 0.3.3 (11/24/2004):
+    New Features:
+    * Added PHP constants for libavcodec version and build numbers (tkirby)
+    * Added getBitRate() method (tkirby)
+    * More optimizations for successive calls to getFrame() (tkirby)
+
     Bug Fixes
     * Fixed problem of grainy image quality when passing an image generated
-      by getFrame() to gdImageCopyResampled().
+      by getFrame() to gdImageCopyResampled() (tkirby)
 
 version 0.3.2 (11/22/2004):
     New Features:
-    * Added getPixelFormat() function (Todd Kirby)
-    * Added hasAudio() function (Todd Kirby)
-    * Optimized getFrame() function so that reading successive frames is much 
-      faster (Todd Kirby)
+    * Added getPixelFormat() method (tkirby)
+    * Added hasAudio() method (tkirby)
+    * Optimized getFrame() method so that reading successive frames is much 
+      faster (tkirby)
     * getFrame() can now be called without an argument to get the next frame in
-      the stream (Todd Kirby)
+      the stream (tkirby)
 
     Bug Fixes:
     * Fixed getFrame() returning one frame off of the requested 
-      frame (Todd Kirby)
-
+      frame (tkirby)
 
 version 0.3.1 (11/19/2004):
     Bug Fixes:
     * Full getFrame() rework, should now work with all ffmpeg 
-      movie types. (Todd Kirby)
+      movie types. (tkirby)
 
 version 0.3.0 (11/17/2004):
     New Features:
-    * Inital support for getFrame() (Todd Kirby)
+    * Inital support for getFrame() (tkirby)
