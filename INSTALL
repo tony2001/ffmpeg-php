@@ -73,7 +73,8 @@ RESULTS: You should get a listing of the methods provided by the ffmpeg-php
 TROUBLESHOOTING
 ---------------
 
-This INSTALL doc is not very comprehensive. If you get 
-stuck, shoot me an email and I'll try to help. 
+This INSTALL doc is not very comprehensive. If you get stuck, post a message 
+to the ffmpeg-php help forum (http://sourceforge.net/forum/forum.php?forum_id=417245)
+and I'll try to help. 
 
     - Todd Kirby (doubleshot at pacbell dot net)
