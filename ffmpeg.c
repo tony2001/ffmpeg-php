@@ -830,12 +830,6 @@ PHP_FUNCTION(getFrame)
         if (wanted_frame < 1) {
             zend_error(E_ERROR, "Frame number must be greater than zero");
         }
-
-        if (wanted_frame > _php_get_framecount(ffmovie_ctx)) {
-            /* FIXME: rewrite so _php_get_framecount is not called twice */
-            zend_error(E_ERROR, "%s only has %d frames.", 
-                    _php_get_filename(ffmovie_ctx), _php_get_framecount(ffmovie_ctx));
-        }
     }
 
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
