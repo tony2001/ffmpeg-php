@@ -42,8 +42,6 @@
   #include "gd.h"
 #endif
 
-#define INBUF_SIZE 4096
-
 #define GET_MOVIE_RESOURCE(im) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
@@ -664,7 +662,6 @@ PHP_FUNCTION(getFrame)
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
 
-
     /* read frames looking for wanted_frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
@@ -713,7 +710,10 @@ PHP_FUNCTION(getFrame)
                     _php_rgba32_to_gd_image((int*)final_frame->data[0], gd_img, decoder_ctx->width,
                             decoder_ctx->height);
 
-                   
+                    if (converted_frame_buf) {
+                        av_free(converted_frame_buf);
+                    }
+
                     /* free wanted frame */
                     av_free_packet(&packet);
                     break; 
@@ -725,7 +725,6 @@ PHP_FUNCTION(getFrame)
         av_free_packet(&packet);
     }
     
-    av_free(converted_frame_buf);
     av_free(decoded_frame);
    
     if (final_frame) {
