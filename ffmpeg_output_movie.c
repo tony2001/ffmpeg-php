@@ -121,7 +121,9 @@ static void _php_free_ffmpeg_output_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
 /* {{{ register_ffmpeg_output_movie_class()
  */
-void register_ffmpeg_output_movie_class(int module_number) {
+void register_ffmpeg_output_movie_class(int module_number)
+{
+    TSRMLS_FETCH();
     le_ffmpeg_output_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_output_movie,
             NULL, "ffmpeg_output_movie", module_number);
 

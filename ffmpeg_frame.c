@@ -116,7 +116,10 @@ static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
-void register_ffmpeg_frame_class(int module_number) {
+void register_ffmpeg_frame_class(int module_number)
+{
+    TSRMLS_FETCH();
+
 #if HAVE_LIBGD20
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
 #endif // HAVE_LIBGD20
