@@ -1,5 +1,12 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.2 (01/11/2005)
+	New Features:
+	* Added more ID3 support methods getAlbum(), getArtist(), getGenre()), 
+	getTrackNumber(), getYear() (tkirby)
+
+	Bug Fixes:
+	
 version 0.4.1 (01/08/2005)
     New Features:
     * Added getVideoCodec(), getAudioCodec() and getAudioChannels() functions
