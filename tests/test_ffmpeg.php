@@ -46,7 +46,7 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
-    printf("get frame = %d\n", $mov->getFrame(1));
+    //printf("get frame = %d\n", $mov->getFrame(1));
     echo "\n--------------------\n\n";
 }
 
