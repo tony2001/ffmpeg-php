@@ -35,7 +35,12 @@
 
 #include "php_ffmpeg.h"
 
-#include "gd.h" 
+/* 
+   include gd header from local include dir. This is a copy of gd.h that is 
+   distributed with php-4.3.9. It is distributed along with ffmpeg-php to
+   allow ffmpeg-php to be built without needing access to the php sources
+ */
+#include "include/gd.h" 
 
 #define GET_MOVIE_RESOURCE(im) {\
 	zval **_tmp_zval;\
@@ -134,6 +139,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 };
 /* }}} */
 
+
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	STANDARD_MODULE_HEADER,
@@ -146,7 +152,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.3.4", /* version number for ffmpeg-php */
+	"0.3.6a", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -168,8 +174,8 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
     av_close_input_file(ffmovie_ctx->fmt_ctx);
 
-    /* if format conversion was done in getFrame, its buffer
-       will need to be freed */
+    /* if format conversion was done in getFrame or getFrameResmpled
+       this buffer will need to be freed */
     if (ffmovie_ctx->rgba_conv_frame) {
        avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
        av_free(ffmovie_ctx->rgba_conv_frame);
@@ -691,7 +697,7 @@ static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getBitrate()
+/* {{{ proto int getVideoBitrate()
  */
 PHP_FUNCTION(getVideoBitRate)
 {
@@ -745,47 +751,39 @@ PHP_FUNCTION(getAudioBitRate)
 
 /* {{{ _php_get_rgba_conv_frame()
  */
-AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width, 
+static AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width, 
         int height) 
 {
-    int rgba_frame_size;
-    uint8_t *converted_frame_buf;
-    AVFrame *conv_frame;
-
-    /* free conv buffer and force reallocation if width or height have changed */
+    /* free conv buffer to force reallocation if width or height have changed */
     if (ffmovie_ctx->rgba_conv_frame &&
             (width != ffmovie_ctx->conv_frame_width ||
              height != ffmovie_ctx->conv_frame_height)) {
-        if (ffmovie_ctx->rgba_conv_frame) {
-            avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
-            av_free(ffmovie_ctx->rgba_conv_frame);
-        }
+        avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
+        av_free(ffmovie_ctx->rgba_conv_frame);
     }
 
-    /* allocate conv buffer or reallocate if width or height have changed */
+    /* (re)allocate conv buffer */
     if (!ffmovie_ctx->rgba_conv_frame) {
-        
-        /* create a temporary picture for conversion to RGBA32 */
-        rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, width, height);
-
-        conv_frame = avcodec_alloc_frame();
-
-        if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
-            zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
-        }
+        ffmovie_ctx->rgba_conv_frame = avcodec_alloc_frame();
+        avpicture_alloc((AVPicture*)ffmovie_ctx->rgba_conv_frame, 
+                PIX_FMT_RGBA32, width, height);
 
         ffmovie_ctx->conv_frame_width = width;
         ffmovie_ctx->conv_frame_height = height;
-
-        avpicture_fill((AVPicture*)conv_frame, converted_frame_buf, 
-                PIX_FMT_RGBA32, width, height);
-
-        return conv_frame; 
-    } else {
-        return ffmovie_ctx->rgba_conv_frame;
     }
+
+    return ffmovie_ctx->rgba_conv_frame;
 }
 /* }}} */
+
+static void _php_free_av_frame(ffmovie_context *ffmovie_ctx, AVFrame *frame) {
+    /* don't free conv frame, it gets freed when the script exits. */
+    if (frame != ffmovie_ctx->rgba_conv_frame) {
+        avpicture_free((AVPicture*)frame);
+        av_free(frame);
+    }
+}
+
 
 /* {{{ dump_img_to_sgi()
  * For debugging frame conversions
@@ -886,10 +884,10 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 }
 /* }}} */
 
+
 /* {{{ _php_getframe()
    Returns a frame from the movie. Caller is reponsible for freeing the frame
  */
-
 AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
         int crop_left, int crop_right)
@@ -986,10 +984,9 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 
                     if (target_pixfmt != PIX_FMT_RGBA32) {
 
-                        final_frame = av_malloc(sizeof(AVFrame));
-                        avpicture_alloc((AVPicture*)final_frame, PIX_FMT_RGBA32,
-                                    wanted_width, wanted_height);
-
+                        final_frame = _php_get_rgba_conv_frame(ffmovie_ctx,
+                                wanted_width, wanted_height); 
+                            
                         if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
                                     (AVPicture*)resampled_frame, target_pixfmt,
                                     wanted_width, wanted_height) < 0) {
@@ -1078,8 +1075,8 @@ PHP_FUNCTION(getFrame)
         
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
 
-        avpicture_free((AVPicture*)frame);
-        av_free(frame);
+        _php_free_av_frame(ffmovie_ctx, frame);
+
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
@@ -1214,8 +1211,8 @@ PHP_FUNCTION(getFrameResampled)
 
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
 
-        avpicture_free((AVPicture*)frame);
-        av_free(frame);
+        _php_free_av_frame(ffmovie_ctx, frame);
+        
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
