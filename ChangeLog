@@ -1,17 +1,20 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.4.2 (01/11/2005)
-	New Features:
-	* Added more ID3 support methods getAlbum(), getArtist(), getGenre()), 
-	getTrackNumber(), getYear() (tkirby)
+version 0.4.2 (01/15/2005)
+    New Features:
+    * Added more ID3 methods getAlbum(), getArtist(), getGenre()), 
+      getTrackNumber(), getYear() for audio files. (tkirby)
+    * Cleaned up to build without gd (tkirby)
+    * Added ability to build against current ffmpeg cvs (tkirby)
 
-	Bug Fixes:
-	
+    Bug Fixes:
+    * Fixed segfault in ffmpeg_movie free when decoder is not found (tkirby)
+
 version 0.4.1 (01/08/2005)
     New Features:
     * Added getVideoCodec(), getAudioCodec() and getAudioChannels() functions
       per feature request #1097373 (tkirby)
-    * Added constructor for ffmpeg_frame that allows to create from a GD
+    * Added constructor for ffmpeg_frame that allows to create from a gd
       image. This won't be all that useful until encoding support is added.
       (tkirby)
 
@@ -101,7 +104,7 @@ version 0.3.3a (11/25/2004):
     * Don't error if stream params not found since some formats don't need 
       them (tkirby)
     * Return zero if can't get a valid duration for the movie (tkirby)
-    * Zero out alpha channel when copying frame to GD so GD will not try to 
+    * Zero out alpha channel when copying frame to gd so gd will not try to 
       apply alpha when image is passed to gdImageCopyResampled() (tkirby)
     * getFrame() no longer bounds checks the framenumber param against 
       framecount since framecount may not always be accurate (tkirby)
