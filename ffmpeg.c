@@ -109,6 +109,10 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getFrameNumber, NULL)
     PHP_FALIAS(getframenumber, getFrameNumber, NULL)
 
+    PHP_FE(getPixelFormat, NULL)
+    PHP_FALIAS(getpixelformat, getPixelFormat, NULL)
+
+
 #if HAVE_LIBGD20
     PHP_FE(getFrame, NULL)
     PHP_FALIAS(getframe, getFrame, NULL)
@@ -492,33 +496,6 @@ PHP_FUNCTION(getFrameHeight)
 /* }}} */
 
 
-/* {{{ _php_get_pixelformat()
- */
-/*
-   static float _php_get_pixelformat(ffmpeg_movie_context *im)
-{
-    AVStream *st = _php_get_video_stream(im->fmt_ctx);
-    zend_printf("pix fmt = %s\n", avcodec_get_pix_fmt_name(c->pix_fmt)); 
-    return st->codec.height;
-}
-*/
-/* }}} */
-
-
-/* {{{ proto int getPixelFormat()
- */
-/*
-PHP_FUNCTION(getPixelFormat) {
-    ffmpeg_movie_context *im;
-    char *fmt;
-    GET_MOVIE_RESOURCE(im);
-   
-    fmt = _php_get_pixelformat(im);
-    RETURN_STRINGL(fmt, strlen(fmt), 1);
-}
-*/
-
-
 /* {{{ _php_get_gd_image()
  */
 zval* _php_get_gd_image(int w, int h)
@@ -626,6 +603,36 @@ PHP_FUNCTION(getFrameNumber)
     RETURN_LONG(_php_get_frame_number(ffmovie_ctx));
 }
 /* }}} */
+
+
+/* {{{ _php_get_pixelformat()
+ */
+static const char* _php_get_pixelformat(ffmpeg_movie_context *ffmovie_ctx)
+{
+    AVCodecContext *decoder_ctx;
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+    return avcodec_get_pix_fmt_name(decoder_ctx->pix_fmt);
+}
+
+/* }}} */
+
+
+/* {{{ proto int getPixelFormat()
+ */
+PHP_FUNCTION(getPixelFormat)
+{
+    const char *fmt;
+    ffmpeg_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+   
+    fmt = _php_get_pixelformat(ffmovie_ctx);
+
+    /* cast const to non-const to keep compiler from complaining, 
+       RETURN_STRINGL just copies so the string won't get overwritten
+       */
+    RETURN_STRINGL((char *)fmt, strlen(fmt), 1);
+}
 
 
 #if HAVE_LIBGD20

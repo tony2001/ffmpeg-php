@@ -33,6 +33,7 @@ PHP_FUNCTION(getCopyright);
 PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
 PHP_FUNCTION(getFrameNumber);
+PHP_FUNCTION(getPixelFormat);
 
 #if HAVE_LIBGD20
 PHP_FUNCTION(getFrame);
