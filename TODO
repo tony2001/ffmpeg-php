@@ -1,3 +1,5 @@
+* rename functions per PHP coding standards
+
 * Add option to store open ffmpeg_movies as persistant resources. This will
   allow a script that returns frames as images to be called repeatedly
   without the performance hit of reopening the movie for each getFrame() call.
