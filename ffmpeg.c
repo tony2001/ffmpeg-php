@@ -756,42 +756,6 @@ static AVFrame *_php_get_context_frame(ffmovie_frame *ff_frame, int width,
 /* }}} */
 
 
-/* {{{ dump_img_to_sgi()
- * For debugging frame conversions
- * TODO: add img conversion to allow other pix_fmts than PIX_FMT_RGBA32
- */
-static void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
-{
-    int err;
-    AVImageFormat *image_fmt;
-    AVImageInfo img_info;
-    ByteIOContext pb;
-    for (image_fmt = first_image_format; image_fmt != NULL;
-            image_fmt = image_fmt->next) {
-        if (strncmp(image_fmt->name, "png", 3) == 0) {
-            break;
-        }
-    }
-
-    img_info.pict.data[0] = frame->data[0];
-    img_info.pict.linesize[0] = frame->linesize[0];
-    img_info.pix_fmt = PIX_FMT_RGBA32;
-    img_info.width = width;
-    img_info.height = height;
-    img_info.interleaved = 0;
-
-    /* open the file */
-    err = url_fopen(&pb, filename, URL_RDWR);
-    if (err < 0) {
-        fprintf(stderr, "Could not open %s %d\n", filename, err);
-        exit(1);
-    }
-    url_setbufsize(&pb, 4096);
-    image_fmt->img_write(&pb, &img_info);
-    url_fclose(&pb);
-}
-/* }}} */
-
 #if HAVE_LIBGD20
 
 /* {{{ _php_get_gd_image()
