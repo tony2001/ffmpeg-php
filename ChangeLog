@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.3.3 (11/24/2004):
+    Bug Fixes
+    * Fixed problem of grainy image quality when passing an image generated
+      by getFrame() to gdImageCopyResampled().
+
 version 0.3.2 (11/22/2004):
     New Features:
     * Added getPixelFormat() function (Todd Kirby)
