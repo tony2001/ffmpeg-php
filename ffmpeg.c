@@ -223,6 +223,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
 
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", avcodec_build(), CONST_CS | CONST_PERSISTENT);
+
+    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
     
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
             ffmpeg_movie_class_methods);
@@ -791,15 +793,16 @@ static void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filenam
 zval* _php_get_gd_image(int w, int h)
 {
     zval *function_name, *width, *height;
-    zval **params[2];
-    zval *return_value;
-    zend_function *func;
+    zval **argv[2];
+    zval *retval;
+    //zend_function *func;
     char *function_cname = "imagecreatetruecolor";
-
+    
+    /*
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
-    }
+    }*/
 
     MAKE_STD_ZVAL(function_name);
     MAKE_STD_ZVAL(width);
@@ -809,19 +812,24 @@ zval* _php_get_gd_image(int w, int h)
     ZVAL_LONG(width, w);
     ZVAL_LONG(height, h);
 
-    params[0] = &width;
-    params[1] = &height;
+    argv[0] = &width;
+    argv[1] = &height;
 
     if (call_user_function_ex(EG(function_table), NULL, function_name, 
-                &return_value, 2, params, 0, NULL TSRMLS_CC) == FAILURE) {
+                &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
         zend_error(E_ERROR, "Error calling %s function", function_cname);
     }
 
     FREE_ZVAL(function_name); 
     FREE_ZVAL(width); 
     FREE_ZVAL(height); 
+    
+    if (!retval || retval->type != IS_RESOURCE) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Error creating GD Image");
+    }
 
-    return return_value;
+    return retval;
 }
 /* }}} */
 
@@ -1046,12 +1054,6 @@ PHP_FUNCTION(get_frame)
 		//dump_img_to_sgi(frame, , wanted_width, wanted_height, "/tmp/test.sgi")
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
-        if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Error creating GD Image");
-        }
-
-        ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
         
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
@@ -1185,17 +1187,11 @@ PHP_FUNCTION(get_frame_resampled)
     frame = _php_getframe(ffmovie_ctx, wanted_frame, 
             wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
-
+#define Z_REFCOUNT_PP(a) ((*a)->refcount)
     if (frame) {
-
+        int ret;
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
-        if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Error creating GD Image");
-        }
-
-        ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
 
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
