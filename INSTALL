@@ -1,8 +1,8 @@
 REQUIREMENTS
 ============
 
-ffmpeg-0.4.9 or higher
-php-4.3.x (I have not tested with php 5, but I've received reports that it doesn't run)
+ffmpeg-0.4.9pre1 or higher built with the --enable-shared option (ffmpeg cvs recommended)
+php-4.3.x or higher 
 gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS
@@ -12,9 +12,18 @@ These instructions are for Linux since I don't have windows. If you
 successfully build on windows, let me know how you did it and I'll update 
 the instructions.
 
+BUILDING FFMPEG
+---------------
 
-BUILDING AS A SHARED EXTENSION 
-------------------------------
+cd /path/to/ffmpeg
+./configure --enable-shared --prefix=/usr
+make clean && make
+[become root]
+make install
+
+
+BUILDING FFMPEG-PHP AS A SHARED EXTENSION 
+-----------------------------------------
 
 1. Build php if not already built (See the file INSTALL in your php source directory)
 
@@ -46,8 +55,8 @@ it available to all scripts by default add extension=ffmpeg.so to your php.ini
 file which will tell php to load it when starting up.
 
 
-BUILDING AS PART OF THE PHP BINARY 
-----------------------------------
+BUILDING FFMPEG-PHP AS PART OF THE PHP BINARY 
+---------------------------------------------
 
 1. Unpack the archive and copy the ffmpeg extension directory into your the php 
    sources extensions directory
@@ -67,7 +76,7 @@ BUILDING AS PART OF THE PHP BINARY
        
 ...and build and install php.
 
-The ffmpeg functions should now be built directly into php and so no need to
+The ffmpeg-php methods should now be built directly into php and so no need to
 explicitly load the extension at runtime.
 
 
@@ -84,6 +93,23 @@ RESULTS: You should get a listing of the methods provided by the ffmpeg-php
 
 TROUBLESHOOTING
 ---------------
+
+Q: I get '`gdImage' undeclared or `gdImagePtr''undeclared when I try to 
+   'make' ffmpeg-php
+
+A: Your version of php is compiled without gd support. Make sure to use the 
+   '--with-gd' flag when configuring php.
+
+
+Q: I get 'avcodec.h: No such file or directory' when I try to 'make' ffmpeg-php 
+
+A: ffmpeg-php can't fond ffmpeg header files. Make sure when you configure 
+   ffmpeg you use the '--enable-shared' option and make sure it installs 
+   somewhere where other programs can find the libs/headers. See 
+   'BUILDING FFMPEG' above for an example.
+ 
+HELP
+----
 
 This INSTALL doc is not very comprehensive. If you get stuck, post a message 
 to the ffmpeg-php help forum (http://sourceforge.net/forum/forum.php?forum_id=417245)
