@@ -1,6 +1,6 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.3.8z (12/xx/2004)
+version 0.3.8a (12/15/2004)
     New Features:
     * Added getFrameIntoImage() function to reuse the same gd image for speed
       (tkirby)
