@@ -7,10 +7,6 @@
 * Try to use av_seek_frame before reverting to sequential reads, this will speed
   up getFrame() on formats that support seeking.
 
-* Add get audio bit rate function
-
-* Add get audio channels function
-
 * Resampling has been changed slightly due to a fix in recent versions
   of ffmpeg's resample code. Need to use EXPECTREX to test for both md5 
   possibilities in getFrameResampled regression.
