@@ -17,10 +17,11 @@ function getDirFiles($dirPath)
 {
     if ($handle = opendir($dirPath))
     {
-        while (false !== ($file = readdir($handle)))
-            if ($file != "CVS" && $file != "." && $file != "..")
-                $filesArr[] = trim($dirPath . '/' . $file);
-
+        while (false !== ($file = readdir($handle))) {
+            $fullpath = $dirPath . '/' . $file;
+            if (!is_dir($fullpath) && $file != "CVS" && $file != "." && $file != "..")
+                $filesArr[] = trim($fullpath);
+        }
         closedir($handle);
     } 
 
@@ -63,8 +64,8 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
-    printf("frame height = %d pixels\n", $mov->getFrameWidth());
-    printf("frame width = %d pixels\n", $mov->getFrameHeight());
+    printf("frame height = %d pixels\n", $mov->getFrameHeight());
+    printf("frame width = %d pixels\n", $mov->getFrameWidth());
     printf("has audio = %s\n", $mov->hasAudio() == 0 ? 'No' : 'Yes');
     printf("get pixel format = %s\n", $mov->getPixelFormat());
     printf("get video bit rate = %d kb/s\n", $mov->getVideoBitRate());
