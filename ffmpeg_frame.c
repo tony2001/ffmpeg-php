@@ -86,7 +86,11 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 static void _php_free_av_frame(AVFrame *av_frame)
 {
     if (av_frame) {
-        avpicture_free((AVPicture *)av_frame);
+        /* FIXME: causes double free
+        if (av_frame->data[0]) {
+            av_free(av_frame->data[0]);
+        }
+        */
         av_free(av_frame);
     }
 }
