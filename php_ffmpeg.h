@@ -1,6 +1,13 @@
 #ifndef PHP_FFMPEG_H
 #define PHP_FFMPEG_H
 
+#define SAFE_STRING(s) ((s)?(s):"")
+
+#ifndef safe_emalloc
+    # define safe_emalloc(a,b,c) emalloc((a)*(b)+(c))
+#endif
+
+
 extern zend_module_entry ffmpeg_module_entry;
 #define phpext_ffmpeg_ptr &ffmpeg_module_entry
 
