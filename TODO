@@ -17,4 +17,8 @@
   of ffmpeg's resample code. Need to use EXPECTREX to test for both md5 
   possibilities in getFrameResampled regression.
 
-* Add cropping and possibly padding to getFrameResampled()
+* Add padding to getFrameResampled()
+
+* Add cropping for non resampled images
+
+* Add ffmpeg_track object to encapsulate audio file specific methods
