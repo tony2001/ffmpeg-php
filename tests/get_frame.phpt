@@ -9,8 +9,7 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 --FILE--
 <?php
 $frame = 5;
-//$mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-$mov = new ffmpeg_movie('/timon_ref_movies/show_data/Tarzan2/jobs/tn01/scenes/tn01-005.mov');
+$mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
 $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
 
 $gd_image = $mov->get_frame($frame);
