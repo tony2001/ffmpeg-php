@@ -232,7 +232,6 @@ PHP_FUNCTION(ffmpeg_movie)
                 //php_error_docref(NULL TSRMLS_CC, E_ERROR, "Not a valid persistent movie resource");
                 ffmovie_ctx->rsrc_id = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_pmovie);
             }
-
             
         } else { /* no existing persistant movie, create one */
             list_entry new_le;
@@ -255,7 +254,6 @@ PHP_FUNCTION(ffmpeg_movie)
             
             ffmovie_ctx->rsrc_id = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_pmovie);
         }
-        
         
     } else {
         ffmovie_ctx = _php_alloc_ffmovie_ctx(0);
@@ -354,8 +352,6 @@ void register_ffmpeg_movie_class(int module_number)
 }
 /* }}} */
 
-
-#define REOPEN_DECODER 1
 
 /* {{{ __php_get_decoder_context() 
    Opens decoders and gets codec context. Always call this to get a pointer to 
