@@ -55,7 +55,7 @@ foreach(get_class_methods($class) as $method) {
 }
 
 // put some movie files into this array to test the ffmpeg functions
-$movies = getDirFiles(dirname(__FILE__) . '/test_media');
+$movies = getDirFiles(dirname(__FILE__) . '/mpgtests');
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
@@ -72,7 +72,7 @@ foreach($movies as $movie) {
     printf("frame width = %d pixels\n", $mov->getFrameWidth());
     printf("has audio = %s\n", $mov->hasAudio() == 0 ? 'No' : 'Yes');
     printf("get pixel format = %s\n", $mov->getPixelFormat());
-    printf("get video bit rate = %d kb/s\n", $mov->getVideoBitRate());
+    printf("get bit rate = %d kb/s\n", $mov->getBitRate());
 /*    
     while (1) {
         $frame = $mov->getFrame();
