@@ -1,11 +1,11 @@
 --TEST--
-ffmpeg get_frameheight test
+ffmpeg getFrameWidth test
 --SKIPIF--
 <?php extension_loaded('ffmpeg') or die("ffmpeg extension not loaded\n"); ?>
 --FILE--
 <?php
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-printf("ffmpeg get_frameheight(): %d\n", $mov->get_frameheight());
+printf("ffmpeg getFrameWidth(): %d\n", $mov->getFrameWidth());
 ?>
 --EXPECT--
-ffmpeg get_frameheight(): 240
+ffmpeg getFrameWidth(): 190
