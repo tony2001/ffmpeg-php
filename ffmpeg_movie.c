@@ -124,6 +124,7 @@ static ff_movie_context* _php_alloc_ffmovie_ctx()
     
     ffmovie_ctx = emalloc(sizeof(ff_movie_context));
     ffmovie_ctx->fmt_ctx = NULL;
+    ffmovie_ctx->frame_number = 0;
 
 
     for (i = 0; i < MAX_STREAMS; i++) {
@@ -590,10 +591,10 @@ static long _php_get_framenumber(ff_movie_context *ffmovie_ctx)
         return 0;
     }
 
-    if (decoder_ctx->frame_number <= 0) {
+    if (ffmovie_ctx->frame_number <= 0) {
         return 1; /* no frames read yet so return the first */
     } else {
-        return decoder_ctx->frame_number;
+        return ffmovie_ctx->frame_number;
     }
 }
 /* }}} */
@@ -860,8 +861,9 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
     }
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
+    if (wanted_frame && wanted_frame <= ffmovie_ctx->frame_number) {
         if (
+                
 #if LIBAVFORMAT_BUILD >=  4619
                 av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, 0)
 #else 
@@ -878,6 +880,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         if (decoder_ctx == NULL) {
             return NULL;
         }
+        ffmovie_ctx->frame_number = 0; 
     }
 
     frame = avcodec_alloc_frame();
@@ -887,11 +890,12 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 
         if (packet.stream_index == video_stream) {
         
-            avcodec_decode_video(decoder_ctx, frame, &got_frame,
+             avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
-
+        
+            ffmovie_ctx->frame_number++; 
             if (got_frame) {
-                if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
+                if (!wanted_frame || ffmovie_ctx->frame_number == wanted_frame) {
                     /* free wanted frame packet */
                     av_free_packet(&packet);
                     break; 

@@ -34,6 +34,8 @@ PHP_FUNCTION(getAudioChannels);
 typedef struct {
     AVFormatContext *fmt_ctx;
     AVCodecContext *codec_ctx[MAX_STREAMS];
+    int64_t last_pts;
+    int frame_number;
 } ff_movie_context;
 
 #endif // FFMPEG_MOVIE_H
