@@ -15,7 +15,7 @@ These instructions are for Linux since I don't have windows. If you successfully
 
         cd /path/to/php_sources/ext/ffmpeg
 
-4. Run phpize to build configuration files
+4. Run phpize (included in the php installation) to build configuration files
 
         phpize
 
