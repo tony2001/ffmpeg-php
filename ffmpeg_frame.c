@@ -21,7 +21,7 @@
 static zend_class_entry *ffmpeg_frame_class_entry_ptr;
 zend_class_entry ffmpeg_frame_class_entry;
  
-static int le_ffmpeg_frame;
+int le_ffmpeg_frame; // not static since it is used in ffmpeg_output_movie
 static int le_gd;
 
 /* {{{ ffmpeg_frame methods[]
@@ -262,7 +262,7 @@ static int _php_resample_frame(ff_frame_context *ff_frame,
 
 /* {{{ _php_get_gd_image()
  */
-int _php_get_gd_image(int w, int h)
+static int _php_get_gd_image(int w, int h)
 {
     zval *function_name, *width, *height;
     zval **argv[2];
@@ -314,7 +314,7 @@ int _php_get_gd_image(int w, int h)
 
 /* {{{ _php_avframe_to_gd_image()
  */
-int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height)
+static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height)
 {
     int x, y;
     int *src = (int*)frame->data[0];
@@ -339,13 +339,14 @@ int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int heigh
 
 /* {{{ _php_gd_image_to_avframe()
  */
-int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, int height) 
+static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, int height) 
 {
     int x, y;
     int *dest = (int*)frame->data[0];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
+			// FIXME: don't do bounds check until we fix the gd.h incompatiblity problem 
             //if (gdImageBoundsSafe(src, x, y)) {
                 dest[x] = src->tpixels[y][x];
             /*} else {
@@ -366,7 +367,7 @@ PHP_FUNCTION(toGDImage)
     ff_frame_context *ff_frame;
     gdImage *gd_img;
 
-    GET_FRAME_RESOURCE(ff_frame);
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     _php_convert_frame(ff_frame, PIX_FMT_RGBA32);
 
@@ -476,7 +477,7 @@ PHP_FUNCTION(getWidth)
 {
     ff_frame_context *ff_frame;
 
-    GET_FRAME_RESOURCE(ff_frame);
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
     
     RETURN_LONG(ff_frame->width);
 }
@@ -489,7 +490,7 @@ PHP_FUNCTION(getHeight)
 {
     ff_frame_context *ff_frame;
 
-    GET_FRAME_RESOURCE(ff_frame);
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
     
     RETURN_LONG(ff_frame->height);
 }
@@ -504,7 +505,7 @@ PHP_FUNCTION(crop)
     ff_frame_context *ff_frame;
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
 
-    GET_FRAME_RESOURCE(ff_frame);
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     /* retrieve arguments */ 
     argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
@@ -581,7 +582,7 @@ PHP_FUNCTION(resize)
     int wanted_width = 0, wanted_height = 0;
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
 
-    GET_FRAME_RESOURCE(ff_frame);
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     /* retrieve arguments */ 
     argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());

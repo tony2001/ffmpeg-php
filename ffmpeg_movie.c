@@ -8,6 +8,18 @@
 #include "ffmpeg_frame.h"
 #include "ffmpeg_movie.h"
 
+#define GET_MOVIE_RESOURCE(ff_movie_ctx) {\
+	zval **_tmp_zval;\
+    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
+                sizeof("ffmpeg_movie"), (void **)&_tmp_zval) == FAILURE) {\
+        zend_error(E_ERROR, "Unable to find ffmpeg_movie property");\
+        RETURN_FALSE;\
+    }\
+\
+    ZEND_FETCH_RESOURCE(ff_movie_ctx, ff_movie_context*, _tmp_zval, -1,\
+            "ffmpeg_movie", le_ffmpeg_movie);\
+}\
+
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 

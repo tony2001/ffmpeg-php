@@ -20,11 +20,11 @@ typedef struct {
 
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
 
-#define GET_FRAME_RESOURCE(ffmpeg_frame) {\
+#define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
 	zval **_tmp_zval;\
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_frame",\
+    if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
                 sizeof("ffmpeg_frame"), (void **)&_tmp_zval) == FAILURE) {\
-        zend_error(E_ERROR, "Unable to find ffmpeg_frame property");\
+        zend_error(E_ERROR, "Unable to locate ffmpeg_frame resource in this object.");\
         RETURN_FALSE;\
     }\
 \
