@@ -1,7 +1,7 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
 
-version 0.3.3 (11/24/2004):
+version 0.3.3 (11/25/2004):
     New Features:
     * Added PHP constants for libavcodec version and build numbers (tkirby)
     * Added getVideoBitRate() method (tkirby)
