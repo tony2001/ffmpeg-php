@@ -39,39 +39,39 @@ typedef struct {
     AVFormatContext* ic;
 } ffmpegInputMovie;
 
-/* TODO: add input movie resource handling */
 
-// Every user visible function must have an entry in ffmpeg_movie_functions[].
+// Every user visible function must have an entry in ffmpeg_movie_functions
 zend_function_entry ffmpeg_movie_functions[] = {
 	ZEND_FE(ffmpeg_movie_open, NULL)
     ZEND_FALIAS(ffmpeg_movie, ffmpeg_movie_open, NULL)
     
 	ZEND_FE(getDuration, NULL)
-    PHP_FALIAS(getduration, getDuration, NULL)
+    ZEND_FALIAS(getduration, getDuration, NULL)
 
 	ZEND_FE(getFrameCount, NULL)
-    PHP_FALIAS(getframecount, getFrameCount, NULL)
+    ZEND_FALIAS(getframecount, getFrameCount, NULL)
 
 	ZEND_FE(getFrameRate, NULL)
-    PHP_FALIAS(getframerate, getFrameRate, NULL)
+    ZEND_FALIAS(getframerate, getFrameRate, NULL)
     
 	ZEND_FE(getFileName, NULL)
-    PHP_FALIAS(getfilename, getFileName, NULL)
+    ZEND_FALIAS(getfilename, getFileName, NULL)
     
 	ZEND_FE(getComment, NULL)
-    PHP_FALIAS(getcomment, getComment, NULL)
+    ZEND_FALIAS(getcomment, getComment, NULL)
  
 	ZEND_FE(getTitle, NULL)
-    PHP_FALIAS(gettitle, getTitle, NULL)
+    ZEND_FALIAS(gettitle, getTitle, NULL)
 
     ZEND_FE(getAuthor, NULL)
-    PHP_FALIAS(getauthor, getAuthor, NULL)
+    ZEND_FALIAS(getauthor, getAuthor, NULL)
  
 	ZEND_FE(getCopyright, NULL)
-    PHP_FALIAS(getcopyright, getCopyright, NULL)
+    ZEND_FALIAS(getcopyright, getCopyright, NULL)
 
-    ZEND_FE(getFrame, NULL)
-    PHP_FALIAS(getframe, getFrame, NULL)
+// FIXME:
+//    ZEND_FE(getFrame, NULL)
+//    ZEND_FALIAS(getframe, getFrame, NULL)
 
 	{NULL, NULL, NULL}
 };
@@ -88,7 +88,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	ZEND_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.2", /* version number for ffmpeg */
+	"0.2", // version number for ffmpeg-php 
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -97,6 +97,7 @@ zend_module_entry ffmpeg_module_entry = {
 #ifdef COMPILE_DL_FFMPEG
 ZEND_GET_MODULE(ffmpeg)
 #endif
+
 
 static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
@@ -109,10 +110,11 @@ static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
 static AVStream *get_video_stream_index(AVStream *st[])
 {
-    int i = 0;
-    for (; i < MAX_STREAMS; i++) {
-        if (st[i]->codec.codec_type == CODEC_TYPE_VIDEO)
+    int i;
+    for (i = 0; i < MAX_STREAMS; i++) {
+        if (st[i]->codec.codec_type == CODEC_TYPE_VIDEO) {
             return st[i];
+        }
     }
     return NULL;
 }
@@ -123,11 +125,14 @@ ZEND_MINIT_FUNCTION(ffmpeg)
 	le_ffmpeg_movie = zend_register_list_destructors_ex(php_free_ffmpeg_movie,
             NULL, "ffmovie", module_number);
     
-    /* must be called before using avcodec lib */
+    // must be called before using avcodec libraries. 
     avcodec_init();
+
+    // register all codecs
     av_register_all();
     return SUCCESS;
 }
+
 
 ZEND_MSHUTDOWN_FUNCTION(ffmpeg)
 {
@@ -135,12 +140,15 @@ ZEND_MSHUTDOWN_FUNCTION(ffmpeg)
 	return SUCCESS;
 }
 
+
+// Add an entry for ffmpeg support in phpinfo() 
 ZEND_MINFO_FUNCTION(ffmpeg)
 {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "ffmpeg support", "enabled");
 	php_info_print_table_end();
 }
+
 
 ZEND_FUNCTION(ffmpeg_movie_open)
 {
@@ -191,7 +199,8 @@ ZEND_FUNCTION(ffmpeg_movie_open)
     object_init_ex(return_value, ce);
     add_property_resource(return_value, "ffmovie", ret);
 }
-    
+
+
 ZEND_FUNCTION(getDuration)
 {
 	zval **tmp;
@@ -263,6 +272,7 @@ ZEND_FUNCTION(getFrameRate)
     RETURN_DOUBLE((float)enc->frame_rate / enc->frame_rate_base);
 }
 
+
 ZEND_FUNCTION(getFileName)
 {
 	zval **tmp;
@@ -279,6 +289,7 @@ ZEND_FUNCTION(getFileName)
 
     RETURN_STRINGL(im->ic->filename, strlen(im->ic->filename), 1);
 }
+
 
 ZEND_FUNCTION(getComment)
 {
@@ -297,6 +308,7 @@ ZEND_FUNCTION(getComment)
     RETURN_STRINGL(im->ic->comment, strlen(im->ic->comment), 1);
 }
 
+
 ZEND_FUNCTION(getTitle)
 {
 	zval **tmp;
@@ -314,6 +326,7 @@ ZEND_FUNCTION(getTitle)
     RETURN_STRINGL(im->ic->title, strlen(im->ic->title), 1);
 }
 
+
 ZEND_FUNCTION(getAuthor)
 {
 	zval **tmp;
@@ -330,6 +343,7 @@ ZEND_FUNCTION(getAuthor)
 
     RETURN_STRINGL(im->ic->author, strlen(im->ic->author), 1);
 }
+
 
 ZEND_FUNCTION(getCopyright)
 {
@@ -393,6 +407,7 @@ static int64_t calculate_timestamp(int64_t frame_number)
 }
 */
 
+/* BROKEN 
 ZEND_FUNCTION(getFrame)
 {
 	zval *this, **tmp, **argv[0];
@@ -407,14 +422,14 @@ ZEND_FUNCTION(getFrame)
 
     ffmpegInputMovie *im;
 
-    /* get the number of arguments */
+    // get the number of arguments 
     argc = ZEND_NUM_ARGS();
 
     if(argc != 1) {
         WRONG_PARAM_COUNT;
     }
 
-    /* retrieve arguments */
+    // retrieve arguments 
     if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
         WRONG_PARAM_COUNT;
     }
@@ -443,10 +458,10 @@ ZEND_FUNCTION(getFrame)
         st->r_frame_rate_base, AV_TIME_BASE, st->r_frame_rate);
 
     
-/*    timestamp = (AV_TIME_BASE * Z_LVAL_PP(argv[0])) / 
-        (enc->frame_rate/enc->frame_rate_base);
-*/
-    /* add the stream start time */
+//    timestamp = (AV_TIME_BASE * Z_LVAL_PP(argv[0])) / 
+//        (enc->frame_rate/enc->frame_rate_base);
+
+    // add the stream start time 
     if (im->ic->start_time != AV_NOPTS_VALUE)
         timestamp += im->ic->start_time;
 
@@ -459,7 +474,7 @@ ZEND_FUNCTION(getFrame)
     av_read_frame(im->ic, pkt);
 
     
-    /* find the video decoder */
+    // find the video decoder 
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec) {
         zend_printf("codec not found\n");
@@ -469,7 +484,7 @@ ZEND_FUNCTION(getFrame)
     c = avcodec_alloc_context();
     picture = avcodec_alloc_frame();
 
-    /* open it */
+    // open it
     if (avcodec_open(c, codec) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
@@ -477,6 +492,8 @@ ZEND_FUNCTION(getFrame)
 
     RETURN_TRUE;
 }
+*/
+
 /*
  * Local variables:
  * tab-width: 4
