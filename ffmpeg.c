@@ -1,6 +1,6 @@
 /*
    ffmpeg-php - a php module for accessing video info from movie files.
-   
+
    Copyright (C) 2004  Todd Kirby (doubleshot at pacbell dot net)
 
    This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-    #include "config.h"
+#include "config.h"
 #endif
 
 #include <assert.h>
@@ -38,26 +38,29 @@
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
+    STANDARD_MODULE_HEADER,
 #endif
-	"ffmpeg",
-	NULL,
-	PHP_MINIT(ffmpeg),
-	PHP_MSHUTDOWN(ffmpeg),
-	NULL,
-	NULL,
-	PHP_MINFO(ffmpeg),
+    "ffmpeg",
+    NULL,
+    PHP_MINIT(ffmpeg),
+    PHP_MSHUTDOWN(ffmpeg),
+    NULL,
+    NULL,
+    PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.4.1", /* version number for ffmpeg-php */
+    "0.4.1", /* version number for ffmpeg-php */
 #endif
-	STANDARD_MODULE_PROPERTIES
+    STANDARD_MODULE_PROPERTIES
 };
 
 
 #ifdef COMPILE_DL_FFMPEG
-ZEND_GET_MODULE(ffmpeg)
+ZEND_GET_MODULE(ffmpeg);
 #endif
 
+extern void register_ffmpeg_movie_class(int);
+//extern void register_ffmpeg_output_movie_class(int);
+extern void register_ffmpeg_frame_class(int);
 
 /* {{{ php module init function
  */
@@ -68,8 +71,9 @@ PHP_MINIT_FUNCTION(ffmpeg)
 
     /* register all codecs */
     av_register_all();
- 
+
     register_ffmpeg_movie_class(module_number);
+    //register_ffmpeg_output_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
@@ -84,7 +88,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -93,10 +97,10 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
    Add an entry for ffmpeg support in phpinfo() */
 PHP_MINFO_FUNCTION(ffmpeg)
 {
-	php_info_print_table_start();
-	php_info_print_table_header(2, "ffmpeg support", "enabled");
+    php_info_print_table_start();
+    php_info_print_table_header(2, "ffmpeg support", "enabled");
     /* TODO: print ffmpeg-php version and lavc version and build numbers here */
-	php_info_print_table_end();
+    php_info_print_table_end();
 }
 /* }}} */
 
