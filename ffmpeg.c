@@ -826,7 +826,7 @@ void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
     image_fmt->img_write(&pb, &img_info);
     url_fclose(&pb);
 }
-
+/* }}} */
 
 #if HAVE_LIBGD20
 
@@ -998,7 +998,6 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             zend_error(E_ERROR, "Can't convert frame");
                         }
 
-                        /* FIXME: glibc detected *** double free or corruption (out): 0x0823fdb0 */
                         if (resampled_frame != decoded_frame) {
                             avpicture_free((AVPicture*)resampled_frame);
                         }
@@ -1027,7 +1026,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 
     return final_frame;
 }
-
+/* }}} */
 
 /* {{{ proto resource getFrame([int frame])
  */
@@ -1068,6 +1067,7 @@ PHP_FUNCTION(getFrame)
 
     if (frame) {
 
+		//dump_img_to_sgi(frame, , wanted_width, wanted_height, "/tmp/test.sgi")
         gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
 
         if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
@@ -1076,7 +1076,6 @@ PHP_FUNCTION(getFrame)
 
         ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
         ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
-
         
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
 
