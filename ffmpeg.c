@@ -413,7 +413,7 @@ static float _php_get_framewidth(ffmpeg_movie_context *im)
 /* }}} */
 
 
-/* {{{ resource getFrameWidth()
+/* {{{ proto int getFrameWidth()
  */
 PHP_FUNCTION(getFrameWidth) {
     ffmpeg_movie_context *im;
@@ -433,7 +433,7 @@ static float _php_get_frameheight(ffmpeg_movie_context *im)
 /* }}} */
 
 
-/* {{{ resource getFrameHeight()
+/* {{{ proto int getFrameHeight()
  */
 PHP_FUNCTION(getFrameHeight) {
     ffmpeg_movie_context *im;
@@ -482,7 +482,7 @@ zval* _php_get_gd_image(AVFrame *pict, int w, int h)
 /* }}} */
 
 
-/* {{{ resource getFrameAsGDImage(int frame)
+/* {{{ proto resource getFrameAsGDImage(int frame)
  */
 PHP_FUNCTION(getFrameAsGDImage)
 {
