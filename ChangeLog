@@ -1,16 +1,13 @@
-ChangeLog for ffmpeg-php.
+ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
+
+version 0.3.1 (11/19/2004):
+    Bug Fixes:
+    * Full getFrame() rework, should now work with all ffmpeg 
+      movie types. (Todd Kirby)
+
+version 0.3.1 (11/17/2004):
+    New Features:
+    * Inital support for getFrame() (Todd Kirby)
 
 
-2004-11-17 Todd Kirby <doubleshot at pacbell dot net>
 
-	* Second alpha release.
-        * full getFrame() rework, should now work correctly with all ffmpeg
-              movie types.
-
-
-2004-11-17 Todd Kirby <doubleshot at pacbell dot net>
-
-	* First alpha release.
-        * Inital support for getFrame()
-
-New entries at the top.
