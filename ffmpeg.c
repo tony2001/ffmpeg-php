@@ -702,10 +702,24 @@ PHP_FUNCTION(getFrame)
         zend_error(E_ERROR, "%s only has %d frames.", 
                 _php_get_filename(ffmovie_ctx), _php_get_framecount(ffmovie_ctx));
     }
-    
+
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
+    
+    /* Rewind to the beginning of the stream if wanted frame already passed */
+    if (wanted_frame < decoder_ctx->frame_number) {
+        if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
+            zend_error(E_ERROR, "Error seeking to begining of video stream");
+        }
+        /* close decoder */
+        avcodec_close(ffmovie_ctx->codec_ctx);
+        ffmovie_ctx->codec_ctx = NULL;
 
+        /* re-open decoder */
+        decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+    }
+
+    
     /* read frames looking for wanted_frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
 
