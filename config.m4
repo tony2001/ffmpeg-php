@@ -2,6 +2,7 @@
 PHP_ARG_WITH(ffmpeg,for ffmpeg support, 
 [  --with-ffmpeg[=DIR]        Include ffmpeg support (requires ffmpeg >= 0.49.0).])
 
+dnl Determine path to ffmpeg libs
 if test "$PHP_FFMPEG" != "no"; then
   for i in $PHP_FFMPEG /usr/local /usr ; do
     if test -f $i/include/ffmpeg/avcodec.h; then
@@ -18,8 +19,6 @@ if test "$PHP_FFMPEG" != "no"; then
   fi
 
   FFMPEG_LIBDIR=$FFMPEG_DIR/lib
-
-      flac.o vp3dsp.o integer.o snow.o tscc.o sonic.o ulti.o
 
   PHP_ADD_LIBRARY_WITH_PATH(avcodec, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
   PHP_ADD_LIBRARY_WITH_PATH(avformat, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
