@@ -992,8 +992,6 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                     }
                     
                     if (non_resize_crop) {
-
-                        zend_printf("NON-RESAMPLED CROP\n");
                         avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
                                 PIX_FMT_RGBA32, wanted_width, wanted_height);
                         ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0]
