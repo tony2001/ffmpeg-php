@@ -904,6 +904,18 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                 /* get wanted frame or next frame in stream if called without
                    a frame number */
                 if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
+                    
+                    
+                    zend_printf("\nww: %d, dw: %d wh: %d  dh: %d\n", wanted_width, 
+                            decoder_ctx->width, wanted_height,decoder_ctx->height);
+                    zend_printf("ct: %d  cb: %d cl: %d cr: %d\n\n", 
+                            crop_top, crop_bottom,
+                            crop_left, crop_right);
+
+                    zend_printf("dcw: %d  dch: %d\n\n", 
+                            decoder_ctx->width - (crop_left + crop_right),
+                            decoder_ctx->height - (crop_top + crop_bottom));
+
 
                     if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
                             (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
@@ -918,6 +930,7 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 
                     } else { /* resampling is needed */
 
+                        zend_printf("RESIZE\n");//DEBUG
                         /* convert to PIX_FMT_YUV420P required for resampling */
                         if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
 
@@ -969,21 +982,23 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                         final_frame = resampled_frame;
                     }
                    
+#define RGBA_PIXELSTRIDE 4
                     
                     if (non_resize_crop) {
+                        zend_printf("NON RESIZE CROP\n");//DEBUG
+                        zend_printf("linesize = %d\n", final_frame->linesize[0]);//DEBUG
                         avpicture_fill((AVPicture*)&ffmovie_ctx->crop_ctx_frame, NULL,
                                 PIX_FMT_RGBA32, wanted_width, wanted_height);
                         ffmovie_ctx->crop_ctx_frame.data[0] = final_frame->data[0] +
-                            (crop_top * final_frame->linesize[0]) + crop_left;
+                            (crop_top * final_frame->linesize[0]) + 
+                            (crop_left * RGBA_PIXELSTRIDE);
 
                         ffmovie_ctx->crop_ctx_frame.linesize[0] = final_frame->linesize[0];
 
                         /*
-                           I know, this looks like we're losing track of the 
-                           original final frame allocated above, but the 
-                           original is a context frame which gets freed 
-                           automatically at when the ffmpeg_movie resource 
-                           is freed.
+                           original final_frame is a context frame which 
+                           gets freed automatically at when the ffmpeg_movie 
+                           resource is freed..
                          */
                         final_frame = &ffmovie_ctx->crop_ctx_frame;
                     }
