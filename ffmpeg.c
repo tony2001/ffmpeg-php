@@ -793,15 +793,14 @@ static void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filenam
 
 /* {{{ _php_get_gd_image()
  */
-zval* _php_get_gd_image(int w, int h)
+int _php_get_gd_image(int w, int h)
 {
     zval *function_name, *width, *height;
     zval **argv[2];
-    zval *return_value;
     zend_function *func;
-    
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
+    int ret;
    
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
@@ -823,7 +822,7 @@ zval* _php_get_gd_image(int w, int h)
                 &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
         zend_error(E_ERROR, "Error calling %s function", function_cname);
     }
-
+    
     FREE_ZVAL(function_name); 
     FREE_ZVAL(width); 
     FREE_ZVAL(height); 
@@ -833,7 +832,14 @@ zval* _php_get_gd_image(int w, int h)
                 "Error creating GD Image");
     }
 
-    return retval;
+    ret = retval->value.lval;
+    zend_list_addref(ret); 
+    if (retval) {
+        zval_ptr_dtor(&retval);
+    }
+
+
+    return ret;
 }
 /* }}} */
 
@@ -1125,14 +1131,14 @@ PHP_FUNCTION(getFrame)
             crop_top, crop_bottom, crop_left, crop_right);
 
     if (frame) {
+        return_value->value.lval = _php_get_gd_image(wanted_width, wanted_height);
+        return_value->type = IS_RESOURCE;
 
-        gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
-
-        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
+        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
         
         _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
 
-        RETURN_RESOURCE(gd_img_resource->value.lval);
+        //RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
     }
@@ -1263,13 +1269,12 @@ PHP_FUNCTION(getFrameResampled)
             crop_top, crop_bottom, crop_left, crop_right);
     
     if (frame) {
-        gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
+        return_value->value.lval = _php_get_gd_image(wanted_width, wanted_height);
+        return_value->type = IS_RESOURCE;
 
-        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
+        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
 
         _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
-
-        RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
     }
@@ -1379,9 +1384,7 @@ PHP_FUNCTION(getFrameIntoImage)
 }
 /* }}} */
 
-
 #endif /* HAVE_LIBGD20 */
-
 
 
 /*
