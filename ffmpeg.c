@@ -112,6 +112,8 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getPixelFormat, NULL)
     PHP_FALIAS(getpixelformat, getPixelFormat, NULL)
 
+    PHP_FE(hasAudio, NULL)
+    PHP_FALIAS(hasaudio, hasAudio, NULL)
 
 #if HAVE_LIBGD20
     PHP_FE(getFrame, NULL)
@@ -180,11 +182,22 @@ static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
 
 /* {{{ _php_get_video_stream()
  */
-static AVStream *_php_get_video_stream(AVFormatContext *ic)
+static AVStream *_php_get_video_stream(AVFormatContext *fmt_ctx)
 {
-    int i = _php_get_stream_index(ic, CODEC_TYPE_VIDEO);
+    int i = _php_get_stream_index(fmt_ctx, CODEC_TYPE_VIDEO);
     
-    return i < 0 ? NULL : ic->streams[i];
+    return i < 0 ? NULL : fmt_ctx->streams[i];
+}
+/* }}} */
+
+
+/* {{{ _php_get_audio_stream()
+ */
+static AVStream *_php_get_audio_stream(AVFormatContext *fmt_ctx)
+{
+    int i = _php_get_stream_index(fmt_ctx, CODEC_TYPE_AUDIO);
+    
+    return i < 0 ? NULL : fmt_ctx->streams[i];
 }
 /* }}} */
 
@@ -634,6 +647,17 @@ PHP_FUNCTION(getPixelFormat)
     RETURN_STRINGL((char *)fmt, strlen(fmt), 1);
 }
 
+
+/* {{{ proto int hasAudio()
+ */
+PHP_FUNCTION(hasAudio)
+{
+    ffmpeg_movie_context *ffmovie_ctx;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
+}
 
 #if HAVE_LIBGD20
 
