@@ -9,10 +9,10 @@ version 0.3.6a (12/04/2004)
     * Fixed bug #1079237 getFrame fails when getting the same frame twice
       (tkirby)
     * Fixed memory leak when freeing ffmpeg_movie objects (tkirby)
-    * Fixed bug #1078753 cropping doesn't work correctly if image is not 
+    * Fixed bug #1078753 cropping doesn't work correctly if image is not
       resized (tkirby)
-    * Fixed bug #1077952 Segfault with multiple calls to 
-      getFrameResampled() (tkirby)
+    * Fixed bug #1077952 Segfault with multiple calls to getFrameResampled()
+      (tkirby)
     * Fixed tiny memory leak in _php_get_gd_image() (tkirby)
     * Added configure warning if trying to build against php 5 since it
       is not supported yet. (tkirby)
@@ -24,8 +24,8 @@ version 0.3.5a (11/29/2004):
       (tkirby - Gentoo User :-)
 
     Bug Fixes:
-    * Fixed a couple of really stupid conversion bugs in
-      getFrame() and getFrameResampled() (tkirby)
+    * Fixed a couple of really stupid conversion bugs in getFrame() and 
+      getFrameResampled() (tkirby)
 
 version 0.3.4a (11/28/2004):
     New Features:
@@ -37,9 +37,8 @@ version 0.3.4a (11/28/2004):
       height of the resized image must be even numbers (tkirby)
     * Initial support for audio only files such as mp3 (tkirby)
     * getDuration() now works for mp3 files (tkirby)
-    * getVideoBitrate() will return bit rate for mp3 files though this
-      will change in the future when more audio specific methods
-      are added (tkirby)
+    * getVideoBitrate() will return bit rate for mp3 files though this will 
+      change in the future when more audio specific methods are added (tkirby)
 
 version 0.3.3a (11/25/2004):
     New Features:
@@ -68,13 +67,12 @@ version 0.3.2a (11/22/2004):
       the stream (tkirby)
 
     Bug Fixes:
-    * Fixed getFrame() returning one frame off of the requested 
-      frame (tkirby)
+    * Fixed getFrame() returning one frame off of the requested frame (tkirby)
 
 version 0.3.1a (11/19/2004):
     Bug Fixes:
-    * Full getFrame() rework, should now work with all ffmpeg 
-      movie types (tkirby)
+    * Full getFrame() rework, should now work with all ffmpeg movie types 
+      (tkirby)
 
 version 0.3.0a (11/17/2004):
     New Features:
