@@ -552,12 +552,12 @@ PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
-    int argc, frame, size, got_frame, len, st;
+    int argc, frame, size, got_frame, st;
     long wanted_frame;
-    uint8_t *tmp_buf = NULL;
+    uint8_t *converted_frame_buf = NULL;
     AVCodec *codec;
     AVPacket packet;
-    AVFrame *src, tmp_pict, *av_pict;
+    AVFrame *decoded_frame, converted_frame, *final_frame;
     AVCodecContext *codec_ctx = NULL;
     
     ffmpeg_movie_context *ffmovie_ctx;
@@ -590,7 +590,7 @@ PHP_FUNCTION(getFrame)
     }
 
     codec_ctx = avcodec_alloc_context();
-    src = avcodec_alloc_frame();
+    decoded_frame = avcodec_alloc_frame();
 
     /* open it */
     if (avcodec_open(codec_ctx, codec) < 0) {
@@ -621,7 +621,7 @@ PHP_FUNCTION(getFrame)
         if (packet.stream_index==st)
         {
             // Decode video frame
-            avcodec_decode_video(codec_ctx, src, &got_frame,
+            avcodec_decode_video(codec_ctx, decoded_frame, &got_frame,
                     packet.data, packet.size);
 
             // Did we get a video frame?
@@ -653,36 +653,37 @@ found_frame:
    
     /* make sure frame data is RGBA32 */
     if (codec_ctx->pix_fmt != PIX_FMT_RGBA32) {
-        int size;
+        int rgba_frame_size;
 
         /* create a temporary picture for conversion to RGBA32 */
-        size = avpicture_get_size(PIX_FMT_RGBA32, codec_ctx->width, 
+        rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, codec_ctx->width, 
                 codec_ctx->height);
 
-        if (! (tmp_buf = av_malloc(size)) ) {
+        if (! (converted_frame_buf = av_malloc(rgba_frame_size)) ) {
             zend_error(E_ERROR, "Error allocating memory for RGBA conversion");
         }
 
-        av_pict = &tmp_pict;
-        avpicture_fill((AVPicture*)av_pict, tmp_buf, PIX_FMT_RGBA32, 
-                codec_ctx->width,codec_ctx->height);
+        final_frame = &converted_frame;
+        avpicture_fill((AVPicture*)final_frame, converted_frame_buf, 
+                PIX_FMT_RGBA32, codec_ctx->width,codec_ctx->height);
 
-        if (img_convert((AVPicture*)av_pict, PIX_FMT_RGBA32,
-                    (AVPicture*)src, codec_ctx->pix_fmt, codec_ctx->width,
-                    codec_ctx->height) < 0) {
+        if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
+                    (AVPicture*)decoded_frame, codec_ctx->pix_fmt, 
+                    codec_ctx->width, codec_ctx->height) < 0) {
             zend_error(E_ERROR, "Error converting frame");
         }
         
     } else {
-        av_pict = src;
+        final_frame = decoded_frame;
     }
 
-    _php_rgba32_to_gd_image((int*)av_pict->data[0], im,codec_ctx->width,codec_ctx->height);
+    _php_rgba32_to_gd_image((int*)final_frame->data[0], im, codec_ctx->width,
+            codec_ctx->height);
 
     avcodec_close(codec_ctx);
     av_free(codec_ctx);
-    av_free(tmp_buf);
-    av_free(src);
+    av_free(converted_frame_buf);
+    av_free(decoded_frame);
    
     RETURN_RESOURCE(gd_img_resource->value.lval);
 }
