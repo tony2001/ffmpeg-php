@@ -4,12 +4,19 @@ ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 version 0.3.3 (11/24/2004):
     New Features:
     * Added PHP constants for libavcodec version and build numbers (tkirby)
-    * Added getBitRate() method (tkirby)
+    * Added getVideoBitRate() method (tkirby)
     * More optimizations for successive calls to getFrame() (tkirby)
 
     Bug Fixes
-    * Fixed problem of grainy image quality when passing an image generated
-      by getFrame() to gdImageCopyResampled() (tkirby)
+    * Don't error if stream params not found since some formats don't need 
+      them. (tkirby)
+    * Return zero if can't get a valid duration for the movie (tkirby)
+    * Zero out alpha channel when copying frame to GD so GD will not try to 
+      apply alpha when image is passed to gdImageCopyResampled() (tkirby)
+    * getFrame() no longer bounds checks the framenumber param against 
+      framecount since framecount may not always be accurate. (tkirby)
+    * getFrame() now returns false if the wanted frame is not found instead
+      of generating an error. (tkirby)
 
 version 0.3.2 (11/22/2004):
     New Features:
