@@ -55,9 +55,15 @@ BUILDING AS PART OF THE PHP BINARY
         tar -xjf ffmpeg-php.X.XX.tar.gz
         cp ffmpeg /path/to/php_sources/ext
 
+2. Run autoconf to rebuild the php configure script and add the --with-ffmpeg 
+   option
+
+        cd /path/to/php_sources
+        autoconf
+        
 2. configure php using... 
 
-        --with-ffmpeg=yes 
+        ./configure --with-ffmpeg=yes 
        
 ...and build and install php.
 
