@@ -797,8 +797,7 @@ PHP_FUNCTION(hasAudio)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-	// FIXME: Warning about int to pointer cast or some such
-    RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
+    RETURN_BOOL( _php_get_audio_stream(ffmovie_ctx->fmt_ctx) > 0);
 }
 /* }}} */
 
