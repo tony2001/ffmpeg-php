@@ -1,4 +1,9 @@
 Add option to config.m4 to -rpath path to ffmpeg libs
 Add check for system GD library and/or bundled GD library to config.m4
-Fix getFrame() so it works with more formats (currently only behaves well with .avi)
-Add getFrameRange() and getFrameRangeCallback() functions
+
+new getFrame symantics
+   noarg getFrame gets the next frame from a movie or if the video stream 
+   isn't opened then opens codec and retrives the first frame
+
+   onearg getFrame opens codecs if they're not opened and gets the frame 
+   specified in the parameter
