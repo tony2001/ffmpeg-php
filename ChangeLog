@@ -1,22 +1,21 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.3.6 (12/xx/2004)
+version 0.3.6a (12/04/2004)
     New Features:
     * More malloc optimizations in frame conversion/resampling (tkirby)
-    * All functions have been renamed to conform to php coding standards
-      getFrame() is now get_frame()... This is required in order to begin
-      porting ffmpeg-php to PHP5 (tkirby) 
-    * Added cropping support to get_frame_resampled() (tkirby)
+    * Added cropping support to getFrameResampled() and getFrame() (tkirby)
 
     Bug Fixes:
     * Fixed memory leak when freeing ffmpeg_movie objects (tkirby)
+    * Fixed bug #1078753 cropping doesn't work correctly if image is not 
+      resized
     * Fixed bug #1077952 Segfault with multiple calls to 
-      get_frame_resampled (tkirby)
+      getFrameResampled (tkirby)
     * Fixed tiny memory leak in _php_get_gd_image() (tkirby)
     * Added configure warning if trying to build against php 5 since it
       is not supported yet. (tkirby)
 
-version 0.3.5 (11/29/2004):
+version 0.3.5a (11/29/2004):
     New Features:
     * Can now be built independently of PHP sources. (tkirby)
     * Added ebuild goodness for the Gentoo Type/R crowd 
@@ -26,7 +25,7 @@ version 0.3.5 (11/29/2004):
     * Fixed a couple of really stupid conversion bugs in
       getFrame() and getFrameResampled() (tkirby)
 
-version 0.3.4 (11/28/2004):
+version 0.3.4a (11/28/2004):
     New Features:
     * Added new method getFrameResampled() which returns a frame resized
       using ffmpeg's resampling. ffmpeg resmpling IMHO is better than GD's 
@@ -40,7 +39,7 @@ version 0.3.4 (11/28/2004):
       will change in the future when more audio specific methods
       are added (tkirby)
 
-version 0.3.3 (11/25/2004):
+version 0.3.3a (11/25/2004):
     New Features:
     * Added PHP constants for libavcodec version and build numbers (tkirby)
     * Added getVideoBitRate() method (tkirby)
@@ -57,7 +56,7 @@ version 0.3.3 (11/25/2004):
     * getFrame() now returns false if the wanted frame is not found instead
       of generating an error (tkirby)
 
-version 0.3.2 (11/22/2004):
+version 0.3.2a (11/22/2004):
     New Features:
     * Added getPixelFormat() method (tkirby)
     * Added hasAudio() method (tkirby)
@@ -70,11 +69,11 @@ version 0.3.2 (11/22/2004):
     * Fixed getFrame() returning one frame off of the requested 
       frame (tkirby)
 
-version 0.3.1 (11/19/2004):
+version 0.3.1a (11/19/2004):
     Bug Fixes:
     * Full getFrame() rework, should now work with all ffmpeg 
       movie types (tkirby)
 
-version 0.3.0 (11/17/2004):
+version 0.3.0a (11/17/2004):
     New Features:
     * Inital support for getFrame() (tkirby)
