@@ -801,13 +801,10 @@ zval* _php_get_gd_image(int w, int h)
     zval **params[2];
     zval *return_value;
     zend_function *func;
-    char *function_cname = "_imagecreatetruecolor";
+    char *function_cname = "imagecreatetruecolor";
 
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
-        php_error_docref1(NULL, function_cname TSRMLS_CC,
-                E_ERROR, "Can't find function");
-
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
     }
 
