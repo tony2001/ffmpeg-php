@@ -8,7 +8,7 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 ?>
 --FILE--
 <?php
-$frame = 5;
+$frame = 73;
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
 $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
 
