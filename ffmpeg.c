@@ -130,6 +130,9 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 #if HAVE_LIBGD20
     PHP_FE(getFrame, NULL)
     PHP_FALIAS(getframe, getFrame, NULL)
+
+    PHP_FE(getFrameResampled, NULL)
+    PHP_FALIAS(getframeresampled, getFrameResampled, NULL)
 #endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
@@ -778,7 +781,7 @@ AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width,
 
         ffmovie_ctx->conv_frame_width = width;
         ffmovie_ctx->conv_frame_height = height;
-        
+
         avpicture_fill((AVPicture*)conv_frame, converted_frame_buf, 
                 PIX_FMT_RGBA32, width, height);
 
@@ -788,6 +791,42 @@ AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width,
     }
 }
 /* }}} */
+
+/* {{{ dump_img_to_sgi()
+ * For debugging frame conversions
+ * TODO: add img conversion to allow other pix_fmts than PIX_FMT_RGBA32
+ */
+void dump_img_to_sgi(AVFrame *frame, int width, int height, char *filename)
+{
+    int err;
+    AVImageFormat *image_fmt;
+    AVImageInfo img_info;
+    ByteIOContext pb;
+    for(image_fmt = first_image_format; image_fmt != NULL;
+            image_fmt = image_fmt->next) {
+        if (strncmp(image_fmt->name, "sgi", 3) == 0) {
+            break;
+        }
+    }
+
+    img_info.pict.data[0] = frame->data[0];
+    img_info.pict.linesize[0] = frame->linesize[0];
+    img_info.pix_fmt = PIX_FMT_RGBA32;
+    img_info.width = width;
+    img_info.height = height;
+    img_info.interleaved = 0;
+
+    /* open the file */
+    err = url_fopen(&pb, filename, URL_RDWR);
+    if (err < 0) {
+        fprintf(stderr, "Could not open %s %d\n", filename, err);
+        exit(1);
+    }
+    url_setbufsize(&pb, 4096);
+    image_fmt->img_write(&pb, &img_info);
+    url_fclose(&pb);
+}
+
 
 #if HAVE_LIBGD20
 
@@ -840,7 +879,7 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             if (gdImageBoundsSafe(dest, x, y)) {
-				/* copy frame to gdimage buffer zeroing the alpha channel */
+                /* copy frame to gdimage buffer zeroing the alpha channel */
                 dest->tpixels[y][x] = src[x] & 0x00ffffff;
             } else {
                 return -1;
@@ -853,139 +892,25 @@ int _php_rgba32_to_gd_image(int *src, gdImage *dest, int width, int height)
 /* }}} */
 
 /* {{{ _php_getframe()
+   Returns a frame from the movie. Caller is reponsible for freeing the frame
  */
-/*
-_php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, int width, int height)
-{
 
-}
-*/
-
-/* {{{ proto resource getFrame([int frame])
- */
-PHP_FUNCTION(getFrame)
+AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame, 
+        int wanted_width, int wanted_height)
 {
-    zval **argv[2], *gd_img_resource;
-    gdImage *gd_img;
-    int argc, got_frame, video_stream;
+    int got_frame, video_stream;
     int resample = 0;
-    int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
+    enum PixelFormat target_pixfmt;
     AVPacket packet;
-    AVFrame *decoded_frame, *final_frame = NULL;
-    ffmovie_context *ffmovie_ctx;
     AVCodecContext *decoder_ctx;
-
-    /* get the number of arguments */
-    argc = ZEND_NUM_ARGS();
-
-    if(argc > 3) {
-        WRONG_PARAM_COUNT;
-    }
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-  
-    if (argc > 0) {
-        /* retrieve arguments */ 
-        if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-            WRONG_PARAM_COUNT;
-        }
-    }
-
-    /* TODO: Clean up this mess, ughh! */
-    switch (argc) {
-
-        case 0: /* no args */
-            break;
-
-        case 1: /* frame number only */
-            convert_to_long_ex(argv[0]);
-            wanted_frame = Z_LVAL_PP(argv[0]);
-
-            /* bounds check wanted frame */
-            if (wanted_frame < 1) {
-                zend_error(E_ERROR, "Frame number must be greater than zero");
-            }
-            
-            break;
-            
-        case 2: /* width and height only */
-
-            /* width */
-            convert_to_long_ex(argv[1]);
-            wanted_width = Z_LVAL_PP(argv[1]);
-
-            /* bounds check wanted width */
-            if (wanted_width < 1) {
-                zend_error(E_ERROR, "Frame width must be greater than zero");
-            }
-
-            /* wanted width must be even number for lavc resample */
-            if (wanted_width % 2) {
-                zend_error(E_ERROR, "Frame width must be an even number for ffmpeg reampling");
-            }
-
-            /* height */
-            convert_to_long_ex(argv[2]);
-            wanted_height = Z_LVAL_PP(argv[2]);
-
-
-            /* bounds check wanted height */
-            if (wanted_height < 1) {
-                zend_error(E_ERROR, "Frame height must be greater than zero");
-            }
-
-            /* wanted height must be even number for lavc resample */
-            if (wanted_height % 2) {
-                zend_error(E_ERROR, "Frame height must be an even number for ffmpeg reampling");
-            }
-
-            break;
-
-        case 3: /* frame number, width and height */
-            convert_to_long_ex(argv[0]);
-            wanted_frame = Z_LVAL_PP(argv[0]);
-
-            /* bounds check wanted frame */
-            if (wanted_frame < 1) {
-                zend_error(E_ERROR, "Frame number must be greater than zero");
-            }
-           
-            /* width */
-            convert_to_long_ex(argv[1]);
-            wanted_width = Z_LVAL_PP(argv[1]);
-
-            /* bounds check wanted width */
-            if (wanted_width < 1) {
-                zend_error(E_ERROR, "Frame width must be greater than zero");
-            }
-
-            /* wanted width must be even number for lavc resample */
-            if (wanted_width % 2) {
-                zend_error(E_ERROR, "Frame width must be an even number for ffmpeg reampling");
-            }
-
-            /* height */
-            convert_to_long_ex(argv[2]);
-            wanted_height = Z_LVAL_PP(argv[2]);
-
-            /* bounds check wanted height */
-            if (wanted_height < 1) {
-                zend_error(E_ERROR, "Frame height must be greater than zero");
-            }
-
-            /* wanted height must be even number for lavc resample */
-            if (wanted_height % 2) {
-                zend_error(E_ERROR, "Frame height must be an even number for ffmpeg reampling");
-            }
-
-            break;
-    }
-    
+    ImgReSampleContext *img_resample_ctx;
+    AVFrame *decoded_frame, *final_frame = NULL;
+    AVFrame *yuv_frame, *resampled_frame;
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
     if (video_stream < 0) {
-        RETURN_FALSE; /* FIXME: Should probably error here */
+        return NULL; /* FIXME: Should probably error here */
     }
 
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
@@ -1016,108 +941,70 @@ PHP_FUNCTION(getFrame)
 
                 /* get wanted frame or next frame in stream if called without
                    a frame number */
-                if (argc == 0 || decoder_ctx->frame_number == wanted_frame) {
+                if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
 
-                    if (! wanted_height || ! wanted_width) {
-                        wanted_width = decoder_ctx->width;
-                        wanted_height = decoder_ctx->height;
-                        resample = 0;
-                    } else if (wanted_height != decoder_ctx->height ||
+                    if (wanted_height != decoder_ctx->height ||
                             wanted_width != decoder_ctx->width) {
                         resample = 1;
                     }
 
-
-                    {
-
-                        enum PixelFormat target_pixfmt;
-                        AVFrame *yuv_frame, *resampled_frame;
-                        ImgReSampleContext *img_resample_ctx;
-                        AVFrame pict_tmp;
-                        uint8_t *buf = NULL;
-                        AVFrame picture_format_temp;
-
-                        if (resample) {
-                            /* convert to PIX_FMT_YUV420P required for resampling */
-                            if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
-                                int size;
-
-                                /* create temporary picture */
-                                size = avpicture_get_size(target_pixfmt, decoder_ctx->width, 
-                                        decoder_ctx->height);
-                                buf = av_malloc(size);
-                                if (!buf) {
-                                    zend_error(E_ERROR, "Can't allocate conversion buffer");
-                                }
-
-                                yuv_frame = &picture_format_temp;
-                                avpicture_fill((AVPicture*)yuv_frame, buf, 
-                                        PIX_FMT_YUV420P, decoder_ctx->width, decoder_ctx->height);
-
-                                if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
-                                            (AVPicture *)decoded_frame, decoder_ctx->pix_fmt, 
-                                            decoder_ctx->width, decoder_ctx->height) < 0) {
-                                    // TODO: Handle conversion error here
-                                }
-                            } else {
-                                yuv_frame = decoded_frame;
-                            }
-
-                            img_resample_ctx = img_resample_init(
-                                    wanted_width, wanted_height,
-                                    decoder_ctx->width, decoder_ctx->height);
-
-                            avpicture_alloc( (AVPicture*)&pict_tmp, PIX_FMT_YUV420P,
+                    if (resample) {
+                        /* convert to PIX_FMT_YUV420P required for resampling */
+                        if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
+                            
+                            yuv_frame = av_malloc(sizeof(AVFrame));
+                            avpicture_alloc( (AVPicture*)yuv_frame, PIX_FMT_YUV420P,
                                     wanted_width, wanted_height);
 
-                            resampled_frame = &pict_tmp;
-                            img_resample(img_resample_ctx, 
-                                    (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
-
-                            target_pixfmt = PIX_FMT_YUV420P;
-                        } else {
-                            target_pixfmt = decoder_ctx->pix_fmt;
-                            resampled_frame = decoded_frame;
-                        }
-
-                        if (target_pixfmt != PIX_FMT_RGBA32) {
-                            int size;
-
-                            av_free(buf);
-                            /* create temporary picture */
-                            size = avpicture_get_size(PIX_FMT_RGBA32, wanted_width, wanted_height);
-                            buf = av_malloc(size);
-                            if (!buf) {
-                                    zend_error(E_ERROR, "Can't allocate conversion buffer");
-                            }
-                            final_frame = &picture_format_temp;
-                            avpicture_fill((AVPicture*)final_frame, buf,
-                                    PIX_FMT_RGBA32, wanted_width, wanted_height);
-
-                            if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
-                                        (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
-                                        wanted_width, wanted_height) < 0) {
+                            if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
+                                        (AVPicture *)decoded_frame, decoder_ctx->pix_fmt, 
+                                        decoder_ctx->width, decoder_ctx->height) < 0) {
                                 // TODO: Handle conversion error here
                             }
+                            
                         } else {
-                            final_frame = resampled_frame;
+                            yuv_frame = decoded_frame;
                         }
+
+                        img_resample_ctx = img_resample_init(
+                                wanted_width, wanted_height,
+                                decoder_ctx->width, decoder_ctx->height);
+                        
+                        resampled_frame = av_malloc(sizeof(AVFrame));
+                        
+                        avpicture_alloc( (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
+                                wanted_width, wanted_height);
+
+                        img_resample(img_resample_ctx, 
+                                (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
+
+                        avpicture_free((AVPicture*)yuv_frame);
+                        av_free(yuv_frame);
+
+                        target_pixfmt = PIX_FMT_YUV420P;
+                    } else {
+                        target_pixfmt = decoder_ctx->pix_fmt;
+                        resampled_frame = decoded_frame;
                     }
 
-                    gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
+                    if (target_pixfmt != PIX_FMT_RGBA32) {
 
-                    if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
-                        zend_error(E_ERROR, "Error creating GD Image");
+                        final_frame = av_malloc(sizeof(AVFrame));
+                        avpicture_alloc((AVPicture*)final_frame, PIX_FMT_RGBA32,
+                                    wanted_width, wanted_height);
+
+                        if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
+                                    (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
+                                    wanted_width, wanted_height) < 0) {
+                            zend_error(E_ERROR, "Can't convert frame");
+                        }
+
+                        avpicture_free((AVPicture*)resampled_frame);
+                        av_free(resampled_frame);
+                    } else {
+                        final_frame = resampled_frame;
                     }
-
-                    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
-                    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, 
-                            &gd_img_resource, -1, "Image", le_gd);
-
-
-                    _php_rgba32_to_gd_image((int*)final_frame->data[0], gd_img, wanted_width,
-                            wanted_height);
-
+                    
                     /* free wanted frame packet */
                     av_free_packet(&packet);
                     break; 
@@ -1129,15 +1016,167 @@ PHP_FUNCTION(getFrame)
         av_free_packet(&packet);
     }
 
-    av_free(decoded_frame);
+    if(final_frame) {
+        return final_frame;
+    } else {
+        av_free(decoded_frame);
+        return NULL;
+    }
 
-    if (final_frame) {
+    return final_frame;
+}
+
+
+/* {{{ proto resource getFrame([int frame])
+ */
+PHP_FUNCTION(getFrame)
+{
+    zval **argv[0], *gd_img_resource;
+    gdImage *gd_img;
+    int argc, wanted_frame = 0, wanted_width, wanted_height; 
+    AVFrame *frame = NULL;
+    ffmovie_context *ffmovie_ctx;
+
+    argc = ZEND_NUM_ARGS();
+
+    if(argc > 1) {
+        WRONG_PARAM_COUNT;
+    }
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    if (argc > 0) {
+        /* retrieve arguments */ 
+        if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+            WRONG_PARAM_COUNT;
+        }
+        
+        convert_to_long_ex(argv[0]);
+        wanted_frame = Z_LVAL_PP(argv[0]);
+
+        /* bounds check wanted frame */
+        if (wanted_frame < 1) {
+            zend_error(E_ERROR, "Frame number must be greater than zero");
+        }
+    }
+
+    wanted_width = _php_get_framewidth(ffmovie_ctx);
+    wanted_height = _php_get_frameheight(ffmovie_ctx); 
+    frame = _php_getframe(ffmovie_ctx, wanted_frame, wanted_width, wanted_height);
+
+    if (frame) {
+
+        gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
+
+        if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
+            zend_error(E_ERROR, "Error creating GD Image");
+        }
+
+        ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
+        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
+
+        
+        _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
+
+        avpicture_free((AVPicture*)frame);
+        av_free(frame);
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
     }
 }
 /* }}} */
+
+
+/* {{{ proto resource getFrameResampled(int width, int height [,int frame])
+ */
+PHP_FUNCTION(getFrameResampled)
+{
+    zval **argv[2], *gd_img_resource;
+    gdImage *gd_img;
+    int argc;
+    int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
+    AVFrame *frame = NULL;
+    ffmovie_context *ffmovie_ctx;
+
+    /* get the number of arguments */
+    argc = ZEND_NUM_ARGS();
+
+    if(argc > 3 || argc < 2) {
+        WRONG_PARAM_COUNT;
+    }
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    /* retrieve arguments */ 
+    if(zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
+        WRONG_PARAM_COUNT;
+    }
+
+    /* width arg */
+    convert_to_long_ex(argv[0]);
+    wanted_width = Z_LVAL_PP(argv[0]);
+
+    /* bounds check wanted width */
+    if (wanted_width < 1) {
+        zend_error(E_ERROR, "Frame width must be greater than zero");
+    }
+
+    /* wanted width must be even number for lavc resample */
+    if (wanted_width % 2) {
+        zend_error(E_ERROR, "Frame width must be an even number");
+    }
+
+    /* height arg */
+    convert_to_long_ex(argv[1]);
+    wanted_height = Z_LVAL_PP(argv[1]);
+
+    /* bounds check wanted height */
+    if (wanted_height < 1) {
+        zend_error(E_ERROR, "Frame height must be greater than zero");
+    }
+
+    /* wanted height must be even number for lavc resample */
+    if (wanted_height % 2) {
+        zend_error(E_ERROR, "Frame height must be an even number");
+    }
+
+    /* check for optional frame number arg */
+    if (argc == 3) {
+        convert_to_long_ex(argv[2]);
+        wanted_frame = Z_LVAL_PP(argv[2]);
+
+        /* bounds check wanted frame */
+        if (wanted_frame < 1) {
+            zend_error(E_ERROR, "Frame number must be greater than zero");
+        }
+    }
+    
+    frame = _php_getframe(ffmovie_ctx, wanted_frame, wanted_width, wanted_height);
+
+    if (frame) {
+
+        gd_img_resource = _php_get_gd_image(wanted_width, wanted_height);
+
+        if (!gd_img_resource || gd_img_resource->type != IS_RESOURCE) {
+            zend_error(E_ERROR, "Error creating GD Image");
+        }
+
+        ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
+        ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
+
+        _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
+
+        avpicture_free((AVPicture*)frame);
+        av_free(frame);
+        RETURN_RESOURCE(gd_img_resource->value.lval);
+    } else {
+        RETURN_FALSE
+    }
+}
+/* }}} */
+
+
 
 #endif /* HAVE_LIBGD20 */
 
