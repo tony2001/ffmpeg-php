@@ -15,7 +15,9 @@ for($i = 1; $i <= $framecount; $i++) {
     $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $i);
     $width = 40 + ($i % 2 ? $i+1 : $i);
     $height = 40 + ($i % 2 ? $i+1 : $i);
-    $gd_image = $mov->getFrameResampled($width, $height, $i);
+    $frame = $mov->getFrame($i);
+    $frame->resize($width, $height); 
+    $gd_image = $frame->toGDImage();
     imagepng($gd_image, $img);
     printf("ffmpeg getFrameResampled(%d): md5 = %s\n", 
             $i, md5(file_get_contents($img)));

@@ -11,30 +11,37 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 
 function print_image_md5($gd_image) {
     if ($gd_image) {
-        $img = sprintf("%s/tmp.png", dirname(__FILE__));
+        $img = sprintf("tmp.png", dirname(__FILE__));
         imagepng($gd_image, $img);
         // generate md5 of file
         printf("%s\n", md5(file_get_contents($img)));
-//        unlink($img);
+        unlink($img);
     } else {
         printf("failed\n");
     }
 }
 
-$frame = 73;
+$framenumber = 73;
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-$img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
+$img = sprintf("%s/test-%04d.png", dirname(__FILE__), $framenumber);
 
-$gd_image = $mov->getFrameResampled(190, 240, $frame, 10, 10, 10, 10);
-print('ffmpeg getFrame(): md5 = ');
+/* cropping as part of resize */
+$frame = $mov->getFrame($framenumber);
+$frame->resize(190, 240, 10, 10, 10, 10);
+$gd_image = $frame->toGDImage();
+print('ffmpeg resize and crop: md5 = ');
 print_image_md5($gd_image);
 imagedestroy($gd_image);
-$frame++;
-$gd_image = $mov->getFrame($frame, 10, 10, 10, 10);
-print('ffmpeg getFrame(): md5 = ');
+$framenumber++;
+
+/* cropping without resize */
+$frame = $mov->getFrame($framenumber);
+$frame->crop(10, 10, 10, 10);
+$gd_image = $frame->toGDImage();
+print('ffmpeg crop: md5 = ');
 print_image_md5($gd_image);
 imagedestroy($gd_image);
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = 811bf64a01eb3f919f3e8cbb45e7f07a
-ffmpeg getFrame(): md5 = d3973f39a33e89e53b03d9707c392cb2
+ffmpeg resize and crop: md5 = 811bf64a01eb3f919f3e8cbb45e7f07a
+ffmpeg crop: md5 = d3973f39a33e89e53b03d9707c392cb2

@@ -13,10 +13,12 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
 $framecount = $mov->getFrameCount();
 for($i = 1; $i <= $framecount; $i++) {
     $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $i);
-    $gd_image = $mov->getFrameResampled(96, 120, $i);
-    imagepng($gd_image, $img);
+    $frame = $mov->getFrame($i);
+    $frame->resize(96, 120);
+    $image = $frame->toGDImage();
+    imagepng($image, $img);
     printf("ffmpeg getFrameResampled($i): md5 = %s\n", md5(file_get_contents($img)));
-    imagedestroy($gd_image);
+    imagedestroy($image);
     unlink($img);
 }
 ?>

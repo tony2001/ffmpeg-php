@@ -13,7 +13,8 @@ $img = dirname(__FILE__) . '/test.png';
 
 $framecount = $mov->getFrameCount();
  for($i = 1; $i <= $framecount; $i++) {
-    $gd_image = $mov->getFrame();
+    $frame = $mov->getFrame();
+    $gd_image = $frame->toGDImage();
     imagepng($gd_image, $img . $i);
     printf("ffmpeg getFrame($i): md5 = %s\n", md5(file_get_contents($img . $i)));
     imagedestroy($gd_image);
