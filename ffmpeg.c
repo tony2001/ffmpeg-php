@@ -547,13 +547,11 @@ found_frame:
     gd_img_resource = _php_get_gd_image(pict, c->width, c->height);
     
     if (gd_img_resource->type != IS_RESOURCE) {
-       zend_printf("it's a resource alright\n");
+       zend_error(E_ERROR, "Error creating GD Image");
     }
     
     ZEND_GET_RESOURCE_TYPE_ID(img_id, "gd");
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", img_id);\
-
-    zend_printf("gd_img_ptr = %p\n", im);
 
     avpicture_fill((AVPicture*)&pict1, (uint8_t *)im->tpixels, PIX_FMT_RGBA32, 
             c->width, c->height);
