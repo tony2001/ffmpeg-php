@@ -1,11 +1,13 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.4.3 (03/01/2005)
+version 0.4.2,2 (03/01/2005)
     Bug Fixes
-    * Track frame number within ffmpeg-php since the frame number in ffmpeg's
-      decoder context seems to give inaccurate results on some 3GP movies.
-      (tkirby)
-    * Fixed bug [ 1099229 ] Stride problems if ffmpeg_frame is resized upwards
+    * Increased strictness of compiler warnings to catch issues like
+      undefined symbol errors. (tkirby)
+    * Track frame number within ffmpeg-php since the frame_number variable
+      in ffmpeg's decoder context seems to give inaccurate results on some 
+      3GP movies. (tkirby)
+    * Fixed bug #1099229 - Stride problems if ffmpeg_frame is resized upwards
       (tkirby)
 
 version 0.4.2.1 (02/15/2005)
