@@ -1,13 +1,16 @@
 * Add option to config.m4 to -rpath path to ffmpeg libs.
 
 * Add option to store open ffmpeg_movies as persistant resources. This will
-  allow an script that returns frames as images to be called repeatedly
+  allow a script that returns frames as images to be called repeatedly
   without the performance hit of reopening the movie for each getFrame() call.
-
-* Add option to resize (resample) the frame returned from getFrame(). This
-  will use ffmpeg's resampling which is better than GDs and should speed up 
-  a bit when returning say a thumbnail sized frame since less data has to
-  be copied into the gd_image.
 
 * Try to use av_seek_frame before reverting to sequential reads, this will speed
   up getFrame() on formats that support seeking.
+
+* Add get audio bit rate function
+
+* Add get audio channels function
+
+* Decouple frame seek fuctionality from frame get functionality to allow 
+  (at least internally) a gotoFrame function that will allow to count frames 
+  manually since frame count as reported by ffmpeg is not always reliable.
