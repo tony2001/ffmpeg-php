@@ -85,10 +85,17 @@ static void php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
     av_close_input_file(input->ic);
 	efree(input);
 }
-    
 
 
-
+static AVStream *get_video_stream_index(AVStream *st[])
+{
+    int i = 0;
+    for (; i < MAX_STREAMS; i++) {
+        if (st[i]->codec.codec_type == CODEC_TYPE_VIDEO)
+            return st[i];
+    }
+    return NULL;
+}
 
 
 ZEND_MINIT_FUNCTION(ffmpeg)
@@ -204,7 +211,7 @@ ZEND_FUNCTION(getFrameCount)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    st = im->ic->streams[0];
+    st = get_video_stream_index(im->ic->streams);
     enc = &st->codec;
 
     duration = (float)im->ic->duration / AV_TIME_BASE;
@@ -230,7 +237,7 @@ ZEND_FUNCTION(getFrameRate)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    st = im->ic->streams[0];
+    st = get_video_stream_index(im->ic->streams);
     enc = &st->codec;
 
     RETURN_DOUBLE((float)enc->frame_rate / enc->frame_rate_base);
@@ -403,8 +410,7 @@ ZEND_FUNCTION(getFrame)
 	ZEND_FETCH_RESOURCE(im, ffmpegInputMovie*, tmp, -1, "ffmpeg_movie",
             le_ffmpeg_movie);
 
-    // TODO: find correct stream (might not always be 0)
-    st = im->ic->streams[0];
+    st = get_video_stream_index(im->ic->streams);
     enc = &st->codec;
     
     // convert frame number to time stamp
