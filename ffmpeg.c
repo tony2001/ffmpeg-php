@@ -1198,14 +1198,6 @@ PHP_FUNCTION(get_frame_resampled)
 
         _php_rgba32_to_gd_image((int*)frame->data[0], gd_img, wanted_width, wanted_height);
 
-        /* 
-           free the frame allocated by the decoder in _php_getframe (likely not 
-           the same frame as the returned by _php_getframe since different frame
-           pointers are returned depending on the combination of 
-           resampling/conversion/cropping that happens in _php_getframe()
-          */
-        _php_free_decoder_ctx_frame(ffmovie_ctx);
-        
         RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
