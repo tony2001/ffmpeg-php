@@ -64,11 +64,18 @@ static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
 typedef struct {
+    AVFrame *frame;
+    int width;
+    int height;
+    int pixel_format;
+} ffmovie_frame;
+
+typedef struct {
     AVFormatContext *fmt_ctx;
     AVCodecContext *codec_ctx;
-    AVFrame *rgba_conv_frame;
-    int conv_frame_width;
-    int conv_frame_height;
+    ffmovie_frame yuv_ctx_frame;
+    ffmovie_frame resample_ctx_frame;
+    ffmovie_frame rgba_ctx_frame;
 } ffmovie_context;
 
 
@@ -175,13 +182,20 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
     av_close_input_file(ffmovie_ctx->fmt_ctx);
 
     /* if format conversion was done in getFrame or getFrameResmpled
-       this buffer will need to be freed */
-    if (ffmovie_ctx->rgba_conv_frame) {
-       avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
-       av_free(ffmovie_ctx->rgba_conv_frame);
+       context frames may need to be freed */
+    if (ffmovie_ctx->rgba_ctx_frame.frame) { 
+       avpicture_free((AVPicture *)ffmovie_ctx->rgba_ctx_frame.frame);
+       av_free(ffmovie_ctx->rgba_ctx_frame.frame);
     }
-    
-	efree(ffmovie_ctx);
+    if (ffmovie_ctx->yuv_ctx_frame.frame) { 
+       avpicture_free((AVPicture *)ffmovie_ctx->yuv_ctx_frame.frame);
+       av_free(ffmovie_ctx->yuv_ctx_frame.frame);
+    }
+    if (ffmovie_ctx->resample_ctx_frame.frame) { 
+       avpicture_free((AVPicture *)ffmovie_ctx->resample_ctx_frame.frame);
+       av_free(ffmovie_ctx->resample_ctx_frame.frame);
+    }
+
 }
 /* }}} */
 
@@ -306,7 +320,9 @@ static ffmovie_context* _php_alloc_ffmovie_ctx()
     ffmovie_ctx = emalloc(sizeof(ffmovie_context));
     ffmovie_ctx->fmt_ctx = NULL;
     ffmovie_ctx->codec_ctx = NULL;
-    ffmovie_ctx->rgba_conv_frame = NULL;
+    ffmovie_ctx->rgba_ctx_frame.frame = NULL;
+    ffmovie_ctx->yuv_ctx_frame.frame = NULL;
+    ffmovie_ctx->resample_ctx_frame.frame = NULL;
     return ffmovie_ctx;
 }
 /* }}} */
@@ -749,36 +765,40 @@ PHP_FUNCTION(getAudioBitRate)
 /* }}} */
 
 
-/* {{{ _php_get_rgba_conv_frame()
+/* {{{ _php_get_context_frame()
  */
-static AVFrame *_php_get_rgba_conv_frame(ffmovie_context *ffmovie_ctx, int width, 
-        int height) 
+static AVFrame *_php_get_context_frame(ffmovie_frame *ff_frame, int width, 
+        int height, int pixel_format) 
 {
-    /* free conv buffer to force reallocation if width or height have changed */
-    if (ffmovie_ctx->rgba_conv_frame &&
-            (width != ffmovie_ctx->conv_frame_width ||
-             height != ffmovie_ctx->conv_frame_height)) {
-        avpicture_free((AVPicture *)ffmovie_ctx->rgba_conv_frame);
-        av_free(ffmovie_ctx->rgba_conv_frame);
+    /* free frame to force reallocation if width or height have changed */
+    if (ff_frame->frame && 
+            (width != ff_frame->width ||
+             height != ff_frame->height ||
+             pixel_format != ff_frame->pixel_format)) {
+        avpicture_free((AVPicture *)ff_frame->frame);
+        av_free(ff_frame->frame);
     }
 
-    /* (re)allocate conv buffer */
-    if (!ffmovie_ctx->rgba_conv_frame) {
-        ffmovie_ctx->rgba_conv_frame = avcodec_alloc_frame();
-        avpicture_alloc((AVPicture*)ffmovie_ctx->rgba_conv_frame, 
-                PIX_FMT_RGBA32, width, height);
+    /* (re)allocate frame */
+    if (!ff_frame->frame) {
+        
+        ff_frame->frame = avcodec_alloc_frame();
+        avpicture_alloc((AVPicture*)ff_frame->frame, pixel_format, width, height);
 
-        ffmovie_ctx->conv_frame_width = width;
-        ffmovie_ctx->conv_frame_height = height;
+        ff_frame->width = width;
+        ff_frame->height = height;
+        ff_frame->pixel_format = pixel_format;
     }
 
-    return ffmovie_ctx->rgba_conv_frame;
+    return ff_frame->frame;
 }
 /* }}} */
 
 static void _php_free_av_frame(ffmovie_context *ffmovie_ctx, AVFrame *frame) {
-    /* don't free conv frame, it gets freed when the script exits. */
-    if (frame != ffmovie_ctx->rgba_conv_frame) {
+    /* don't free context frames, they get freed when the script exits. */
+    if (frame != ffmovie_ctx->rgba_ctx_frame.frame &&
+        frame != ffmovie_ctx->yuv_ctx_frame.frame &&
+        frame != ffmovie_ctx->resample_ctx_frame.frame) {
         avpicture_free((AVPicture*)frame);
         av_free(frame);
     }
@@ -892,14 +912,13 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
         int wanted_width, int wanted_height, int crop_top, int crop_bottom,
         int crop_left, int crop_right)
 {
-    int got_frame, video_stream, non_resize_crop = 0;
+    int got_frame, video_stream;
     enum PixelFormat target_pixfmt;
     AVPacket packet;
     AVCodecContext *decoder_ctx;
     ImgReSampleContext *img_resample_ctx;
     AVFrame *decoded_frame, *final_frame = NULL;
     AVFrame *yuv_frame, *resampled_frame;
-    AVFrame *picture_crop_temp;
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
@@ -937,25 +956,17 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                    a frame number */
                 if (!wanted_frame || decoder_ctx->frame_number == wanted_frame) {
 
-                    if ((wanted_width == decoder_ctx->width - (crop_left + crop_right)) &&
-                            (wanted_height == decoder_ctx->height - (crop_top  + crop_bottom)))
-                    {
-                        /* not resampling so just point to the decoded frame */
-                        resampled_frame = decoded_frame;
-                        target_pixfmt = decoder_ctx->pix_fmt;
-                        
-                        if (crop_top || crop_bottom || crop_left || crop_right) {
-                            non_resize_crop = 1;
-                        }
-
-                    } else { /* resampling is needed */
+                    /* is resampling needed */
+                    if (wanted_height != decoder_ctx->height ||
+                            wanted_width != decoder_ctx->width) {
                         
                         /* convert to PIX_FMT_YUV420P required for resampling */
                         if (decoder_ctx->pix_fmt != PIX_FMT_YUV420P) {
-                            
-                            yuv_frame = av_malloc(sizeof(AVFrame));
-                            avpicture_alloc( (AVPicture*)yuv_frame, PIX_FMT_YUV420P,
-                                    decoder_ctx->width, decoder_ctx->height);
+
+                            yuv_frame = _php_get_context_frame(
+                                    &ffmovie_ctx->yuv_ctx_frame,
+                                    decoder_ctx->width, decoder_ctx->height, 
+                                    PIX_FMT_YUV420P);
 
                             if (img_convert((AVPicture*)yuv_frame, PIX_FMT_YUV420P, 
                                         (AVPicture *)decoded_frame, decoder_ctx->pix_fmt, 
@@ -973,27 +984,24 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                                 crop_top, crop_bottom, crop_left, crop_right,
                                 0, 0, 0, 0);
                         
-                        resampled_frame = av_malloc(sizeof (AVFrame));
+                        resampled_frame = _php_get_context_frame(
+                                &ffmovie_ctx->resample_ctx_frame,
+                                wanted_width, wanted_height, PIX_FMT_YUV420P);
                         
-                        avpicture_alloc( (AVPicture*)resampled_frame, PIX_FMT_YUV420P,
-                                wanted_width, wanted_height);
-
                         img_resample(img_resample_ctx, 
                                 (AVPicture*)resampled_frame, (AVPicture*)yuv_frame);
 
-                        if (yuv_frame != decoded_frame) {
-                            avpicture_free((AVPicture*)yuv_frame);
-                        }
-                        av_free(yuv_frame);
-
                         target_pixfmt = PIX_FMT_YUV420P;
+                    } else {
+                        target_pixfmt = decoder_ctx->pix_fmt;
+                        resampled_frame = decoded_frame;
                     }
-                    
-                    /* always return rgba so convert if needed */
+
                     if (target_pixfmt != PIX_FMT_RGBA32) {
 
-                        final_frame = _php_get_rgba_conv_frame(ffmovie_ctx,
-                                wanted_width, wanted_height); 
+                        final_frame = _php_get_context_frame(
+                                &ffmovie_ctx->rgba_ctx_frame,
+                                wanted_width, wanted_height, PIX_FMT_RGBA32); 
                             
                         if (img_convert((AVPicture*)final_frame, PIX_FMT_RGBA32,
                                     (AVPicture*)resampled_frame, target_pixfmt,
@@ -1001,36 +1009,10 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
                             zend_error(E_ERROR, "Can't convert frame");
                         }
 
-                        if (resampled_frame != decoded_frame) {
-                            avpicture_free((AVPicture*)resampled_frame);
-                        }
-                        av_free(resampled_frame);
                     } else {
                         final_frame = resampled_frame;
                     }
-
-                    if (non_resize_crop) {
-                        picture_crop_temp  = av_malloc(sizeof(AVFrame));
-                       
-                        /* FIXME: 
-                           this will cause memory leak when non resize cropping
-                           until the frame allocation optimzations are in place
-                          */
-                        avpicture_fill((AVPicture*)picture_crop_temp, NULL, 
-                                PIX_FMT_RGBA32, wanted_width, wanted_height);
-                        picture_crop_temp->data[0] = final_frame->data[0] +
-                            (crop_top * final_frame->linesize[0]) + crop_left;
-
-                        picture_crop_temp->linesize[0] = final_frame->linesize[0];
-
-                        /* 
-                           this looks like we're losing track of the original
-                           final frame allocated above, but the original gets
-                           freed automatically at script exit
-                         */
-                        final_frame = picture_crop_temp;
-                    }
-
+                    
                     /* free wanted frame packet */
                     av_free_packet(&packet);
                     break; 
