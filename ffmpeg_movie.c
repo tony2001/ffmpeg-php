@@ -680,10 +680,20 @@ PHP_FUNCTION(getFrame)
         }
 
         /* TODO: Provide function(s) for setting these */
-        ff_frame->av_frame = frame;
         ff_frame->width = _php_get_framewidth(ffmovie_ctx);
         ff_frame->height = _php_get_frameheight(ffmovie_ctx);
         ff_frame->pixel_format = _php_get_pixelformat(ffmovie_ctx);
+        
+        ff_frame->av_frame = avcodec_alloc_frame();
+        avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
+            ff_frame->width, ff_frame->height);
+ 
+        /* FIXME: temporary hack until I figure out how to pass new buffers to the decoder */
+        img_copy((AVPicture*)ff_frame->av_frame, 
+                (AVPicture *)frame, ff_frame->pixel_format, 
+                ff_frame->width, ff_frame->height);
+
+        //ff_frame->av_frame = frame;
     } else {
         RETURN_FALSE;
     }
