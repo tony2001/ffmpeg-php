@@ -1,5 +1,5 @@
 --TEST--
-ffmpeg getFrame test
+ffmpeg getFramesBackwards test
 --SKIPIF--
 <?php 
 extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded"); 
