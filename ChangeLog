@@ -6,11 +6,13 @@ version 0.3.6a (12/04/2004)
     * Added cropping support to getFrameResampled() and getFrame() (tkirby)
 
     Bug Fixes:
+    * Fixed bug #1079237 getFrame fails when getting the same frame twice
+      (tkirby)
     * Fixed memory leak when freeing ffmpeg_movie objects (tkirby)
     * Fixed bug #1078753 cropping doesn't work correctly if image is not 
-      resized
+      resized (tkirby)
     * Fixed bug #1077952 Segfault with multiple calls to 
-      getFrameResampled (tkirby)
+      getFrameResampled() (tkirby)
     * Fixed tiny memory leak in _php_get_gd_image() (tkirby)
     * Added configure warning if trying to build against php 5 since it
       is not supported yet. (tkirby)
