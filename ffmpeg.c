@@ -92,62 +92,27 @@ typedef struct {
 */
 zend_function_entry ffmpeg_movie_class_methods[] = {
    
-	PHP_FE(ffmpeg_movie, NULL)
+    /* contructor */
+    PHP_FE(ffmpeg_movie, NULL)
 
-	PHP_FE(getDuration, NULL)
-    PHP_FALIAS(getduration, getDuration, NULL)
-
-	PHP_FE(getFrameCount, NULL)
-    PHP_FALIAS(getframecount, getFrameCount, NULL)
-
-	PHP_FE(getFrameRate, NULL)
-    PHP_FALIAS(getframerate, getFrameRate, NULL)
-    
-	PHP_FE(getFileName, NULL)
-    PHP_FALIAS(getfilename, getFileName, NULL)
-    
-	PHP_FE(getComment, NULL)
-    PHP_FALIAS(getcomment, getComment, NULL)
- 
-	PHP_FE(getTitle, NULL)
-    PHP_FALIAS(gettitle, getTitle, NULL)
-
-    PHP_FE(getAuthor, NULL)
-    PHP_FALIAS(getauthor, getAuthor, NULL)
- 
-	PHP_FE(getCopyright, NULL)
-    PHP_FALIAS(getcopyright, getCopyright, NULL)
-
-    PHP_FE(getFrameWidth, NULL)
-    PHP_FALIAS(getframewidth, getFrameWidth, NULL)
-
-    PHP_FE(getFrameHeight, NULL)
-    PHP_FALIAS(getframeheight, getFrameHeight, NULL)
-
-    PHP_FE(getFrameNumber, NULL)
-    PHP_FALIAS(getframenumber, getFrameNumber, NULL)
-
-    PHP_FE(getPixelFormat, NULL)
-    PHP_FALIAS(getpixelformat, getPixelFormat, NULL)
-
-    PHP_FE(getVideoBitRate, NULL)
-    PHP_FALIAS(getvideobitrate, getVideoBitRate, NULL)
-/*
-    PHP_FE(getAudioBitRate, NULL)
-    PHP_FALIAS(getaudiobitrate, getAudioBitRate, NULL)
-
-    PHP_FE(getCodecName, NULL)
-    PHP_FALIAS(getcodecname, getCodecName, NULL)
-*/
-    PHP_FE(hasAudio, NULL)
-    PHP_FALIAS(hasaudio, hasAudio, NULL)
-
+    /* methods */
+	PHP_FE(get_duration, NULL)
+	PHP_FE(get_framecount, NULL)
+	PHP_FE(get_framerate, NULL)
+	PHP_FE(get_filename, NULL)
+	PHP_FE(get_comment, NULL)
+	PHP_FE(get_title, NULL)
+    PHP_FE(get_author, NULL)
+	PHP_FE(get_copyright, NULL)
+    PHP_FE(get_framewidth, NULL)
+    PHP_FE(get_frameheight, NULL)
+    PHP_FE(get_framenumber, NULL)
+    PHP_FE(get_pixelformat, NULL)
+    PHP_FE(get_video_bitrate, NULL)
+    PHP_FE(has_audio, NULL)
 #if HAVE_LIBGD20
-    PHP_FE(getFrame, NULL)
-    PHP_FALIAS(getframe, getFrame, NULL)
-
-    PHP_FE(getFrameResampled, NULL)
-    PHP_FALIAS(getframeresampled, getFrameResampled, NULL)
+    PHP_FE(get_frame, NULL)
+    PHP_FE(get_frame_resampled, NULL)
 #endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
@@ -189,7 +154,7 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
     av_close_input_file(ffmovie_ctx->fmt_ctx);
 
-    /* if format conversion was done in getFrame or getFrameResmpled
+    /* if format conversion was done in get_frame or get_frameResmpled
        context frames may need to be freed */
     if (ffmovie_ctx->rgba_ctx_frame.frame) { 
        avpicture_free((AVPicture *)ffmovie_ctx->rgba_ctx_frame.frame);
@@ -389,9 +354,9 @@ static float _php_get_duration(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getDuration()
+/* {{{ proto int get_duration()
  */
-PHP_FUNCTION(getDuration)
+PHP_FUNCTION(get_duration)
 {
     ffmovie_context *ffmovie_ctx;
        
@@ -421,9 +386,9 @@ static long _php_get_framecount(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getFrameCount()
+/* {{{ proto int get_framecount()
  */
-PHP_FUNCTION(getFrameCount)
+PHP_FUNCTION(get_framecount)
 {
     ffmovie_context *ffmovie_ctx;
     GET_MOVIE_RESOURCE(ffmovie_ctx);
@@ -453,9 +418,9 @@ static float _php_get_framerate(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getFrameRate()
+/* {{{ proto int get_framerate()
  */
-PHP_FUNCTION(getFrameRate)
+PHP_FUNCTION(get_framerate)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -475,9 +440,9 @@ static char* _php_get_filename(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto string getFileName()
+/* {{{ proto string get_filename()
  */
-PHP_FUNCTION(getFileName)
+PHP_FUNCTION(get_filename)
 {
     ffmovie_context *ffmovie_ctx;
     char* filename;
@@ -490,9 +455,9 @@ PHP_FUNCTION(getFileName)
 /* }}} */
 
 
-/* {{{ proto string getComment()
+/* {{{ proto string get_comment()
  */
-PHP_FUNCTION(getComment)
+PHP_FUNCTION(get_comment)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -504,9 +469,9 @@ PHP_FUNCTION(getComment)
 /* }}} */
 
 
-/* {{{ proto string getTitle()
+/* {{{ proto string get_title()
  */
-PHP_FUNCTION(getTitle)
+PHP_FUNCTION(get_title)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -518,9 +483,9 @@ PHP_FUNCTION(getTitle)
 /* }}} */
 
 
-/* {{{ proto string getAuthor()
+/* {{{ proto string get_author()
  */
-PHP_FUNCTION(getAuthor)
+PHP_FUNCTION(get_author)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -532,9 +497,9 @@ PHP_FUNCTION(getAuthor)
 /* }}} */
 
 
-/* {{{ proto string getCopyright()
+/* {{{ proto string get_copyright()
  */
-PHP_FUNCTION(getCopyright)
+PHP_FUNCTION(get_copyright)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -560,9 +525,9 @@ static int _php_get_framewidth(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getFrameWidth()
+/* {{{ proto int get_framewidth()
  */
-PHP_FUNCTION(getFrameWidth)
+PHP_FUNCTION(get_framewidth)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -588,9 +553,9 @@ static int _php_get_frameheight(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getFrameHeight()
+/* {{{ proto int get_frameheight()
  */
-PHP_FUNCTION(getFrameHeight)
+PHP_FUNCTION(get_frameheight)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -634,9 +599,9 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
 /* }}} */
 
 
-/* {{{ _php_get_frame_number()
+/* {{{ _php_get_framenumber()
  */
-static long _php_get_frame_number(ffmovie_context *ffmovie_ctx) 
+static long _php_get_framenumber(ffmovie_context *ffmovie_ctx) 
 {
     AVCodecContext *decoder_ctx;
     int video_stream;
@@ -657,15 +622,15 @@ static long _php_get_frame_number(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto resource getFrameNumber()
+/* {{{ proto resource get_framenumber()
  */
-PHP_FUNCTION(getFrameNumber)
+PHP_FUNCTION(get_framenumber)
 {
     ffmovie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_LONG(_php_get_frame_number(ffmovie_ctx));
+    RETURN_LONG(_php_get_framenumber(ffmovie_ctx));
 }
 /* }}} */
 
@@ -689,9 +654,9 @@ static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int getPixelFormat()
+/* {{{ proto int get_pixelformat()
  */
-PHP_FUNCTION(getPixelFormat)
+PHP_FUNCTION(get_pixelformat)
 {
     const char *fmt;
     ffmovie_context *ffmovie_ctx;
@@ -723,7 +688,7 @@ static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
 
 /* {{{ proto int getVideoBitrate()
  */
-PHP_FUNCTION(getVideoBitRate)
+PHP_FUNCTION(get_video_bitrate)
 {
     int bitrate;
     ffmovie_context *ffmovie_ctx;
@@ -738,9 +703,9 @@ PHP_FUNCTION(getVideoBitRate)
 /* }}} */
 
 
-/* {{{ proto int hasAudio()
+/* {{{ proto int has_audio()
  */
-PHP_FUNCTION(hasAudio)
+PHP_FUNCTION(has_audio)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -748,28 +713,6 @@ PHP_FUNCTION(hasAudio)
 
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
-/* }}} */
-
-
-/* {{{ proto int get_audio_sample_rate()
- */
-/*
-PHP_FUNCTION(getAudioBitRate)
-{
-    ffmovie_context *ffmovie_ctx;
-    AVStream *audio_stream;
-    AVCodec audio_codec;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-    
-    // TODO: test if this is an audio only filetype (mp3 ogg...)
-    //       and just return same as getVideoBitRate if it is. 
-    audio_stream = _php_get_audio_stream(ffmovie_ctx->fmt_ctx);
-    
-    audio_codec = avcodec_find_encoder(audio_stream->codec_id);
-    
-    RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
-}*/
 /* }}} */
 
 
@@ -1068,9 +1011,9 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 /* }}} */
 
 
-/* {{{ proto resource getFrame([int frame])
+/* {{{ proto resource get_frame([int frame])
  */
-PHP_FUNCTION(getFrame)
+PHP_FUNCTION(get_frame)
 {
     zval **argv[0], *gd_img_resource;
     gdImage *gd_img;
@@ -1138,9 +1081,9 @@ PHP_FUNCTION(getFrame)
 /* }}} */
 
 
-/* {{{ proto resource getFrameResampled(int width, int height [,int frame])
+/* {{{ proto resource get_frame_resampled(int width, int height [,int frame])
  */
-PHP_FUNCTION(getFrameResampled)
+PHP_FUNCTION(get_frame_resampled)
 {
     zval **argv[6], *gd_img_resource;
     gdImage *gd_img;
