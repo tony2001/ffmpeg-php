@@ -113,12 +113,15 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getPixelFormat, NULL)
     PHP_FALIAS(getpixelformat, getPixelFormat, NULL)
 
-    PHP_FE(getBitRate, NULL)
-    PHP_FALIAS(getbitrate, getBitRate, NULL)
+    PHP_FE(getVideoBitRate, NULL)
+    PHP_FALIAS(getvideobitrate, getVideoBitRate, NULL)
+/*
+    PHP_FE(getAudioBitRate, NULL)
+    PHP_FALIAS(getaudiobitrate, getAudioBitRate, NULL)
 
-//    PHP_FE(getCodecName, NULL)
-//    PHP_FALIAS(getcodecname, getCodecName, NULL)
-
+    PHP_FE(getCodecName, NULL)
+    PHP_FALIAS(getcodecname, getCodecName, NULL)
+*/
     PHP_FE(hasAudio, NULL)
     PHP_FALIAS(hasaudio, hasAudio, NULL)
 
@@ -281,7 +284,8 @@ static void _php_open_movie_file(ffmovie_context *ffmovie_ctx,
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. */
     if (av_find_stream_info(ffmovie_ctx->fmt_ctx)) {
-        zend_error(E_ERROR, "Can't find codec parameters for %s", filename);
+        /* This is not a problem for some formats */
+        /*zend_error(E_WARNING, "Can't find codec parameters for %s", filename); */
     }
 }
 /* }}} */
@@ -639,7 +643,7 @@ static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
 
 /* {{{ proto int getBitrate()
  */
-PHP_FUNCTION(getBitRate)
+PHP_FUNCTION(getVideoBitRate)
 {
     int bitrate;
     ffmovie_context *ffmovie_ctx;
@@ -664,6 +668,26 @@ PHP_FUNCTION(hasAudio)
 
     RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
 }
+/* }}} */
+
+
+/* {{{ proto int get_audio_sample_rate()
+ */
+/*
+PHP_FUNCTION(getAudioBitRate)
+{
+    ffmovie_context *ffmovie_ctx;
+    AVStream *audio_stream;
+    AVCodec audio_codec;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+    
+    audio_stream = _php_get_audio_stream(ffmovie_ctx->fmt_ctx);
+    
+    audio_codec = avcodec_find_encoder(audio_stream->codec_id);
+    
+    RETURN_BOOL(_php_get_audio_stream(ffmovie_ctx->fmt_ctx));
+}*/
 /* }}} */
 
 

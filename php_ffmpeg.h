@@ -34,8 +34,11 @@ PHP_FUNCTION(getFrameWidth);
 PHP_FUNCTION(getFrameHeight);
 PHP_FUNCTION(getFrameNumber);
 PHP_FUNCTION(getPixelFormat);
-PHP_FUNCTION(getBitRate);
-//PHP_FUNCTION(getCodecName);
+PHP_FUNCTION(getVideoBitRate);
+/*
+PHP_FUNCTION(getAudioBitRate);
+PHP_FUNCTION(getCodecName);
+ */
 PHP_FUNCTION(hasAudio);
 
 #if HAVE_LIBGD20
