@@ -22,4 +22,4 @@ if ($gd_image) {
 }
 ?>
 --EXPECT--
-ffmpeg getFrameResampled(): md5 = cc36d30fb5b269146802e740ce4ab239
+ffmpeg getFrameResampled(): md5 = 135b7ff2a0e5d15dc9c111c94e74c9a4 
