@@ -29,7 +29,7 @@ typedef struct {
     AVCodecContext *codec_ctx;
 } ff_movie_context;
 
-#define GET_MOVIE_RESOURCE(im) {\
+#define GET_MOVIE_RESOURCE(ff_movie_ctx) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
                 sizeof("ffmpeg_movie"), (void **)&_tmp_zval) == FAILURE) {\
@@ -37,7 +37,7 @@ typedef struct {
         RETURN_FALSE;\
     }\
 \
-    ZEND_FETCH_RESOURCE(im, ff_movie_context*, _tmp_zval, -1,\
+    ZEND_FETCH_RESOURCE(ff_movie_ctx, ff_movie_context*, _tmp_zval, -1,\
             "ffmpeg_movie", le_ffmpeg_movie);\
 }\
 
