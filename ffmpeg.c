@@ -90,8 +90,8 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 	PHP_FE(getCopyright, NULL)
     PHP_FALIAS(getcopyright, getCopyright, NULL)
 
-    PHP_FE(getFrame, NULL)
-    PHP_FALIAS(getframe, getFrame, NULL)
+    PHP_FE(getFrameAsGDImage, NULL)
+    PHP_FALIAS(getframe, getFrameAsGDImage, NULL)
 
 	{NULL, NULL, NULL}
 };
@@ -131,7 +131,7 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
-/* {{{ _php_get_stream_index
+/* {{{ _php_get_stream_index()
  */
 static int _php_get_stream_index(AVStream *st[], int type)
 {
@@ -207,16 +207,34 @@ PHP_MINFO_FUNCTION(ffmpeg)
 }
 /* }}} */
 
+/* {{{ _php_open_movie_file()
+ */
+static void _php_open_movie_file(ffmpeg_movie_context *im, char* filename)
+{
+    AVFormatParameters params;
 
-/* {{{ ffmpeg_movie constructor
+    /* open the file with generic libav function */
+    if (av_open_input_file(&(im->ic), filename, NULL, 0, &params)) {
+        zend_error(E_ERROR, "Can't open movie file");
+    }
+    
+    /* If not enough info to get the stream parameters, we decode the
+       first frames to get it. */
+    if (av_find_stream_info(im->ic)) {
+        zend_error(E_ERROR, "Can't find codec parameters for movie\n");
+    }
+}
+/* }}} */
+
+
+/* {{{ proto object ffmpeg_movie(string filename) 
+   Constructor for ffmpeg_movie objects
  */
 PHP_FUNCTION(ffmpeg_movie)
 {
     int argc, ret;
     zval **argv[0];
     ffmpeg_movie_context *im;
-
-    AVFormatParameters params, *ap = &params;
     
     /* get the number of arguments */
     argc = ZEND_NUM_ARGS();
@@ -234,18 +252,9 @@ PHP_FUNCTION(ffmpeg_movie)
     
     convert_to_string_ex(argv[0]);
     
-    /* open the file with generic libav function */
-    if (av_open_input_file(&(im->ic), Z_STRVAL_PP(argv[0]), NULL, 0, ap)) {
-        zend_error(E_ERROR, "Can't open movie file");
-    }
-    
-    /* If not enough info to get the stream parameters, we decode the
-       first frames to get it. */
-    if (av_find_stream_info(im->ic)) {
-        zend_error(E_ERROR, "Can't find codec parameters for movie\n");
-    }
+    _php_open_movie_file(im, Z_STRVAL_PP(argv[0]));
 
-    /* pass null for resource result since we're not returning the resource
+    /* pass NULL for resource result since we're not returning the resource
      directly, but adding it to the returned object. */
 	ret = ZEND_REGISTER_RESOURCE(NULL, im, le_ffmpeg_movie);
     
@@ -255,7 +264,7 @@ PHP_FUNCTION(ffmpeg_movie)
 /* }}} */
 
 
-/* {{{ getDuration()
+/* {{{ proto int getDuration()
  */
 PHP_FUNCTION(getDuration)
 {
@@ -274,7 +283,7 @@ PHP_FUNCTION(getDuration)
 
 /* {{{ _php_get_framecount()
  */
-static float _php_get_framecount(ffmpeg_movie_context *im)
+static long _php_get_framecount(ffmpeg_movie_context *im)
 {
     float duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(im->ic->streams);
@@ -287,7 +296,7 @@ static float _php_get_framecount(ffmpeg_movie_context *im)
 /* }}} */
 
 
-/* {{{ getFrameCount()
+/* {{{ proto int getFrameCount()
  */
 PHP_FUNCTION(getFrameCount)
 {
@@ -309,7 +318,7 @@ static float _php_get_framerate(ffmpeg_movie_context *im)
 /* }}} */
 
 
-/* {{{ getFrameRate()
+/* {{{ proto int getFrameRate()
  */
 PHP_FUNCTION(getFrameRate)
 {
@@ -329,7 +338,7 @@ static char* _php_get_filename(ffmpeg_movie_context *im)
 /* }}} */
 
 
-/* {{{ getFileName()
+/* {{{ proto string getFileName()
  */
 PHP_FUNCTION(getFileName)
 {
@@ -344,7 +353,7 @@ PHP_FUNCTION(getFileName)
 /* }}} */
 
 
-/* {{{ getComment()
+/* {{{ proto string getComment()
  */
 PHP_FUNCTION(getComment)
 {
@@ -357,7 +366,7 @@ PHP_FUNCTION(getComment)
 /* }}} */
 
 
-/* {{{ getTitle()
+/* {{{ proto string getTitle()
  */
 PHP_FUNCTION(getTitle)
 {
@@ -370,7 +379,7 @@ PHP_FUNCTION(getTitle)
 /* }}} */
 
 
-/* {{{ getAuthor()
+/* {{{ proto string getAuthor()
  */
 PHP_FUNCTION(getAuthor)
 {
@@ -383,7 +392,7 @@ PHP_FUNCTION(getAuthor)
 /* }}} */
 
 
-/* {{{ getCopyright()
+/* {{{ proto string getCopyright()
  */
 PHP_FUNCTION(getCopyright)
 {
@@ -400,15 +409,18 @@ PHP_FUNCTION(getCopyright)
  */
 void _php_copy_frame_to_gd(AVFrame *pict)
 {
-    zval func;
-    zval retval;
+    zval *function;
+    zval **retval;
     zval param;
+    
+    MAKE_STD_ZVAL(function);
 
-    if (!zend_hash_exists(EG(function_table), "imagecreatetruecolor", sizeof("imagecreatetruecolor"))) {
-        zend_error(E_ERROR, "ffmpeg getFrame function requires GD\n");
+    ZVAL_STRING(function, "imagecreatetruecolor", 1);
+
+    if (call_user_function_ex(CG(function_table), NULL, function, 
+                retval, 0, 0, 1, NULL TSRMLS_CC) == FAILURE) {
+        zend_error(E_ERROR, "err");
     }
-    ZVAL_STRING(&func, "imagecreatetruecolor", 0);
-    INIT_ZVAL(param); 
 
 
     /* get imagecreatetruecolor function
@@ -419,9 +431,9 @@ void _php_copy_frame_to_gd(AVFrame *pict)
 /* }}} */
 
 
-/* {{{ getFrame(int frame)
+/* {{{ resource getFrameAsGDImage(int frame)
  */
-PHP_FUNCTION(getFrame)
+PHP_FUNCTION(getFrameAsGDImage)
 {
 	zval **argv[0];
     int argc;
@@ -480,8 +492,6 @@ PHP_FUNCTION(getFrame)
     }
     
     convert_to_long_ex(argv[0]);
-    
-    zend_printf("argv[0] == %ld\n", Z_LVAL_PP(argv[0]));
     
     frame = 0;
     for(;;) {

@@ -30,9 +30,7 @@ PHP_FUNCTION(getComment);
 PHP_FUNCTION(getTitle);
 PHP_FUNCTION(getAuthor);
 PHP_FUNCTION(getCopyright);
-//PHP_FUNCTION(hasVideo);
-//PHP_FUNCTION(hasAudio);
-PHP_FUNCTION(getFrame);
+PHP_FUNCTION(getFrameAsGDImage);
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)
