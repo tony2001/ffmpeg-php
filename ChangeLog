@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.2.1 (02/15/2005)
+    Bug Fixes
+    * Fixed error handling when ffmpeg_movie object creation fails
+    * Fixed undefined symbol error in ffmpeg_output_movie.
+
 version 0.4.2 (01/15/2005)
     New Features:
     * Added more ID3 methods getAlbum(), getArtist(), getGenre()), 
