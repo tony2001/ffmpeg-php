@@ -729,6 +729,7 @@ static AVFrame *_php_get_context_frame(ffmovie_frame *ff_frame, int width,
              pixel_format != ff_frame->pixel_format)) {
         avpicture_free((AVPicture *)ff_frame->frame);
         av_free(ff_frame->frame);
+        ff_frame->frame = NULL;
     }
 
     /* (re)allocate frame */
