@@ -1,3 +1,9 @@
+REQUIREMENTS
+============
+
+ffmpeg-0.4.9 or higher
+php-4.3.x (I have not tested with php 5, but I've received reports that it doesn't run)
+gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS
 =========================
