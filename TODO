@@ -1,3 +1,4 @@
 Add option to config.m4 to -rpath path to ffmpeg libs
 Add check for system GD library and/or bundled GD library to config.m4
-
+Fix getFrame() so it works with more formats (currently only behaves well with .avi)
+Add getFrameRange() and getFrameRangeCallback() functions
