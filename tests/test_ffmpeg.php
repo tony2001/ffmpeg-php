@@ -85,7 +85,7 @@ foreach($movies as $movie) {
         echo "get frame() $frame" . "\n";
     }
  */    
-    printf("get frame = %s\n", $mov->getFrame(10));
+    printf("get frame = %s\n", is_object($mov->getFrame(10)) ? 'true' : 'false');
     printf("get frame number = %d\n", $mov->getFrameNumber());
     echo "\n--------------------\n\n";
 }
