@@ -35,7 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.4.2"
+#define FFMPEG_PHP_VERSION "0.4.2.1"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
