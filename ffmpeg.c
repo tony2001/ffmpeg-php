@@ -1052,74 +1052,26 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
  */
 PHP_FUNCTION(getFrame)
 {
-    zval **argv[5], *gd_img_resource;
+    zval ***argv, *gd_img_resource;
     gdImage *gd_img;
-    int argc, wanted_frame = 0, wanted_width, wanted_height; 
+    int wanted_frame = 0, wanted_width, wanted_height; 
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0; 
     AVFrame *frame = NULL;
     ffmovie_context *ffmovie_ctx;
 
-    argc = ZEND_NUM_ARGS();
-
-    if (argc > 5) {
-        WRONG_PARAM_COUNT;
-    }
-
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    if (argc > 0) {
-        /* retrieve arguments */ 
-        if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-            WRONG_PARAM_COUNT;
-        }
+    /* retrieve arguments */ 
+    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
 
-        convert_to_long_ex(argv[0]);
-        wanted_frame = Z_LVAL_PP(argv[0]);
+    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
+        efree(argv);
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Error parsing arguments");
+    }
 
-        /* bounds check wanted frame */
-        if (wanted_frame < 1) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR, 
-                    "Frame number must be greater than zero");
-        }
-
-        /* check for optional crop top arg */
-        if (argc >= 2) {
-            convert_to_long_ex(argv[1]);
-            crop_top = Z_LVAL_PP(argv[1]);
-
-            /*  crop top  must be even number for lavc cropping */
-            if (crop_top % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop top must be an even number");
-            }
-        }
-
-        /* check for optional crop bottom arg */
-        if (argc >= 3) {
-            convert_to_long_ex(argv[2]);
-            crop_bottom = Z_LVAL_PP(argv[2]);
-
-            /*  crop bottom must be even number for lavc cropping */
-            if (crop_bottom % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop bottom must be an even number");
-            }
-        }
-
-        /* check for optional crop left arg */
-        if (argc >= 4) {
-            convert_to_long_ex(argv[3]);
-            crop_left = Z_LVAL_PP(argv[3]);
-
-            /*  crop left must be even number for lavc cropping */
-            if (crop_left % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop left must be an even number");
-            }
-        }
-
-        /* check for optional crop right arg */
-        if (argc >= 5) {
+    switch (ZEND_NUM_ARGS()) {
+        case 5:
             convert_to_long_ex(argv[4]);
             crop_right = Z_LVAL_PP(argv[4]);
 
@@ -1128,8 +1080,56 @@ PHP_FUNCTION(getFrame)
                 php_error_docref(NULL TSRMLS_CC, E_ERROR,
                         "Crop right must be an even number");
             }
-        }
-    }
+            /* fallthru */
+        case 4:
+            convert_to_long_ex(argv[3]);
+            crop_left = Z_LVAL_PP(argv[3]);
+
+            /*  crop left must be even number for lavc cropping */
+            if (crop_left % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop left must be an even number");
+            }
+
+            /* fallthru */
+        case 3:
+            convert_to_long_ex(argv[2]);
+            crop_bottom = Z_LVAL_PP(argv[2]);
+
+            /*  crop bottom must be even number for lavc cropping */
+            if (crop_bottom % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop bottom must be an even number");
+            }
+
+            /* fallthru */
+        case 2:
+            convert_to_long_ex(argv[1]);
+            crop_top = Z_LVAL_PP(argv[1]);
+
+            /*  crop top  must be even number for lavc cropping */
+            if (crop_top % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop top must be an even number");
+            }
+
+            /* fallthru */
+        case 1:
+            convert_to_long_ex(argv[0]);
+            wanted_frame = Z_LVAL_PP(argv[0]);
+            
+            /* bounds check wanted frame */
+            if (wanted_frame < 1) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame number must be greater than zero");
+            }
+        case 0:
+            break;
+        default:
+            WRONG_PARAM_COUNT;
+    } 
+
+    efree(argv);
 
     wanted_width = _php_get_framewidth(ffmovie_ctx);
     wanted_height = _php_get_frameheight(ffmovie_ctx);
@@ -1149,7 +1149,6 @@ PHP_FUNCTION(getFrame)
         
         _php_avframe_to_gd_image(frame, gd_img, wanted_width, wanted_height);
 
-        //RETURN_RESOURCE(gd_img_resource->value.lval);
     } else {
         RETURN_FALSE
     }
@@ -1161,120 +1160,118 @@ PHP_FUNCTION(getFrame)
  */
 PHP_FUNCTION(getFrameResampled)
 {
-    zval **argv[7], *gd_img_resource;
+    zval ***argv, *gd_img_resource;
     gdImage *gd_img;
-    int argc;
     int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0; 
     AVFrame *frame = NULL;
     ffmovie_context *ffmovie_ctx;
 
-    /* get the number of arguments */
-    argc = ZEND_NUM_ARGS();
-
-    if (argc > 7 || argc < 2) {
-        WRONG_PARAM_COUNT;
-    }
-
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     /* retrieve arguments */ 
-    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-        WRONG_PARAM_COUNT;
-    }
+    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
 
-    /* width arg */
-    convert_to_long_ex(argv[0]);
-    wanted_width = Z_LVAL_PP(argv[0]);
-
-    /* bounds check wanted width */
-    if (wanted_width < 1) {
+    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
+        efree(argv);
         php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Frame width must be greater than zero");
+                "Error parsing arguments");
     }
 
-    /* wanted width must be even number for lavc resample */
-    if (wanted_width % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Frame width must be an even number");
-    }
+    switch (ZEND_NUM_ARGS()) {
+        case 7:
+            convert_to_long_ex(argv[6]);
+            crop_right = Z_LVAL_PP(argv[6]);
 
-    /* height arg */
-    convert_to_long_ex(argv[1]);
-    wanted_height = Z_LVAL_PP(argv[1]);
+            /*  crop right must be even number for lavc cropping */
+            if (crop_right % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop right must be an even number");
+            }
+            /* fallthru */
+        case 6:
+            convert_to_long_ex(argv[5]);
+            crop_left = Z_LVAL_PP(argv[5]);
 
-    /* bounds check wanted height */
-    if (wanted_height < 1) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Frame height must be greater than zero");
-    }
+            /*  crop left must be even number for lavc cropping */
+            if (crop_left % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop left must be an even number");
+            }
 
-    /* wanted height must be even number for lavc resample */
-    if (wanted_height % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Frame height must be an even number");
-    }
+            /* fallthru */
+        case 5:
+            convert_to_long_ex(argv[4]);
+            crop_bottom = Z_LVAL_PP(argv[4]);
 
-    /* check for optional frame number arg */
-    if (argc >= 3) {
-        convert_to_long_ex(argv[2]);
-        wanted_frame = Z_LVAL_PP(argv[2]);
+            /*  crop bottom must be even number for lavc cropping */
+            if (crop_bottom % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop bottom must be an even number");
+            }
 
-        /* bounds check wanted frame */
-        if (wanted_frame < 1) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Frame number must be greater than zero");
-        }
-    }
+            /* fallthru */
+        case 4:
+            convert_to_long_ex(argv[3]);
+            crop_top = Z_LVAL_PP(argv[3]);
 
-    /* check for optional crop top arg */
-    if (argc >= 4) {
-        convert_to_long_ex(argv[3]);
-        crop_top = Z_LVAL_PP(argv[3]);
+            /*  crop top  must be even number for lavc cropping */
+            if (crop_top % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop top must be an even number");
+            }
 
-        /*  crop top  must be even number for lavc cropping */
-        if (crop_top % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop top must be an even number");
-        }
-    }
+            /* fallthru */
+        case 3:
+            convert_to_long_ex(argv[2]);
+            wanted_frame = Z_LVAL_PP(argv[2]);
+            
+            /* bounds check wanted frame */
+            if (wanted_frame < 1) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame number must be greater than zero");
+            }
 
-    /* check for optional crop bottom arg */
-    if (argc >= 5) {
-        convert_to_long_ex(argv[4]);
-        crop_bottom = Z_LVAL_PP(argv[4]);
-        
-        /*  crop bottom must be even number for lavc cropping */
-        if (crop_bottom % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop bottom must be an even number");
-        }
-    }
+            /* fallthru */
+        case 2:
+            /* height arg */
+            convert_to_long_ex(argv[1]);
+            wanted_height = Z_LVAL_PP(argv[1]);
 
-    /* check for optional crop left arg */
-    if (argc >= 6) {
-        convert_to_long_ex(argv[5]);
-        crop_left = Z_LVAL_PP(argv[5]);
+            /* bounds check wanted height */
+            if (wanted_height < 1) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame height must be greater than zero");
+            }
 
-        /*  crop left must be even number for lavc cropping */
-        if (crop_left % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop left must be an even number");
-        }
-    }
+            /* wanted height must be even number for lavc resample */
+            if (wanted_height % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame height must be an even number");
+            }
+       case 1:
+            /* width arg */
+            convert_to_long_ex(argv[0]);
+            wanted_width = Z_LVAL_PP(argv[0]);
 
-    /* check for optional crop right arg */
-    if (argc >= 7) {
-        convert_to_long_ex(argv[6]);
-        crop_right = Z_LVAL_PP(argv[6]);
+            /* bounds check wanted width */
+            if (wanted_width < 1) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame width must be greater than zero");
+            }
 
-        /*  crop right must be even number for lavc cropping */
-        if (crop_right % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop right must be an even number");
-        }
-    }
+            /* wanted width must be even number for lavc resample */
+            if (wanted_width % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame width must be an even number");
+            }
+            break;
+        default:
+            WRONG_PARAM_COUNT;
+    } 
 
+    efree(argv);
+ 
     frame = _php_getframe(ffmovie_ctx, wanted_frame, 
             wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
@@ -1297,101 +1294,96 @@ PHP_FUNCTION(getFrameResampled)
  */
 PHP_FUNCTION(getFrameIntoImage)
 {
-    int argc, wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
+    int wanted_frame = 0, wanted_width = 0, wanted_height = 0; 
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0; 
-    zval **argv[6], *gd_img_resource;
+    zval ***argv, *gd_img_resource;
     gdImage *gd_img;
     AVFrame *frame = NULL;
     ffmovie_context *ffmovie_ctx;
 
-    /* get the number of arguments */
-    argc = ZEND_NUM_ARGS();
-
-    if (argc > 6 || argc < 1) {
-        WRONG_PARAM_COUNT;
-    }
-
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     /* retrieve arguments */ 
-    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-        WRONG_PARAM_COUNT;
-    }
+    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
 
-    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, argv[0], -1, "Image", le_gd);
-    
-    if (!gd_img->trueColor) {
+    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
+        efree(argv);
         php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "First parameter must be a truecolor gd image.");
+                "Error parsing arguments");
     }
 
+    switch (ZEND_NUM_ARGS()) {
+        case 6:
+            convert_to_long_ex(argv[5]);
+            crop_right = Z_LVAL_PP(argv[5]);
+
+            /*  crop right must be even number for lavc cropping */
+            if (crop_right % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop right must be an even number");
+            }
+            /* fallthru */
+        case 5:
+            convert_to_long_ex(argv[4]);
+            crop_left = Z_LVAL_PP(argv[4]);
+
+            /*  crop left must be even number for lavc cropping */
+            if (crop_left % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop left must be an even number");
+            }
+
+            /* fallthru */
+        case 4:
+            convert_to_long_ex(argv[3]);
+            crop_bottom = Z_LVAL_PP(argv[3]);
+
+            /*  crop bottom must be even number for lavc cropping */
+            if (crop_bottom % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop bottom must be an even number");
+            }
+
+            /* fallthru */
+        case 3:
+            convert_to_long_ex(argv[2]);
+            crop_top = Z_LVAL_PP(argv[2]);
+
+            /*  crop top  must be even number for lavc cropping */
+            if (crop_top % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Crop top must be an even number");
+            }
+
+            /* fallthru */
+        case 2:
+            convert_to_long_ex(argv[1]);
+            wanted_frame = Z_LVAL_PP(argv[1]);
+
+            /* bounds check wanted frame */
+            if (wanted_frame < 1) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Frame number must be greater than zero");
+            }
+
+            /* fallthru */
+        case 1:
+            ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, argv[0], -1, "Image", le_gd);
+
+            if (!gd_img->trueColor) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "First parameter must be a previously initialized gd image.");
+            }
+            break;
+        default:
+            WRONG_PARAM_COUNT;
+    } 
+
+    efree(argv);
+        
     wanted_width = gdImageSX(gd_img);
     wanted_height = gdImageSY(gd_img);
 
-	if (wanted_width % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Image width must be an even number for ffmpeg based resampling.");
-	}
- 
-	if (wanted_width % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Image height must be an even number for ffmpeg based resampling.");
-	}
-
-    /* check for optional frame number arg */
-    if (argc >= 2) {
-        convert_to_long_ex(argv[1]);
-        wanted_frame = Z_LVAL_PP(argv[1]);
-    }
-
-    /* check for optional crop top arg */
-    if (argc >= 3) {
-        convert_to_long_ex(argv[2]);
-        crop_top = Z_LVAL_PP(argv[2]);
-
-        /*  crop top  must be even number for lavc cropping */
-        if (crop_top % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop top must be an even number");
-        }
-    }
-
-    /* check for optional crop bottom arg */
-    if (argc >= 4) {
-        convert_to_long_ex(argv[3]);
-        crop_bottom = Z_LVAL_PP(argv[3]);
-        
-        /*  crop bottom must be even number for lavc cropping */
-        if (crop_bottom % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop bottom must be an even number");
-        }
-    }
-
-    /* check for optional crop left arg */
-    if (argc >= 5) {
-        convert_to_long_ex(argv[4]);
-        crop_left = Z_LVAL_PP(argv[4]);
-
-        /*  crop left must be even number for lavc cropping */
-        if (crop_left % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop left must be an even number");
-        }
-    }
-
-    /* check for optional crop right arg */
-    if (argc >= 6) {
-        convert_to_long_ex(argv[5]);
-        crop_right = Z_LVAL_PP(argv[5]);
-
-        /*  crop right must be even number for lavc cropping */
-        if (crop_right % 2) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Crop right must be an even number");
-        }
-    }
-   
     frame = _php_getframe(ffmovie_ctx, wanted_frame, 
             wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
@@ -1404,6 +1396,7 @@ PHP_FUNCTION(getFrameIntoImage)
     }
 }
 /* }}} */
+
 
 #endif /* HAVE_LIBGD20 */
 
