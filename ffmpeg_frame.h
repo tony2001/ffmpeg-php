@@ -7,6 +7,7 @@
 PHP_FUNCTION(getWidth);
 PHP_FUNCTION(getHeight);
 PHP_FUNCTION(resize);
+PHP_FUNCTION(crop);
 PHP_FUNCTION(toGDImage);
 
 typedef struct {
