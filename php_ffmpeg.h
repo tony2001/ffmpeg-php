@@ -23,25 +23,25 @@ PHP_MINFO_FUNCTION(ffmpeg);
 /* movie constructor */
 PHP_FUNCTION(ffmpeg_movie);
 
-/* movie functions */
-PHP_FUNCTION(get_duration);
-PHP_FUNCTION(get_framecount);
-PHP_FUNCTION(get_framerate);
-PHP_FUNCTION(get_filename);
-PHP_FUNCTION(get_comment);
-PHP_FUNCTION(get_title);
-PHP_FUNCTION(get_author);
-PHP_FUNCTION(get_copyright);
-PHP_FUNCTION(get_framewidth);
-PHP_FUNCTION(get_frameheight);
-PHP_FUNCTION(get_framenumber);
-PHP_FUNCTION(get_pixelformat);
-PHP_FUNCTION(get_video_bitrate);
-PHP_FUNCTION(has_audio);
+/* movie methods */
+PHP_FUNCTION(getDuration);
+PHP_FUNCTION(getFrameCount);
+PHP_FUNCTION(getFrameRate);
+PHP_FUNCTION(getFileName);
+PHP_FUNCTION(getComment);
+PHP_FUNCTION(getTitle);
+PHP_FUNCTION(getAuthor);
+PHP_FUNCTION(getCopyright);
+PHP_FUNCTION(getFrameWidth);
+PHP_FUNCTION(getFrameHeight);
+PHP_FUNCTION(getFrameNumber);
+PHP_FUNCTION(getPixelFormat);
+PHP_FUNCTION(getVideoBitRate);
+PHP_FUNCTION(hasAudio);
 
 #if HAVE_LIBGD20
-PHP_FUNCTION(get_frame);
-PHP_FUNCTION(get_frame_resampled);
+PHP_FUNCTION(getFrame);
+PHP_FUNCTION(getFrameResampled);
 #endif /* HAVE_LIBGD20 */
 
 #ifdef ZTS

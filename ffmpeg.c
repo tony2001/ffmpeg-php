@@ -97,23 +97,23 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(ffmpeg_movie, NULL)
 
     /* methods */
-	PHP_FE(get_duration, NULL)
-	PHP_FE(get_framecount, NULL)
-	PHP_FE(get_framerate, NULL)
-	PHP_FE(get_filename, NULL)
-	PHP_FE(get_comment, NULL)
-	PHP_FE(get_title, NULL)
-    PHP_FE(get_author, NULL)
-	PHP_FE(get_copyright, NULL)
-    PHP_FE(get_framewidth, NULL)
-    PHP_FE(get_frameheight, NULL)
-    PHP_FE(get_framenumber, NULL)
-    PHP_FE(get_pixelformat, NULL)
-    PHP_FE(get_video_bitrate, NULL)
-    PHP_FE(has_audio, NULL)
+	PHP_FALIAS(getduration,         getDuration,        NULL)
+	PHP_FALIAS(getframecount,       getFrameCount,      NULL)
+	PHP_FALIAS(getframerate,        getFrameRate,       NULL)
+	PHP_FALIAS(getfilename,         getFileName,        NULL)
+	PHP_FALIAS(getcomment,          getComment,         NULL)
+	PHP_FALIAS(gettitle,            getTitle,           NULL)
+    PHP_FALIAS(getauthor,           getAuthor,          NULL)
+	PHP_FALIAS(getcopyright,        getCopyright,       NULL)
+    PHP_FALIAS(getframewidth,       getFrameWidth,      NULL)
+    PHP_FALIAS(getframeheight,      getFrameHeight,     NULL)
+    PHP_FALIAS(getframenumber,      getFrameNumber,     NULL)
+    PHP_FALIAS(getpixelformat,      getPixelFormat,     NULL)
+    PHP_FALIAS(getvideobitrate,     getVideoBitRate,    NULL)
+    PHP_FALIAS(hasaudio,            hasAudio,           NULL)
 #if HAVE_LIBGD20
-    PHP_FE(get_frame, NULL)
-    PHP_FE(get_frame_resampled, NULL)
+    PHP_FALIAS(getframe,            getFrame,           NULL)
+    PHP_FALIAS(getframeresampled,   getFrameResampled,  NULL)
 #endif /* HAVE_LIBGD20 */
 
 	{NULL, NULL, NULL}
@@ -358,9 +358,9 @@ static float _php_get_duration(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_duration()
+/* {{{ proto int getDuration()
  */
-PHP_FUNCTION(get_duration)
+PHP_FUNCTION(getDuration)
 {
     ffmovie_context *ffmovie_ctx;
        
@@ -390,9 +390,9 @@ static long _php_get_framecount(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_framecount()
+/* {{{ proto int getFrameCount()
  */
-PHP_FUNCTION(get_framecount)
+PHP_FUNCTION(getFrameCount)
 {
     ffmovie_context *ffmovie_ctx;
     GET_MOVIE_RESOURCE(ffmovie_ctx);
@@ -422,9 +422,9 @@ static float _php_get_framerate(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_framerate()
+/* {{{ proto int getFrameRate()
  */
-PHP_FUNCTION(get_framerate)
+PHP_FUNCTION(getFrameRate)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -444,9 +444,9 @@ static char* _php_get_filename(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto string get_filename()
+/* {{{ proto string getFileName()
  */
-PHP_FUNCTION(get_filename)
+PHP_FUNCTION(getFileName)
 {
     ffmovie_context *ffmovie_ctx;
     char* filename;
@@ -459,9 +459,9 @@ PHP_FUNCTION(get_filename)
 /* }}} */
 
 
-/* {{{ proto string get_comment()
+/* {{{ proto string getComment()
  */
-PHP_FUNCTION(get_comment)
+PHP_FUNCTION(getComment)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -473,9 +473,9 @@ PHP_FUNCTION(get_comment)
 /* }}} */
 
 
-/* {{{ proto string get_title()
+/* {{{ proto string getTitle()
  */
-PHP_FUNCTION(get_title)
+PHP_FUNCTION(getTitle)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -487,9 +487,9 @@ PHP_FUNCTION(get_title)
 /* }}} */
 
 
-/* {{{ proto string get_author()
+/* {{{ proto string getAuthor()
  */
-PHP_FUNCTION(get_author)
+PHP_FUNCTION(getAuthor)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -501,9 +501,9 @@ PHP_FUNCTION(get_author)
 /* }}} */
 
 
-/* {{{ proto string get_copyright()
+/* {{{ proto string getCopyright()
  */
-PHP_FUNCTION(get_copyright)
+PHP_FUNCTION(getCopyright)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -529,9 +529,9 @@ static int _php_get_framewidth(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_framewidth()
+/* {{{ proto int getFrameWidth()
  */
-PHP_FUNCTION(get_framewidth)
+PHP_FUNCTION(getFrameWidth)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -557,9 +557,9 @@ static int _php_get_frameheight(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_frameheight()
+/* {{{ proto int getFrameHeight()
  */
-PHP_FUNCTION(get_frameheight)
+PHP_FUNCTION(getFrameHeight)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -626,9 +626,9 @@ static long _php_get_framenumber(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto resource get_framenumber()
+/* {{{ proto resource getFrameNumber()
  */
-PHP_FUNCTION(get_framenumber)
+PHP_FUNCTION(getFrameNumber)
 {
     ffmovie_context *ffmovie_ctx;
     
@@ -658,9 +658,9 @@ static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
 /* }}} */
 
 
-/* {{{ proto int get_pixelformat()
+/* {{{ proto int getPixelFormat()
  */
-PHP_FUNCTION(get_pixelformat)
+PHP_FUNCTION(getPixelFormat)
 {
     const char *fmt;
     ffmovie_context *ffmovie_ctx;
@@ -692,7 +692,7 @@ static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
 
 /* {{{ proto int getVideoBitrate()
  */
-PHP_FUNCTION(get_video_bitrate)
+PHP_FUNCTION(getVideoBitRate)
 {
     int bitrate;
     ffmovie_context *ffmovie_ctx;
@@ -707,9 +707,9 @@ PHP_FUNCTION(get_video_bitrate)
 /* }}} */
 
 
-/* {{{ proto int has_audio()
+/* {{{ proto int hasAudio()
  */
-PHP_FUNCTION(has_audio)
+PHP_FUNCTION(hasAudio)
 {
     ffmovie_context *ffmovie_ctx;
 
@@ -1031,9 +1031,9 @@ AVFrame* _php_getframe(ffmovie_context *ffmovie_ctx, int wanted_frame,
 /* }}} */
 
 
-/* {{{ proto resource get_frame([int frame])
+/* {{{ proto resource getFrame([int frame])
  */
-PHP_FUNCTION(get_frame)
+PHP_FUNCTION(getFrame)
 {
     zval **argv[0], *gd_img_resource;
     gdImage *gd_img;
@@ -1086,9 +1086,9 @@ PHP_FUNCTION(get_frame)
 /* }}} */
 
 
-/* {{{ proto resource get_frame_resampled(int width, int height [,int frame])
+/* {{{ proto resource getFrameResampled(int width, int height [,int frame])
  */
-PHP_FUNCTION(get_frame_resampled)
+PHP_FUNCTION(getFrameResampled)
 {
     zval **argv[6], *gd_img_resource;
     gdImage *gd_img;
