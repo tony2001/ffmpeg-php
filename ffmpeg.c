@@ -130,7 +130,7 @@ zend_module_entry ffmpeg_module_entry = {
 	NULL,
 	PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.3.1", /* version number for ffmpeg-php */
+	"0.3.2", /* version number for ffmpeg-php */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -252,7 +252,10 @@ static void _php_open_movie_file(ffmpeg_movie_context *ffmovie_ctx,
 /* }}} */
 
 
-static ffmpeg_movie_context* _php_alloc_ffmovie_ctx() {
+/* {{{ _php_alloc_ffmovie_ctx()
+ */
+static ffmpeg_movie_context* _php_alloc_ffmovie_ctx()
+{
     ffmpeg_movie_context *ffmovie_ctx;
     
     ffmovie_ctx = emalloc(sizeof(ffmpeg_movie_context));
@@ -260,6 +263,7 @@ static ffmpeg_movie_context* _php_alloc_ffmovie_ctx() {
     ffmovie_ctx->codec_ctx = NULL;
     return ffmovie_ctx;
 }
+/* }}} */
 
 
 /* {{{ proto object ffmpeg_movie(string filename) 
@@ -719,7 +723,7 @@ PHP_FUNCTION(getFrame)
                     if (decoder_ctx->pix_fmt == PIX_FMT_RGBA32) {
                         final_frame = decoded_frame;
 
-                    } else { /* convert frame to rgba */
+                    } else { /* convert frame to RGBA32 */
 
                         /* create a temporary picture for conversion to RGBA32 */
                         rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, decoder_ctx->width, 
@@ -747,7 +751,7 @@ PHP_FUNCTION(getFrame)
                         av_free(converted_frame_buf);
                     }
 
-                    /* free wanted frame */
+                    /* free wanted frame packet */
                     av_free_packet(&packet);
                     break; 
                 }
