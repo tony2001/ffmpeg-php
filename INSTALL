@@ -29,7 +29,8 @@ These instructions are for Linux since I don't have windows.
 
         make install
 
-7. Put /tests/test_ffmpeg.php under your web root somewhere.
+7. Put the file tests/test.avi and tests/test_ffmpeg.php under your web root 
+somewhere (put both in the same directory).
 
 8. Load test_ffmpeg.php into your browser.
 
