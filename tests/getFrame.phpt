@@ -8,16 +8,17 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 ?>
 --FILE--
 <?php
+$frame = 73;
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-$img = dirname(__FILE__) . '/test.png';
+$img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
 
-$gd_image = $mov->getFrame(73);
+$gd_image = $mov->getFrame($frame, 96, 120);
 imagepng($gd_image, $img);
 imagedestroy($gd_image);
 
 // generate md5 of file
 printf("ffmpeg getFrame(): md5 = %s\n", md5(file_get_contents($img)));
-unlink($img);
+//unlink($img);
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = cc36d30fb5b269146802e740ce4ab239
+ffmpeg getFrame(): md5 = 5ac497e1a483220654136103ad7a4688
