@@ -35,7 +35,7 @@
 
 #include "php_ffmpeg.h"
 
-// FIXME: make this work without the ../../ when compiling standalone 
+/* FIXME: make this work without the ../../ when compiling standalone  */
 #if HAVE_GD_BUNDLED
   #include "../../ext/gd/libgd/gd.h"
 #else
@@ -46,14 +46,14 @@
 
 #define GET_MOVIE_RESOURCE(im) {\
 	zval **_tmp_zval;\
-    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie", sizeof("ffmpeg_movie"),\
-                (void **)&_tmp_zval) == FAILURE) {\
+    if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
+                sizeof("ffmpeg_movie"), (void **)&_tmp_zval) == FAILURE) {\
         zend_error(E_ERROR, "Unable to find ffmpeg_movie property");\
         RETURN_FALSE;\
     }\
 \
-    ZEND_FETCH_RESOURCE(im, ffmpeg_movie_context*, _tmp_zval, -1, "ffmpeg_movie",\
-            le_ffmpeg_movie);\
+    ZEND_FETCH_RESOURCE(im, ffmpeg_movie_context*, _tmp_zval, -1,\
+            "ffmpeg_movie", le_ffmpeg_movie);\
 }\
 
 
@@ -552,7 +552,7 @@ PHP_FUNCTION(getFrame)
 {
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
-    int argc, frame, size, got_frame, st, rgba_frame_size;
+    int argc, frame, size, got_frame, video_stream, rgba_frame_size;
     long wanted_frame;
     uint8_t *converted_frame_buf = NULL;
     AVCodec *codec;
@@ -576,14 +576,15 @@ PHP_FUNCTION(getFrame)
    
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
-    st = _php_get_stream_index(ffmovie_ctx->ic, CODEC_TYPE_VIDEO);
-    if (st < 0) {
+    video_stream = _php_get_stream_index(ffmovie_ctx->ic, CODEC_TYPE_VIDEO);
+    if (video_stream < 0) {
         zend_error(E_ERROR, "Video stream not found in %s",
                 _php_get_filename(ffmovie_ctx));
     }
 
     /* find the decoder */
-    codec = avcodec_find_decoder(ffmovie_ctx->ic->streams[st]->codec.codec_id);
+    codec = avcodec_find_decoder(
+            ffmovie_ctx->ic->streams[video_stream]->codec.codec_id);
     if (!codec) {
         zend_error(E_ERROR, "Codec not found for %s", 
                 _php_get_filename(ffmovie_ctx));
@@ -592,9 +593,9 @@ PHP_FUNCTION(getFrame)
     codec_ctx = avcodec_alloc_context();
     decoded_frame = avcodec_alloc_frame();
 
-    /* open it */
+    /* open the decoder */
     if (avcodec_open(codec_ctx, codec) < 0) {
-        // TODO: must clean up before erroring
+        /* TODO: must clean up before erroring */
         zend_error(E_ERROR, "Could not open codec for %s", 
                 _php_get_filename(ffmovie_ctx));
     }
@@ -607,24 +608,21 @@ PHP_FUNCTION(getFrame)
     }
     
     if (wanted_frame > _php_get_framecount(ffmovie_ctx)) {
-        // FIXME: rewrite so _php_get_framecount is not called twice
+        /* FIXME: rewrite so _php_get_framecount is not called twice */
         wanted_frame = _php_get_framecount(ffmovie_ctx);
         zend_error(E_WARNING, "%s only has %d frames, getting last frame.", 
                 _php_get_filename(ffmovie_ctx), wanted_frame);
     }
 
-    // Read frames looking for wanted_frame 
+    /* read frames looking for wanted_frame */ 
     frame = 1;
-    while (av_read_frame(ffmovie_ctx->ic, &packet)>=0)
+    while (av_read_frame(ffmovie_ctx->ic, &packet) >= 0)
     {
-        // Is this a packet from the video stream?
-        if (packet.stream_index==st)
+        if (packet.stream_index == video_stream)
         {
-            // Decode video frame
             avcodec_decode_video(codec_ctx, decoded_frame, &got_frame,
                     packet.data, packet.size);
 
-            // Did we get a video frame?
             if (got_frame)
             {
                 if (frame == wanted_frame) {
@@ -633,7 +631,7 @@ PHP_FUNCTION(getFrame)
             }
         }
 
-        // Free the packet that was allocated by av_read_frame
+        /* free the packet allocated by av_read_frame */
         av_free_packet(&packet);
         frame++;
     }
