@@ -10,6 +10,8 @@
 #include "ffmpeg_frame.h"
 #include "ffmpeg_movie.h"
 
+#define SAFE_STRING(s) ((s)?(s):"")
+
 #define GET_MOVIE_RESOURCE(ff_movie_ctx) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
@@ -18,14 +20,21 @@
         RETURN_FALSE;\
     }\
 \
-    ZEND_FETCH_RESOURCE(ff_movie_ctx, ff_movie_context*, _tmp_zval, -1,\
-            "ffmpeg_movie", le_ffmpeg_movie);\
+    ZEND_FETCH_RESOURCE2(ff_movie_ctx, ff_movie_context*, _tmp_zval, -1,\
+            "ffmpeg_movie", le_ffmpeg_movie, le_ffmpeg_pmovie);\
 }\
+
+/* cross platform LRINT
+NOTE: This only works for postive values and is really slow compared to 
+      the native implementation.
+*/
+#define LRINT(x) ((long) ((x)+0.5))
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
 static int le_ffmpeg_movie;
+static int le_ffmpeg_pmovie;
 
 /* {{{ ffmpeg_movie methods[]
     Methods of the ffmpeg_movie class 
@@ -117,12 +126,14 @@ static char* _php_get_filename(ff_movie_context *ffmovie_ctx)
 
 /* {{{ _php_alloc_ffmovie_ctx()
  */
-static ff_movie_context* _php_alloc_ffmovie_ctx()
+static ff_movie_context* _php_alloc_ffmovie_ctx(int persistent)
 {
     int i;
     ff_movie_context *ffmovie_ctx;
     
-    ffmovie_ctx = emalloc(sizeof(ff_movie_context));
+    
+    ffmovie_ctx = persistent ? malloc(sizeof(ff_movie_context)) : 
+                               emalloc(sizeof(ff_movie_context));
     ffmovie_ctx->fmt_ctx = NULL;
     ffmovie_ctx->frame_number = 0;
 
@@ -165,38 +176,106 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
  */
 PHP_FUNCTION(ffmpeg_movie)
 {
-    int argc, ret;
-    zval **argv[1];
-    ff_movie_context *ffmovie_ctx;
+    int persistent = 0, hashkey_length;
+    char *filename = NULL, *fullpath = NULL, *hashkey = NULL;
+    zval ***argv;
+    ff_movie_context *ffmovie_ctx = NULL;
+
+    /* retrieve arguments */ 
+    argv = (zval ***) emalloc(sizeof(zval **) * ZEND_NUM_ARGS());
+
+    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
+        efree(argv);
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Error parsing arguments");
+    }
+
+    switch (ZEND_NUM_ARGS()) {
+        case 2:
+            convert_to_long_ex(argv[1]);
+            persistent = Z_LVAL_PP(argv[1]);
+            /* fallthru */
+        case 1:
+            convert_to_string_ex(argv[0]);
+            filename = Z_STRVAL_PP(argv[0]);
+            break;
+        default:
+            WRONG_PARAM_COUNT;
+    } 
     
-    /* get the number of arguments */
-    argc = ZEND_NUM_ARGS();
+    if (persistent) {
+        list_entry *le;
+        /* resolve the fully-qualified path name to use as the hash key */
+        fullpath = expand_filepath(filename, NULL TSRMLS_CC);
 
-    if (argc != 1) {
-        WRONG_PARAM_COUNT;
+        hashkey_length = sizeof("ffmpeg-php_")-1 + strlen(SAFE_STRING(filename));
+        hashkey = (char *) emalloc(hashkey_length+1);
+        sprintf(hashkey, "ffmpeg-php_%s", SAFE_STRING(filename));
+
+        /* do we have an existing persistent movie? */
+        if (SUCCESS == zend_hash_find(&EG(persistent_list), hashkey, hashkey_length+1, (void**)&le)) {
+            int type;
+            
+            if (Z_TYPE_P(le) != le_ffmpeg_pmovie) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, "Failed to retrieve persistent resource");
+            }
+            ffmovie_ctx = (ff_movie_context*)le->ptr;
+            
+            /* sanity check to ensure that the resource is still a valid regular resource * number */
+            if (zend_list_find(ffmovie_ctx->rsrc_id, &type) == ffmovie_ctx) {
+                /* add a reference to the persistent movie */
+                zend_list_addref(ffmovie_ctx->rsrc_id);
+            }
+
+            
+        } else { /* no existing persistant movie, create one */
+            list_entry new_le;
+            ffmovie_ctx = _php_alloc_ffmovie_ctx(1);
+
+            if (_php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]))) {
+                zend_error(E_WARNING, "Can't open movie file %s", Z_STRVAL_PP(argv[0]));
+                efree(argv);
+                ZVAL_BOOL(getThis(), 0);
+                RETURN_FALSE;
+            }
+
+            Z_TYPE(new_le) = le_ffmpeg_pmovie;
+            new_le.ptr = ffmovie_ctx;
+
+            if (FAILURE == zend_hash_update(&EG(persistent_list), hashkey, hashkey_length+1,
+                        (void *)&new_le, sizeof(list_entry), NULL)) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to register persistent resource");
+            }
+            
+            ffmovie_ctx->rsrc_id = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_pmovie);
+        }
+        
+        
+    } else {
+        ffmovie_ctx = _php_alloc_ffmovie_ctx(0);
+        
+        if (_php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]))) {
+            zend_error(E_WARNING, "Can't open movie file %s", Z_STRVAL_PP(argv[0]));
+            efree(argv);
+            ZVAL_BOOL(getThis(), 0);
+            RETURN_FALSE;
+        }
+        
+        /* pass NULL for resource result since we're not returning the resource
+           directly, but adding it to the returned object. */
+        ffmovie_ctx->rsrc_id = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_movie);
     }
-
-    /* argument count is correct, now retrieve arguments */
-    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-        WRONG_PARAM_COUNT;
-    }
-  
-	ffmovie_ctx = _php_alloc_ffmovie_ctx();
-    
-    convert_to_string_ex(argv[0]);
-
-    if (_php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]))) {
-        zend_error(E_WARNING, "Can't open movie file %s", Z_STRVAL_PP(argv[0]));
-        ZVAL_BOOL(getThis(), 0);
-        RETURN_FALSE;
-    }
-
-    /* pass NULL for resource result since we're not returning the resource
-       directly, but adding it to the returned object. */
-    ret = ZEND_REGISTER_RESOURCE(NULL, ffmovie_ctx, le_ffmpeg_movie);
 
     object_init_ex(getThis(), ffmpeg_movie_class_entry_ptr);
-    add_property_resource(getThis(), "ffmpeg_movie", ret);
+    add_property_resource(getThis(), "ffmpeg_movie", ffmovie_ctx->rsrc_id);
+
+    efree(argv);
+    if (fullpath) {
+        efree(fullpath);
+    }
+    if (hashkey) {
+        efree(hashkey);
+    }
 }
 /* }}} */
 
@@ -224,6 +303,30 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
+/* {{{ _php_free_ffmpeg_movie
+ */
+static void _php_free_ffmpeg_pmovie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+{
+    /* TODO: Factor into a single free function for pmovie and movie */
+    int i;
+    ff_movie_context *ffmovie_ctx = (ff_movie_context*)rsrc->ptr;    
+
+    if (ffmovie_ctx->codec_ctx) {
+        for (i = 0; i < MAX_STREAMS; i++) {
+            if(ffmovie_ctx->codec_ctx[i]) {
+                avcodec_close(ffmovie_ctx->codec_ctx[i]);
+            }
+            ffmovie_ctx->codec_ctx[i] = NULL;
+        }
+    }
+
+    av_close_input_file(ffmovie_ctx->fmt_ctx);
+
+    free(ffmovie_ctx);
+}
+/* }}} */
+
+
 /* {{{ register_ffmpeg_movie_class()
  */
 void register_ffmpeg_movie_class(int module_number)
@@ -232,6 +335,8 @@ void register_ffmpeg_movie_class(int module_number)
     le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
             NULL, "ffmpeg_movie", module_number);
 
+    le_ffmpeg_pmovie = zend_register_list_destructors_ex(_php_free_ffmpeg_pmovie,
+            NULL, "ffmpeg_pmovie", module_number);
    
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
             ffmpeg_movie_class_methods);
@@ -459,7 +564,7 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
     /* TODO: Find a pre C99 replacement for lrint */
-    return lrint(frame_rate * duration);
+    return LRINT(frame_rate * duration);
 }
 /* }}} */
 
@@ -818,7 +923,6 @@ static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
 } 
 
 
-
 /* {{{ proto int getVideoCodec()
  */
 PHP_FUNCTION(getAudioChannels)
@@ -876,6 +980,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 #define RELOAD_CODEC 1
 
         /* re-open decoder */
+        /* TODO: Is this is still needed now that we're counting frames outside of ffmpeg */
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO, RELOAD_CODEC);
         if (decoder_ctx == NULL) {
             return NULL;

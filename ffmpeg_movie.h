@@ -36,6 +36,7 @@ typedef struct {
     AVCodecContext *codec_ctx[MAX_STREAMS];
     int64_t last_pts;
     int frame_number;
+    long rsrc_id;
 } ff_movie_context;
 
 #endif // FFMPEG_MOVIE_H
