@@ -17,12 +17,19 @@ if (!$cgi) {
     echo '<pre>';
 }
 
-// print available functions
+echo "\nFunctions available in the $module extension:<br>\n";
+// print available functions and aliases
 $functions = get_extension_funcs($module);
-echo "Functions available in the $module extension:<br>\n";
 
 foreach($functions as $func) {
     echo $func."\n";
+}
+
+$class = "ffmpeg_movie";
+echo "\nMethods available in class $class:<br>\n";
+$movie_methods = get_class_methods($class);
+foreach($movie_methods as $method) {
+    echo $method."\n";
 }
 
 // put some movie files into this array to test the ffmpeg functions
@@ -39,7 +46,7 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
-    // BROKEN    $mov->getFrame(1);
+    printf("get frame = %d\n", $mov->getFrame(1));
     echo "\n--------------------\n\n";
 }
 
