@@ -39,6 +39,10 @@ if(!extension_loaded($extension)) {
 }
 
 // print available functions and aliases
+printf("libavcodec version number: %d\n", LIBAVCODEC_VERSION_NUMBER);
+printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
+
+// print available functions and aliases
 echo "\nFunctions available in $extension_fullname extension:\n";
 foreach(get_extension_funcs($extension) as $func) {
     echo $func."\n";
