@@ -801,11 +801,10 @@ zval* _php_get_gd_image(int w, int h)
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
    
-    /*
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
         zend_error(E_ERROR, "Error can't find %s function", function_cname);
-    }*/
+    }
 
     MAKE_STD_ZVAL(function_name);
     MAKE_STD_ZVAL(width);
