@@ -113,6 +113,12 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(getPixelFormat, NULL)
     PHP_FALIAS(getpixelformat, getPixelFormat, NULL)
 
+    PHP_FE(getBitRate, NULL)
+    PHP_FALIAS(getbitrate, getBitRate, NULL)
+
+//    PHP_FE(getCodecName, NULL)
+//    PHP_FALIAS(getcodecname, getCodecName, NULL)
+
     PHP_FE(hasAudio, NULL)
     PHP_FALIAS(hasaudio, hasAudio, NULL)
 
@@ -543,7 +549,6 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx)
         
         /* find the decoder */
         decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
-
         if (!decoder) {
             zend_error(E_ERROR, "Codec not found for %s", 
                     _php_get_filename(ffmovie_ctx));
@@ -597,7 +602,6 @@ static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
     return avcodec_get_pix_fmt_name(decoder_ctx->pix_fmt);
 }
-
 /* }}} */
 
 
@@ -617,6 +621,34 @@ PHP_FUNCTION(getPixelFormat)
        */
     RETURN_STRINGL((char *)fmt, strlen(fmt), 1);
 }
+/* }}} */
+
+
+/* {{{ _php_get_bitrate()
+ */
+static int _php_get_bitrate(ffmovie_context *ffmovie_ctx)
+{
+    return ffmovie_ctx->fmt_ctx->bit_rate;
+}
+/* }}} */
+
+
+/* {{{ proto int getBitrate()
+ */
+PHP_FUNCTION(getBitRate)
+{
+    int bitrate;
+    ffmovie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+   
+    /* convert to kb/s */
+    bitrate = _php_get_bitrate(ffmovie_ctx) / 1000; 
+
+    RETURN_LONG(bitrate);
+}
+/* }}} */
+
 
 
 /* {{{ proto int hasAudio()
@@ -651,8 +683,6 @@ AVFrame *_php_get_rgba_conv_frame(int width, int height)
 
     return conv_frame; 
 }
-
-
 
 
 #if HAVE_LIBGD20
