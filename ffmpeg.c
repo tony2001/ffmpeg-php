@@ -62,8 +62,6 @@ static int le_gd;
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 
-zend_class_entry ffmpeg_movie_class_entry;
-
 typedef struct {
     AVFrame *frame;
     int width;
@@ -226,6 +224,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", avcodec_build(), CONST_CS | CONST_PERSISTENT);
 
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
+ 
+    zend_class_entry ffmpeg_movie_class_entry;
     
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
             ffmpeg_movie_class_methods);
@@ -800,7 +800,7 @@ zval* _php_get_gd_image(int w, int h)
     
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
-    
+   
     /*
     if (zend_hash_find(EG(function_table), function_cname, 
                 strlen(function_cname) + 1, (void **)&func) == FAILURE) {
@@ -1276,6 +1276,8 @@ PHP_FUNCTION(getFrameResampled)
 /* }}} */
 
 #endif /* HAVE_LIBGD20 */
+
+
 
 /*
  * Local variables:
