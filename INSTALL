@@ -17,22 +17,22 @@ These instructions are for Linux since I don't have windows.
 
         phpize
 
-4. Configure and build
+5. Configure and build
 
         ./configure && make
 
-5. Become root
+6. Become root
 
         su root
 
-6. Install the shared extension
+7. Install the shared extension
 
         make install
 
-7. Put the file tests/test.avi and tests/test_ffmpeg.php under your web root 
+8. Put the file tests/test.avi and tests/test_ffmpeg.php under your web root 
 somewhere (put both in the same directory).
 
-8. Load test_ffmpeg.php into your browser.
+9. Load test_ffmpeg.php into your browser.
 
 RESULTS: You should get a listing of the functions provided by the ffmpeg-php 
          module
@@ -42,6 +42,9 @@ must explicitly load it in your php script using dl(). If you want to install
 ffmpeg-php as part of the php binary then add... 
 
         --with-ffmpeg=yes 
+
+        NOTE: I haven't tested building ffmpeg-php into php let me know if
+              you run into problem.
         
 ...to your php configure line and rebulid php. Alternately you can just add...
 
@@ -55,4 +58,6 @@ TROUBLESHOOTING:
 
 This INSTALL doc is very preliminary, I spent about 45 
 seconds writing this and even less time testing it. If you get 
-stuck, shoot me an email and I'll try to help.
+stuck, shoot me an email and I'll try to help. 
+
+    - Todd Kirby (doubleshot at pacbell dot net)
