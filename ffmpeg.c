@@ -616,15 +616,13 @@ PHP_FUNCTION(getFrame)
 
     /* read frames looking for wanted_frame */ 
     frame = 1;
-    while (av_read_frame(ffmovie_ctx->ic, &packet) >= 0)
-    {
-        if (packet.stream_index == video_stream)
-        {
+    while (av_read_frame(ffmovie_ctx->ic, &packet) >= 0) {
+        
+        if (packet.stream_index == video_stream) {
             avcodec_decode_video(codec_ctx, decoded_frame, &got_frame,
                     packet.data, packet.size);
 
-            if (got_frame)
-            {
+            if (got_frame) {
                 if (frame == wanted_frame) {
                     goto found_frame;
                 }
@@ -650,7 +648,10 @@ found_frame:
     ZEND_FETCH_RESOURCE(im, gdImagePtr, &gd_img_resource, -1, "Image", le_gd);
    
     /* make sure frame data is RGBA32 */
-    if (codec_ctx->pix_fmt != PIX_FMT_RGBA32) {
+    if (codec_ctx->pix_fmt == PIX_FMT_RGBA32) {
+        final_frame = decoded_frame;
+
+    } else { /* convert frame to rgba */
 
         /* create a temporary picture for conversion to RGBA32 */
         rgba_frame_size = avpicture_get_size(PIX_FMT_RGBA32, codec_ctx->width, 
@@ -669,9 +670,6 @@ found_frame:
                     codec_ctx->width, codec_ctx->height) < 0) {
             zend_error(E_ERROR, "Error converting frame");
         }
-        
-    } else {
-        final_frame = decoded_frame;
     }
 
     _php_rgba32_to_gd_image((int*)final_frame->data[0], im, codec_ctx->width,
