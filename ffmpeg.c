@@ -221,9 +221,12 @@ static AVStream *_php_get_audio_stream(AVFormatContext *fmt_ctx)
  */
 PHP_MINIT_FUNCTION(ffmpeg)
 {
-	le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
+    le_ffmpeg_movie = zend_register_list_destructors_ex(_php_free_ffmpeg_movie,
             NULL, "ffmpeg_movie", module_number);
 
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", avcodec_build(), CONST_CS | CONST_PERSISTENT);
+    
     INIT_CLASS_ENTRY(ffmpeg_movie_class_entry, "ffmpeg_movie", 
             ffmpeg_movie_class_methods);
     
