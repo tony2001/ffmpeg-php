@@ -3,7 +3,6 @@ ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
 version 0.3.4 (11/28/2004):
     New Features:
-<<<<<<< ChangeLog
     * Added new method getFrameResampled() which returns a frame resized
       using ffmpeg's resampling. ffmpeg resmpling IMHO is better than GD's 
       reampling and will speed up greatly returning say a thumbnail sized 
