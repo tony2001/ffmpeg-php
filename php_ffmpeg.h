@@ -30,7 +30,7 @@ ZEND_FUNCTION(getComment);
 ZEND_FUNCTION(getTitle);
 ZEND_FUNCTION(getAuthor);
 ZEND_FUNCTION(getCopyright);
-ZEND_FUNCTION(getFrame);
+//ZEND_FUNCTION(getFrame);
 
 #ifdef ZTS
 #define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)

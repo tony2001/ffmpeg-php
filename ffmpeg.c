@@ -74,10 +74,10 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
  
 	ZEND_FE(getCopyright, NULL)
     ZEND_FALIAS(getcopyright, getCopyright, NULL)
-
+/*
     ZEND_FE(getFrame, NULL)
     ZEND_FALIAS(getframe, getFrame, NULL)
-
+*/
 	{NULL, NULL, NULL}
 };
 
@@ -410,7 +410,7 @@ static int64_t calculate_timestamp(AVFormatContext *fc, AVStream *stream,
     return timestamp;
 }
 
-
+/*
 ZEND_FUNCTION(getFrame)
 {
 	zval *this, **tmp, **argv[0];
@@ -482,7 +482,7 @@ ZEND_FUNCTION(getFrame)
     //zend_printf("video index = %d\n" , video_index);
 
     // keep reading frames until we get a packet from the right stream
-    /*
+    
     do {
         int result = av_read_frame(im->ic, pkt);
         if(result < 0) {
@@ -490,7 +490,7 @@ ZEND_FUNCTION(getFrame)
             RETURN_FALSE;
         }
     } while (pkt->stream_index != video_index);
-*/
+
     
     // find the video decoder 
     codec = avcodec_find_decoder(st->codec.codec_id);
@@ -502,16 +502,16 @@ ZEND_FUNCTION(getFrame)
     c = avcodec_alloc_context();
 
     // open it
-/*    if (avcodec_open(c, codec) < 0) {
+    if (avcodec_open(c, codec) < 0) {
         zend_error(E_ERROR, "could not open codec\n");
         RETURN_FALSE;
     }
 
     picture = avcodec_alloc_frame();
-*/
+
     RETURN_LONG(timestamp);
 }
-
+*/
 
 /*
  * Local variables:
