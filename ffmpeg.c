@@ -552,6 +552,7 @@ PHP_FUNCTION(getFrame)
 	zval **argv[0], *gd_img_resource;
     gdImage *im;
     int argc, frame, size, got_picture, len;
+    long wanted_frame;
     FILE *f;
     uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     uint8_t *tmp_buf = NULL;
@@ -616,6 +617,18 @@ PHP_FUNCTION(getFrame)
     }
     
     convert_to_long_ex(argv[0]);
+    wanted_frame = Z_LVAL_PP(argv[0]);
+
+    if (wanted_frame < 1) {
+        zend_error(E_ERROR, "Frame number must be greater than zero");
+    }
+    
+    if (wanted_frame > _php_get_framecount(ffmovie_ctx)) {
+        // FIXME: rewrite so _php_get_framecount is not called twice
+        wanted_frame = _php_get_framecount(ffmovie_ctx);
+        zend_error(E_WARNING, "%s only has %d frames, getting last frame.", 
+                _php_get_filename(ffmovie_ctx), wanted_frame);
+    }
     
     frame = 0;
     for(;;) {
@@ -633,7 +646,7 @@ PHP_FUNCTION(getFrame)
                         frame, _php_get_filename(ffmovie_ctx));
             }
             if (got_picture) {
-                if (frame == Z_LVAL_PP(argv[0])) {
+                if (frame == wanted_frame) {
                     goto found_frame;
                 }
                 frame++;
@@ -643,13 +656,11 @@ PHP_FUNCTION(getFrame)
         }
     }
 
-    /* get last frame */
+    /* if we didn't find wanted_frame then use last frame */
     len = avcodec_decode_video(c, src, &got_picture, NULL, 0);
-    if (got_picture) {
-        if (frame == Z_LVAL_PP(argv[0])) {
-            goto found_frame;
-        }
-        frame++;
+    if (!got_picture) {
+       // TODO: last call to avcodec_decode_video should not return a 
+       // partial frame do error
     }
         
 found_frame:
@@ -725,8 +736,6 @@ found_frame:
     avcodec_close(c);
     av_free(c);
     av_free(tmp_buf);
-    
-    // TODO: check if we should free using avpicture_free or not.
     av_free(src);
    
     RETURN_RESOURCE(gd_img_resource->value.lval);
