@@ -43,5 +43,5 @@ print_image_md5($gd_image);
 imagedestroy($gd_image);
 ?>
 --EXPECT--
-ffmpeg resize and crop: md5 = 811bf64a01eb3f919f3e8cbb45e7f07a
+ffmpeg resize and crop: md5 = 01e7e90b4a723f8c34f42fb8cc8d8c0f 
 ffmpeg crop: md5 = d3973f39a33e89e53b03d9707c392cb2
