@@ -4,7 +4,7 @@ PHP_ARG_WITH(ffmpeg,for ffmpeg support,
 dnl Determine path to ffmpeg libs
 if test "$PHP_FFMPEG" != "no"; then
 
-  AC_MSG_CHECKING(for ffmpeg libraries)
+  AC_MSG_CHECKING(for ffmpeg headers)
   for i in $PHP_FFMPEG /usr/local /usr ; do
     if test -f $i/include/ffmpeg/avcodec.h; then
       FFMPEG_DIR=$i
@@ -16,13 +16,27 @@ if test "$PHP_FFMPEG" != "no"; then
   done
 
   if test -z "$FFMPEG_DIR"; then
-    AC_MSG_RESULT(not found)
+    AC_MSG_ERROR(ffmpeg headers not found. Make sure you've built ffmpeg as shared libs using the --enable-shared option)
   else
     dnl For debugging
-    AC_MSG_RESULT(...found in $FFMPEG_DIR)
+    AC_MSG_RESULT(...found in $FFMPEG_INCDIR)
   fi
 
-  FFMPEG_LIBDIR=$FFMPEG_DIR/lib
+  AC_MSG_CHECKING(for ffmpeg libavcodec.so)
+  for i in $PHP_FFMPEG /usr/local /usr ; do
+    if test -f $i/lib/libavcodec.so; then
+      FFMPEG_LIBDIR=$i/lib
+    fi
+  done
+
+  if test -z "$FFMPEG_LIBDIR"; then
+    AC_MSG_ERROR(ffmpeg share libraries not found. Make sure you've built ffmpeg as shared libs using the --enable-shared option)
+  else
+    dnl For debugging
+    AC_MSG_RESULT(...found in $FFMPEG_LIBDIR)
+  fi
+
+  dnl FFMPEG_LIBDIR=$FFMPEG_DIR/lib
 
   PHP_ADD_LIBRARY_WITH_PATH(avcodec, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
   PHP_ADD_LIBRARY_WITH_PATH(avformat, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
