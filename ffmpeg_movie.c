@@ -705,7 +705,6 @@ PHP_FUNCTION(getAudioCodec)
 static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx = NULL;
-    AVCodec *p = NULL;
     int stream;
 
     stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_AUDIO);
