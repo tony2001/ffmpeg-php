@@ -379,6 +379,10 @@ static long _php_get_framecount(ffmovie_context *ffmovie_ctx)
     float duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
+    if (!st) {
+      return 0;
+    }
+    
     duration = _php_get_duration(ffmovie_ctx);
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 
@@ -404,6 +408,10 @@ static float _php_get_framerate(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
+    if (!st) {
+      return 0.0f;
+    }
+ 
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 }
 /* }}} */
@@ -503,10 +511,14 @@ PHP_FUNCTION(getCopyright)
 
 /* {{{ _php_get_framewidth()
  */
-static float _php_get_framewidth(ffmovie_context *ffmovie_ctx)
+static int _php_get_framewidth(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
+    if (!st) {
+      return 0;
+    }
+ 
     return st->codec.width;
 }
 /* }}} */
@@ -527,10 +539,14 @@ PHP_FUNCTION(getFrameWidth)
 
 /* {{{ _php_get_frameheight()
  */
-static float _php_get_frameheight(ffmovie_context *ffmovie_ctx)
+static int _php_get_frameheight(ffmovie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
+    if (!st) {
+      return 0;
+    }
+ 
     return st->codec.height;
 }
 /* }}} */
@@ -554,22 +570,15 @@ PHP_FUNCTION(getFrameHeight)
    the codec context. This allows to postpone codec init until a function
    that requires it is called.
  */
-static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx)
+static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx,
+        int stream_index)
 {
-    int video_stream;
     AVCodec *decoder;
     
     if (!ffmovie_ctx->codec_ctx) {
-
-        video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
-                CODEC_TYPE_VIDEO);
-        if (video_stream < 0) {
-            zend_error(E_ERROR, "Video stream not found in %s",
-                    _php_get_filename(ffmovie_ctx));
-        }
-        
+   
         ffmovie_ctx->codec_ctx = 
-            &ffmovie_ctx->fmt_ctx->streams[video_stream]->codec;
+            &ffmovie_ctx->fmt_ctx->streams[stream_index]->codec;
         
         /* find the decoder */
         decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
@@ -594,8 +603,15 @@ static AVCodecContext* _php_get_decoder_context(ffmovie_context *ffmovie_ctx)
 static long _php_get_frame_number(ffmovie_context *ffmovie_ctx) 
 {
     AVCodecContext *decoder_ctx;
+    int stream_index;
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+    stream_index = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
+            CODEC_TYPE_VIDEO);
+    if (stream_index < 0) {
+        return 0;
+    }
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, stream_index);
     if (decoder_ctx->frame_number <= 0) {
         return 1; /* no frames read yet so return the first */
     } else {
@@ -623,7 +639,15 @@ PHP_FUNCTION(getFrameNumber)
 static const char* _php_get_pixelformat(ffmovie_context *ffmovie_ctx)
 {
     AVCodecContext *decoder_ctx;
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+    int video_stream;
+
+    video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
+            CODEC_TYPE_VIDEO);
+    if (video_stream < 0) {
+        return NULL;
+    }
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     return avcodec_get_pix_fmt_name(decoder_ctx->pix_fmt);
 }
 /* }}} */
@@ -640,10 +664,14 @@ PHP_FUNCTION(getPixelFormat)
    
     fmt = _php_get_pixelformat(ffmovie_ctx);
 
-    /* cast const to non-const to keep compiler from complaining, 
-       RETURN_STRINGL just copies so the string won't get overwritten
-       */
-    RETURN_STRINGL((char *)fmt, strlen(fmt), 1);
+   if (fmt) {
+       /* cast const to non-const to keep compiler from complaining, 
+          RETURN_STRINGL just copies so the string won't get overwritten
+        */
+       RETURN_STRINGL((char *)fmt, strlen(fmt), 1);
+   } else {
+       RETURN_FALSE;
+   }
 }
 /* }}} */
 
@@ -832,13 +860,17 @@ PHP_FUNCTION(getFrame)
         }
     }
 
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
-    
-    decoded_frame = avcodec_alloc_frame();
-
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, 
             CODEC_TYPE_VIDEO);
+    if (video_stream < 0) {
+        RETURN_FALSE; /* FIXME: Should probably error here */
+    }
+
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     
+    decoded_frame = avcodec_alloc_frame();
+   
     /* Rewind to the beginning of the stream if wanted frame already passed */
     if (wanted_frame && wanted_frame < decoder_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
@@ -849,7 +881,7 @@ PHP_FUNCTION(getFrame)
         ffmovie_ctx->codec_ctx = NULL;
 
         /* re-open decoder */
-        decoder_ctx = _php_get_decoder_context(ffmovie_ctx);
+        decoder_ctx = _php_get_decoder_context(ffmovie_ctx, video_stream);
     }
 
     
