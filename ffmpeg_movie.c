@@ -98,11 +98,17 @@ static char* _php_get_filename(ff_movie_context *ffmovie_ctx)
  */
 static ff_movie_context* _php_alloc_ffmovie_ctx()
 {
+    int i;
     ff_movie_context *ffmovie_ctx;
     
     ffmovie_ctx = emalloc(sizeof(ff_movie_context));
     ffmovie_ctx->fmt_ctx = NULL;
-    ffmovie_ctx->codec_ctx = NULL;
+
+
+    for (i = 0; i < MAX_STREAMS; i++) {
+        ffmovie_ctx->codec_ctx[i] = NULL;
+    }
+
     return ffmovie_ctx;
 }
 /* }}} */
@@ -172,10 +178,16 @@ PHP_FUNCTION(ffmpeg_movie)
  */
 static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
+    int i;
     ff_movie_context *ffmovie_ctx = (ff_movie_context*)rsrc->ptr;    
 
     if (ffmovie_ctx->codec_ctx) {
-        avcodec_close(ffmovie_ctx->codec_ctx);
+        for (i = 0; i < MAX_STREAMS; i++) {
+            if(ffmovie_ctx->codec_ctx[i]) {
+                avcodec_close(ffmovie_ctx->codec_ctx[i]);
+            }
+            ffmovie_ctx->codec_ctx[i] = NULL;
+        }
     }
 
     av_close_input_file(ffmovie_ctx->fmt_ctx);
@@ -227,28 +239,27 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
         }
     }
 
-
-    /* FIXME: This will break if  and audio function is called before 
+    /* FIXME: This will break if and audio function is called before 
        getFrame since the audio codec will get set as the decoder to use */
-    if (!ffmovie_ctx->codec_ctx) {
+    if (!ffmovie_ctx->codec_ctx[stream_index]) {
    
-        ffmovie_ctx->codec_ctx = 
+        ffmovie_ctx->codec_ctx[stream_index] = 
             &ffmovie_ctx->fmt_ctx->streams[stream_index]->codec;
         
         /* find the decoder */
-        decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx->codec_id);
+        decoder = avcodec_find_decoder(ffmovie_ctx->codec_ctx[stream_index]->codec_id);
         if (!decoder) {
             zend_error(E_ERROR, "Could not find decoder for %s", 
                     _php_get_filename(ffmovie_ctx));
         }
 
         /* open the decoder */
-        if (avcodec_open(ffmovie_ctx->codec_ctx, decoder) < 0) {
+        if (avcodec_open(ffmovie_ctx->codec_ctx[stream_index], decoder) < 0) {
             zend_error(E_ERROR, "Could not open codec for %s",
                     _php_get_filename(ffmovie_ctx));
         }
     }
-    return ffmovie_ctx->codec_ctx;
+    return ffmovie_ctx->codec_ctx[stream_index];
 }
 /* }}} */
 
@@ -754,17 +765,19 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
     }
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame && wanted_frame <= ffmovie_ctx->codec_ctx->frame_number) {
+    if (wanted_frame && wanted_frame <= decoder_ctx->frame_number) {
         if (av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0) < 0) {
             zend_error(E_ERROR, "Error seeking to begining of video stream");
         }
         /* close decoder */
-        avcodec_close(ffmovie_ctx->codec_ctx);
-        ffmovie_ctx->codec_ctx = NULL;
+        avcodec_close(decoder_ctx);
+        decoder_ctx = NULL;
 
+        //zend_printf("reload");
         /* re-open decoder */
         decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
         if (decoder_ctx == NULL) {
+            //zend_printf("reload");
             return NULL;
         }
     }
