@@ -55,7 +55,7 @@ foreach(get_class_methods($class) as $method) {
 }
 
 // put some movie files into this array to test the ffmpeg functions
-$movies = getDirFiles(dirname(__FILE__) . '/mpgtests');
+$movies = getDirFiles(dirname(__FILE__) . '/test_media');
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
