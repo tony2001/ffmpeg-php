@@ -1,15 +1,15 @@
 
 PROJECT DESCRIPTION:
-ffmpeg-php is an extension for php that adds useful functions for accessing and retrieving information from any of the video formats supported by ffmpeg (mov, avi, mpg, divx...)
+ffmpeg-php is an extension for php that adds useful functions for accessing and retrieving information from many of the video formats supported by ffmpeg.
 
 WEBSITE:
-The project website is at https://sourceforge.net/projects/ffmpeg-php/
+The project website is at http://sourceforge.net/projects/ffmpeg-php/
 
 NOTES:
-ffmpeg-php was originally written to allow me to quickly tally the total duration of many small movie clips (>500 at a time). It's main advantage over shelling out to the command line version of ffmpeg is speed. There is setup and teardown overhead when repeatedly calling the commandline ffmpeg. ffmpeg-php currently supports gathering information on video files such as duration, framerate, framecount, width and height. I plan to add support for retrieving info about audio such as sample rate, duration... and the ability to retrieve arbitrary video frames as GD images in the near future.
+ffmpeg-php was originally written to allow me to quickly tally the total duration of many small movie clips (>500 at a time). It's main advantage over shelling out to the command line version of ffmpeg is speed. There is setup and teardown overhead when repeatedly calling the commandline ffmpeg. ffmpeg-php currently supports gathering information on video files such as duration, framerate, framecount, width and height. I plan to add support for retrieving info about audio such as sample rate, duration, number of channels... 
 
 COMPATIBILITY
-ffmpeg-php has been tested using PHP4.3.x on Linux/x86 so far. ffmpeg-0.4.9 or greater required. ffmpeg must be built as shared libs. I have been using the extension for some time in production, however the movies on my site are homogeneous (All .mov with rpza codec) and so the extension hasn't really be tested with a wide variety of codecs/formats. In my limited testing with other codecs and formats, I've noticed some that do not return useful data for duration and framerate. This may be a limitation of the format or (more likely) something I am not accounting for in the ffmpeg-php code.
+ffmpeg-php has been tested using PHP4.3.x on Linux/x86 so far. ffmpeg-0.4.9 or greater required. ffmpeg must be built as shared libs. I have been using the extension for some time in production, however the movies on my site are homogeneous (All .mov with rpza codec) and so the extension hasn't really be tested with a wide variety of codecs/formats. In my limited testing with other codecs and formats, I've noticed wmv/asf do not always return useful data for duration and framerate. This may be a limitation of the format, I don't know, but I've seen other ffmpeg based projects complain of this so the problem/solution is probably outside the scope of this project.
 
 SOURCES
 Almost all of the code exists in ffmpeg.c. Regression tests are located in tests/
@@ -22,6 +22,8 @@ See file CREDITS
 
 NEWS
 
+2004-11-25: Fourth alpha release. Bug fixes mostly. Slightly optimized getFrame()
+2004-11-22: Third alpha release.
 2004-11-19: Second alpha release.
 2004-11-17: First alpha release with getFrame()
 2004-11-10: Added getFrameWidth() and getFrameHeight() functions.
