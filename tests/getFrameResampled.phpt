@@ -14,7 +14,7 @@ $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
 
 $ff_frame = $mov->getFrame($frame);
 if ($ff_frame) {
-    $ff_frame->resize(96, 120);
+    $ff_frame->resize(360, 460);
     $gd_image = $ff_frame->toGDImage();
     if ($gd_image) {
         imagepng($gd_image, $img);
@@ -23,9 +23,9 @@ if ($ff_frame) {
         // md5 hashes since resampling has been changed slightly due to a fix. Need to
         // use EXPECTREX to test for both md5 possibilities.
         printf("ffmpeg getFrameResampled(): md5 = %s\n", md5(file_get_contents($img)));
-        unlink($img);
+//        unlink($img);
     }
 }
 ?>
 --EXPECT--
-ffmpeg getFrameResampled(): md5 = 135b7ff2a0e5d15dc9c111c94e74c9a4 
+ffmpeg getFrameResampled(): md5 = f6198008e59b7f8618bde48c95593764
