@@ -3,6 +3,7 @@ ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 version 0.3.2 (11/22/2004):
     New Features:
     * Added getPixelFormat() function (Todd Kirby)
+    * Added hasAudio() function (Todd Kirby)
     * Optimized getFrame() function so that reading successive frames is much 
       faster (Todd Kirby)
     * getFrame() can now be called without an argument to get the next frame in
