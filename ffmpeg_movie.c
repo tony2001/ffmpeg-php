@@ -308,7 +308,7 @@ static float _php_get_duration(ff_movie_context *ffmovie_ctx)
 {
     float duration;
 
-    duration = ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE;
+    duration = (float)ffmovie_ctx->fmt_ctx->duration / AV_TIME_BASE;
 
     if (duration < 0) {
         duration = 0.0f;
