@@ -1,6 +1,6 @@
 
 PHP_ARG_ENABLE(ffmpeg-rpath,hard code full path to ffmpeg libs,
-[  --enable-ffmpeg-rpath     Hardcode ffmpeg library paths.])
+[  --enable-ffmpeg-rpath     Hardcode ffmpeg library paths.], no, no)
 
 PHP_ARG_WITH(ffmpeg,for ffmpeg support, 
 [  --with-ffmpeg[=DIR]       Include ffmpeg support (requires ffmpeg >= 0.49.0).])
@@ -31,10 +31,12 @@ if test "$PHP_FFMPEG" != "no"; then
   PHP_ADD_INCLUDE($FFMPEG_INCDIR)
 
   dnl Make path to ffmpeg libs absolute if the user specified a path.
-  dnl This allows to specify a lib path outside the default lib dirs.
-  if test -z "$PHP_FFMPEG_RPATH"; then
+  dnl This allows to specify a lib path outside the default lib dirs which
+  dnl is needed for my installation, but probably not for most standard
+  dnl installs. -tkirby
+  if test "$PHP_FFMPEG_RPATH" != "no"; then
     PHP_RPATHS=$FFMPEG_LIBDIR
-    AC_MSG_RESULT(...adding rpath for $FFMPEG_DIR to ffmpeg extension)
+    AC_MSG_RESULT(...adding rpath to ffmpeg libs in $FFMPEG_DIR)
   fi
   
   PHP_NEW_EXTENSION(ffmpeg, ffmpeg.c, $ext_shared)
