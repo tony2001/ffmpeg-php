@@ -62,6 +62,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getpixelformat,      getPixelFormat,     NULL)
     PHP_FALIAS(getbitrate,          getBitRate,         NULL)
     PHP_FALIAS(hasaudio,            hasAudio,           NULL)
+    PHP_FALIAS(getnextkeyframe,     getNextKeyFrame,    NULL)
     PHP_FALIAS(getframe,            getFrame,           NULL)
     PHP_FALIAS(getvideocodec,       getVideoCodec,      NULL)
     PHP_FALIAS(getaudiocodec,       getAudioCodec,      NULL)
@@ -939,10 +940,13 @@ PHP_FUNCTION(getAudioChannels)
 /* }}} */
 
 
-/* {{{ _php_getframe()
+/* {{{ _php_get_av_frame()
    Returns a frame from the movie.
  */
-static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
+#define GETFRAME_KEYFRAME -1
+#define GETFRAME_NEXTFRAME 0
+static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_frame,
+        int *is_keyframe)
 {
     AVCodecContext *decoder_ctx = NULL;
     AVPacket packet;
@@ -961,7 +965,7 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
     }
 
     /* Rewind to the beginning of the stream if wanted frame already passed */
-    if (wanted_frame && wanted_frame <= ffmovie_ctx->frame_number) {
+    if (wanted_frame > 0 && wanted_frame <= ffmovie_ctx->frame_number) {
         if (
                 
 #if LIBAVFORMAT_BUILD >=  4619
@@ -995,8 +999,28 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
         
             ffmovie_ctx->frame_number++; 
             if (got_frame) {
-                if (!wanted_frame || ffmovie_ctx->frame_number == wanted_frame) {
+                /* FIXME: 
+                 *        With the addition of the keyframe logic, this loop is 
+                 *        getting a little too tricky. wanted_frame is way 
+                 *        overloaded. Refactor to make clearer what is going on.
+                 */
+
+                /* 
+                 * if caller wants next keyframe then get it and break out of 
+                 * loop.
+                 */
+                if (wanted_frame == GETFRAME_KEYFRAME && 
+                        (packet.flags & PKT_FLAG_KEY)) {
                     /* free wanted frame packet */
+                    *is_keyframe = 1;
+                    av_free_packet(&packet);
+                    break;
+                }
+                
+                if (wanted_frame == GETFRAME_NEXTFRAME || 
+                        ffmovie_ctx->frame_number == wanted_frame) {
+                    /* free wanted frame packet */
+                    *is_keyframe = (packet.flags & PKT_FLAG_KEY);
                     av_free_packet(&packet);
                     break; 
                 }
@@ -1011,14 +1035,76 @@ static AVFrame* _php_getframe(ff_movie_context *ffmovie_ctx, int wanted_frame)
 /* }}} */
 
 
+/* {{{ _php_get_ff_frame()
+   Returns an ff_frame from the movie.
+ */
+static ff_frame_context *_php_get_ff_frame(ff_movie_context *ffmovie_ctx, 
+        int wanted_frame, INTERNAL_FUNCTION_PARAMETERS) {
+    int is_keyframe = 0;
+    AVFrame *frame = NULL;
+    ff_frame_context *ff_frame;
+ 
+    frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe);
+    if (frame) { 
+        /*
+         * _php_create_ffmpeg_frame sets PHP return_value to a ffmpeg_frame
+         * object via INTERNAL_FUNCTION_PARAM_PASSTHRU, the returned ff_frame
+         * is just for conveniently setting its fields.
+         */
+        ff_frame = _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
+        if (!ff_frame) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Error allocating ffmpeg_frame resource");
+        }
+
+        /* TODO: Provide function(s) for setting these in ffmpeg_frame */
+        ff_frame->width = _php_get_framewidth(ffmovie_ctx);
+        ff_frame->height = _php_get_frameheight(ffmovie_ctx);
+        ff_frame->pixel_format = _php_get_pixelformat(ffmovie_ctx);
+        ff_frame->keyframe = is_keyframe;
+        
+        ff_frame->av_frame = avcodec_alloc_frame();
+        avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
+            ff_frame->width, ff_frame->height);
+ 
+        /* FIXME: temporary hack until I figure out how to pass new buffers to the decoder */
+        img_copy((AVPicture*)ff_frame->av_frame, 
+                (AVPicture *)frame, ff_frame->pixel_format, 
+                ff_frame->width, ff_frame->height);
+
+        return ff_frame;
+    } else {
+        return NULL;
+    }
+
+}
+/* }}} */
+
+
+/* {{{ proto resource getFrame([int frame])
+ */
+PHP_FUNCTION(getNextKeyFrame)
+{
+    ff_movie_context *ffmovie_ctx;
+
+    if (ZEND_NUM_ARGS()) {
+        WRONG_PARAM_COUNT;
+    }
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    _php_get_ff_frame(ffmovie_ctx, GETFRAME_KEYFRAME, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+}
+/* }}} */
+
+
 /* {{{ proto resource getFrame([int frame])
  */
 PHP_FUNCTION(getFrame)
 {
     zval **argv[1];
     int wanted_frame = 0; 
-    AVFrame *frame = NULL;
-    ff_frame_context *ff_frame;
     ff_movie_context *ffmovie_ctx;
 
     if (ZEND_NUM_ARGS() > 1) {
@@ -1045,38 +1131,7 @@ PHP_FUNCTION(getFrame)
         }
     } 
 
-    frame = _php_getframe(ffmovie_ctx, wanted_frame);
-    if (frame) { 
-        /* 
-         * _php_create_ffmpeg_frame sets PHP return_value to a ffmpeg_frame 
-         * object via INTERNAL_FUNCTION_PARAM_PASSTHRU, the returned ff_frame
-         * is just for conveniently setting its fields. 
-         */
-        ff_frame = _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-
-        if (!ff_frame) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                    "Error allocating ffmpeg_frame resource");
-        }
-
-        /* TODO: Provide function(s) for setting these in ffmpeg_frame */
-        ff_frame->width = _php_get_framewidth(ffmovie_ctx);
-        ff_frame->height = _php_get_frameheight(ffmovie_ctx);
-        ff_frame->pixel_format = _php_get_pixelformat(ffmovie_ctx);
-        
-        ff_frame->av_frame = avcodec_alloc_frame();
-        avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
-            ff_frame->width, ff_frame->height);
- 
-        /* FIXME: temporary hack until I figure out how to pass new buffers to the decoder */
-        img_copy((AVPicture*)ff_frame->av_frame, 
-                (AVPicture *)frame, ff_frame->pixel_format, 
-                ff_frame->width, ff_frame->height);
-
-        //ff_frame->av_frame = frame;
-    } else {
-        RETURN_FALSE;
-    }
+    _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU);
 }
 /* }}} */
 

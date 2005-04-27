@@ -491,6 +491,19 @@ PHP_FUNCTION(ffmpeg_frame)
 
 /* {{{ proto int getWidth()
  */
+PHP_FUNCTION(isKeyFrame)
+{
+    ff_frame_context *ff_frame;
+
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    
+    RETURN_LONG(ff_frame->keyframe);
+}
+/* }}} */
+
+
+/* {{{ proto int getWidth()
+ */
 PHP_FUNCTION(getWidth)
 {
     ff_frame_context *ff_frame;
