@@ -489,7 +489,7 @@ PHP_FUNCTION(ffmpeg_frame)
 #endif /* HAVE_LIBGD20 */
 
 
-/* {{{ proto int getWidth()
+/* {{{ proto int isKeyFrame()
  */
 PHP_FUNCTION(isKeyFrame)
 {
