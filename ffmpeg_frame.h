@@ -9,6 +9,7 @@ PHP_FUNCTION(getWidth);
 PHP_FUNCTION(getHeight);
 PHP_FUNCTION(resize);
 PHP_FUNCTION(crop);
+PHP_FUNCTION(isKeyFrame);
 
 #if HAVE_LIBGD20
 PHP_FUNCTION(toGDImage);
@@ -19,6 +20,7 @@ typedef struct {
     int width;
     int height;
     int pixel_format;
+    int keyframe;
 } ff_frame_context;
 
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
