@@ -196,7 +196,13 @@ PHP_FUNCTION(ffmpeg_movie)
     switch (ZEND_NUM_ARGS()) {
         case 2:
             convert_to_long_ex(argv[1]);
-            persistent = Z_LVAL_PP(argv[1]);
+
+            if (INI_INT("ffmpeg.allow_persistent")) {
+                persistent = Z_LVAL_PP(argv[1]);
+            } else {
+                persistent = 0;
+                zend_error(E_WARNING, "Persistent movies have been disabled in php.ini");
+            }
             /* fallthru */
         case 1:
             convert_to_string_ex(argv[0]);

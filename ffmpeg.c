@@ -63,6 +63,11 @@ extern void register_ffmpeg_movie_class(int);
 //extern void register_ffmpeg_output_movie_class(int);
 extern void register_ffmpeg_frame_class(int);
 
+PHP_INI_BEGIN()
+    PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
+PHP_INI_END()
+
+
 /* {{{ php module init function
  */
 PHP_MINIT_FUNCTION(ffmpeg)
@@ -73,6 +78,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
     /* register all codecs */
     av_register_all();
 
+    REGISTER_INI_ENTRIES();
+    
     register_ffmpeg_movie_class(module_number);
 //   register_ffmpeg_output_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
@@ -92,6 +99,9 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
     // TODO: Free persistent movies
+    
+    UNREGISTER_INI_ENTRIES();
+
     return SUCCESS;
 }
 /* }}} */
