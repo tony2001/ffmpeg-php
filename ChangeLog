@@ -1,9 +1,18 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.4 (04/27/2005)
+	New Features:
+	* Added flag to php.ini to allow server admins to disable persistent
+	  movies since injudicious use of persistent movies in scripts can eat 
+	  up server resources quickly (tkirby)
+	* Added frame->isKeyFrame() and movie->getNextKeyFrame() methods (tkirby)
+
+	Bug Fixes:
+	
 version 0.4.3 (03/12/2005)
-    Bug Fixes
+    Bug Fixes:
     * Added ability to open movies as persistent resources. This greatly
-      increases speed of repeately accessing the same movie from separate
+      increases speed of repeatedly accessing the same movie from separate
       php scripts. This is still somewhat experimental so don't use it
       unless you have a specific need (tkirby)
     * Increased strictness of compiler warnings to catch issues like
@@ -18,7 +27,7 @@ version 0.4.3 (03/12/2005)
     * Changed lrint() to a macro to allow compiling on Windows (tkirby)
 
 version 0.4.2.1 (02/15/2005)
-    Bug Fixes
+    Bug Fixes:
     * Fixed error handling when ffmpeg_movie object creation fails (tkirby)
     * Fixed undefined symbol error in ffmpeg_output_movie (tkirby)
 
@@ -107,7 +116,7 @@ version 0.3.4a (11/28/2004):
     New Features:
     * Added new method getFrameResampled() which returns a frame resized
       using ffmpeg's resampling. ffmpeg resmpling IMHO is better than GD's 
-      reampling and will speed up greatly returning say a thumbnail sized 
+      resampling and will speed up greatly returning say a thumbnail sized 
       frame since less data has to be copied into the returned GD image. 
       The only caveat to ffmpeg based resampling is that the width and 
       height of the resized image must be even numbers (tkirby)
@@ -152,4 +161,4 @@ version 0.3.1a (11/19/2004):
 
 version 0.3.0a (11/17/2004):
     New Features:
-    * Inital support for getFrame() (tkirby)
+    * Initial support for framer() (tkirby)
