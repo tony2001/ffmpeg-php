@@ -1,5 +1,5 @@
 /*
-   ffmpeg-php - a php module for accessing video info from movie files.
+   ffmpeg-php - a php module for accessing audio/video info from movie files.
 
    Copyright (C) 2004  Todd Kirby (doubleshot at pacbell dot net)
 
