@@ -1,13 +1,15 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
 version 0.4.4 (04/27/2005)
-	New Features:
-	* Added flag to php.ini to allow server admins to disable persistent
-	  movies since injudicious use of persistent movies in scripts can eat 
-	  up server resources quickly (tkirby)
-	* Added frame->isKeyFrame() and movie->getNextKeyFrame() methods (tkirby)
+    New Features:
+    * Added flag to php.ini to allow server admins to disable persistent
+      movies since injudicious use of persistent movies in scripts can eat 
+      up server resources quickly (tkirby)
+    * Added frame->isKeyFrame() and movie->getNextKeyFrame() methods (tkirby)
 
-	Bug Fixes:
+    Bug Fixes:
+    * Fixed segfault when a script tries to read more frames than exist in
+      a movie. (tkirby)
 	
 version 0.4.3 (03/12/2005)
     Bug Fixes:
