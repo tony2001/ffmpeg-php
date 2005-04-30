@@ -9,16 +9,17 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 --FILE--
 <?php
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-$img = dirname(__FILE__) . '/test.png';
+$img = dirname(__FILE__) . '/test-';
+$i = 0;
 
-$framecount = $mov->getFrameCount();
- for($i = 1; $i <= $framecount; $i++) {
-    $frame = $mov->getFrame();
+while (($frame = $mov->getFrame()) != false) {
+    $i++;
+    $filename = $img . $i . '.png';
     $gd_image = $frame->toGDImage();
-    imagepng($gd_image, $img . $i);
-    printf("ffmpeg getFrame($i): md5 = %s\n", md5(file_get_contents($img . $i)));
+    imagepng($gd_image, $filename);
+    printf("ffmpeg getFrame($i): md5 = %s\n", md5(file_get_contents($filename)));
     imagedestroy($gd_image);
-    unlink($img . $i);
+    unlink($filename);
 }
 ?>
 --EXPECT--
@@ -82,8 +83,8 @@ ffmpeg getFrame(57): md5 = 1f306b368dc3ffa4991e665f39138615
 ffmpeg getFrame(58): md5 = 16d473aa1bc37274974abfa858ba6d08
 ffmpeg getFrame(59): md5 = d98118837bcd3c1fbd137be58d187d6e
 ffmpeg getFrame(60): md5 = 3e5fb3f0cfe8c3ba793fb9419843473c
-ffmpeg getFrame(61): md5 = 291a876d42773db5ad25bbd0aba0fb95
-ffmpeg getFrame(62): md5 = 291a876d42773db5ad25bbd0aba0fb95
+ffmpeg getFrame(61): md5 = f0285b52f4057cba94e34001fd84aa4c
+ffmpeg getFrame(62): md5 = f0285b52f4057cba94e34001fd84aa4c
 ffmpeg getFrame(63): md5 = 5c0233f0bbcb9342d75dc61c43826696
 ffmpeg getFrame(64): md5 = 6df63a2facd2778b1939fd89927e19f4
 ffmpeg getFrame(65): md5 = f6c0f7df37077826950b9294edb043bc
@@ -106,39 +107,39 @@ ffmpeg getFrame(81): md5 = 83fcb36e27706034a9bdb942673d6d65
 ffmpeg getFrame(82): md5 = 512faeb9492900a6ec8fe7df61966867
 ffmpeg getFrame(83): md5 = cf05a3eb6fb0546d421af2498b2bad14
 ffmpeg getFrame(84): md5 = 6c95336879fe36999d15ad54698be8db
-ffmpeg getFrame(85): md5 = af1e8feb72654a9ea62909ef9232f1df
-ffmpeg getFrame(86): md5 = af1e8feb72654a9ea62909ef9232f1df
-ffmpeg getFrame(87): md5 = c24a47f55cd7241c258988b7b1b0deb4
-ffmpeg getFrame(88): md5 = 085117c57973cac1646c741f40a26469
-ffmpeg getFrame(89): md5 = 45be0d5d5d3cc79dcc9c4d02ceee55b5
-ffmpeg getFrame(90): md5 = a5b2360fbf6dbcc3afd8264bae3345f1
-ffmpeg getFrame(91): md5 = 24a30b33a420da89de9dd0ac39163333
-ffmpeg getFrame(92): md5 = d0ffc0a0ce4d54031657447d63760147
-ffmpeg getFrame(93): md5 = 65047fabdeb803b564431bb107a6e629
-ffmpeg getFrame(94): md5 = 143588cde18ac3c5ea34864fbb2dc365
-ffmpeg getFrame(95): md5 = 0b178063219bf9d4084befb42ec29781
-ffmpeg getFrame(96): md5 = ccc47c1e9a9ca917b05f9ea05f924769
-ffmpeg getFrame(97): md5 = cf89e3c19741ac437d6c4875a623223d
-ffmpeg getFrame(98): md5 = cf89e3c19741ac437d6c4875a623223d
-ffmpeg getFrame(99): md5 = d7ac19cb794c3ef2b65f3bcdc7778ce2
-ffmpeg getFrame(100): md5 = 68f258e915294dcd461cbdbad0df563b
-ffmpeg getFrame(101): md5 = 6013eb9fc877ec2c2c4bf31cc6695f31
-ffmpeg getFrame(102): md5 = 841619f41993c235e1431a6c7fdc5858
-ffmpeg getFrame(103): md5 = 0c5baf2082949d8e03dca9eb5975ac62
-ffmpeg getFrame(104): md5 = 93ec72452c26338c77723183f4ae0775
-ffmpeg getFrame(105): md5 = ac1bf9455578c8324535805b9acabffc
-ffmpeg getFrame(106): md5 = 6f9ac413de8467d4a47c1a1fe662fea2
-ffmpeg getFrame(107): md5 = 807563c733251a55d6b229be4fac87e7
-ffmpeg getFrame(108): md5 = 6cd4d35a8a88b72f1b5eaed745535bc7
-ffmpeg getFrame(109): md5 = 64f998f1d29748443869ba1991642ca6
-ffmpeg getFrame(110): md5 = 64f998f1d29748443869ba1991642ca6
-ffmpeg getFrame(111): md5 = 2d586475f1476aa997286226726c7f09
-ffmpeg getFrame(112): md5 = ee307718be3920ad83f1e64128c649eb
-ffmpeg getFrame(113): md5 = 84f05c547109021337561b6602f21d06
-ffmpeg getFrame(114): md5 = 050b1c9a6d7142999289fb5f99b357b3
-ffmpeg getFrame(115): md5 = da237d8289e55eba1e67acef1b307624
-ffmpeg getFrame(116): md5 = d9ddd96fb0d57e8f0113f988b3f4a6b3
-ffmpeg getFrame(117): md5 = cd77986f53e8395bbcfed4ef603dc253
-ffmpeg getFrame(118): md5 = 5a12eb481ec7b419b8171bd5e3c1243d
-ffmpeg getFrame(119): md5 = 2423381dfc81076e26c7c6b6cebdc18b
-ffmpeg getFrame(120): md5 = 5279a84a50a1608a741c9c19a038a441
+ffmpeg getFrame(85): md5 = 264250f22a7a4f374653576f56d32a51
+ffmpeg getFrame(86): md5 = 264250f22a7a4f374653576f56d32a51
+ffmpeg getFrame(87): md5 = a337f04cdcfd3d3eccb0eeb9baaf9098
+ffmpeg getFrame(88): md5 = e773283788c9146adf2243e49c4097c2
+ffmpeg getFrame(89): md5 = 8ffac9c0a475cbc5cbb9c7bdc47847ef
+ffmpeg getFrame(90): md5 = 06113996a89ffa3602d5dcc8b7d9fc42
+ffmpeg getFrame(91): md5 = 740652b50fc8c95a8dba2b56ca434a5a
+ffmpeg getFrame(92): md5 = ca7036c174e03f2842126c6b9e57b109
+ffmpeg getFrame(93): md5 = 06444c47932cdcdd0771a0a0bd291e4f
+ffmpeg getFrame(94): md5 = fb50ae5f62fb4fd2a6cefc555198c41c
+ffmpeg getFrame(95): md5 = 991f9f53db08c1c04a6d3cecd93e16dc
+ffmpeg getFrame(96): md5 = 727c895de8483f15182cee76ca4d3e0d
+ffmpeg getFrame(97): md5 = ccae0d5e5a99a455276abc314bbad69e
+ffmpeg getFrame(98): md5 = ccae0d5e5a99a455276abc314bbad69e
+ffmpeg getFrame(99): md5 = 92e90a2d700fbf2d0aeeff5da513c217
+ffmpeg getFrame(100): md5 = fd994cf3d579024b9a45de7e81c4e464
+ffmpeg getFrame(101): md5 = ffab66359626076d43f2d12361d3f119
+ffmpeg getFrame(102): md5 = e58219529e296cbddd272531ba21c647
+ffmpeg getFrame(103): md5 = 1a81dddcc28bd1b1024f156db85a4e07
+ffmpeg getFrame(104): md5 = 238889da46c637b7941a8f07b8095006
+ffmpeg getFrame(105): md5 = 760f6e4bf6b511737f52ce405a2700ce
+ffmpeg getFrame(106): md5 = 9c51d6b1936d18a29166766f3496451f
+ffmpeg getFrame(107): md5 = 7f9c88905d5cca85b295a4a6cf0f02c8
+ffmpeg getFrame(108): md5 = 17e54042ea339bcc5d72c3d98203e061
+ffmpeg getFrame(109): md5 = c4a8f5f3839380d6f159f2ecb15d6059
+ffmpeg getFrame(110): md5 = c4a8f5f3839380d6f159f2ecb15d6059
+ffmpeg getFrame(111): md5 = d88620f6f3842e9d77923a616c167edf
+ffmpeg getFrame(112): md5 = d3ff2bb7210d2997b3792f4c80d8792b
+ffmpeg getFrame(113): md5 = efee392dbfbec70b69d33abf782d02d9
+ffmpeg getFrame(114): md5 = 97b779a61be1beffa1f182c3f86461d6
+ffmpeg getFrame(115): md5 = c0b2e4aa091641ca2e92a5657516dee0
+ffmpeg getFrame(116): md5 = 4b52fed557f598057c46e2d58648ebd3
+ffmpeg getFrame(117): md5 = 092e487a7849b2ecf6e25eca534b028d
+ffmpeg getFrame(118): md5 = 02042be68e3ff390283b2f962e8e36f6
+ffmpeg getFrame(119): md5 = c2b25f297d23671bf65b4eba268b202b
+ffmpeg getFrame(120): md5 = fa20e8347182e121b60f6e8b8c30561a
