@@ -1020,7 +1020,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
                     /* free wanted frame packet */
                     *is_keyframe = 1;
                     av_free_packet(&packet);
-                    break;
+                    goto found_frame; 
                 }
                 
                 if (wanted_frame == GETFRAME_NEXTFRAME || 
@@ -1028,7 +1028,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
                     /* free wanted frame packet */
                     *is_keyframe = (packet.flags & PKT_FLAG_KEY);
                     av_free_packet(&packet);
-                    break; 
+                    goto found_frame; 
                 }
             }
         }
@@ -1036,15 +1036,21 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
         /* free the packet allocated by av_read_frame */
         av_free_packet(&packet);
     }
+
+    av_free(frame);
+    return NULL;
+
+found_frame:
     return frame;
 }
 /* }}} */
 
 
 /* {{{ _php_get_ff_frame()
-   Returns an ff_frame from the movie.
+   puts a ff_frame object into the php return_value variable 
+   returns 1 on sucess, 0 on failure.
  */
-static ff_frame_context *_php_get_ff_frame(ff_movie_context *ffmovie_ctx, 
+static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, 
         int wanted_frame, INTERNAL_FUNCTION_PARAMETERS) {
     int is_keyframe = 0;
     AVFrame *frame = NULL;
@@ -1079,9 +1085,9 @@ static ff_frame_context *_php_get_ff_frame(ff_movie_context *ffmovie_ctx,
                 (AVPicture *)frame, ff_frame->pixel_format, 
                 ff_frame->width, ff_frame->height);
 
-        return ff_frame;
+        return 1;
     } else {
-        return NULL;
+        return 0;
     }
 
 }
@@ -1100,7 +1106,9 @@ PHP_FUNCTION(getNextKeyFrame)
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    _php_get_ff_frame(ffmovie_ctx, GETFRAME_KEYFRAME, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+    if (!_php_get_ff_frame(ffmovie_ctx, GETFRAME_KEYFRAME, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
+        RETURN_FALSE;   
+    }
 }
 /* }}} */
 
@@ -1137,7 +1145,9 @@ PHP_FUNCTION(getFrame)
         }
     } 
 
-    _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU);
+    if (! _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
+        RETURN_FALSE;
+    }
 }
 /* }}} */
 
