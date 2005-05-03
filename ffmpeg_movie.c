@@ -565,8 +565,11 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     }
     
     duration = _php_get_duration(ffmovie_ctx);
+#if LIBAVCODEC_BUILD > 4753 
+    frame_rate = (float)st->codec.time_base.den / st->codec.time_base.num;
+#else
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
-
+#endif
     /* TODO: Find a pre C99 replacement for lrint */
     return LRINT(frame_rate * duration);
 }
@@ -600,7 +603,11 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
     }
      */
 
+#if LIBAVCODEC_BUILD > 4753 
+    return (float)st->codec.time_base.den / st->codec.time_base.num;
+#else
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
+#endif
 }
 /* }}} */
 
