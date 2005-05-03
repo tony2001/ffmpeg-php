@@ -10,6 +10,8 @@ version 0.4.4 (04/27/2005)
     Bug Fixes:
     * Fixed segfault when a script tries to read more frames than exist in
       a movie. (tkirby)
+	* Patch to use native time bases. This allows building against libavcodec 
+	  build 4754 (Steve Brown)
 	
 version 0.4.3 (03/12/2005)
     Bug Fixes:
