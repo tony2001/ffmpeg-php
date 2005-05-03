@@ -40,6 +40,7 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
     PHP_FALIAS(getheight,      getHeight,     NULL)
     PHP_FALIAS(resize,         resize,        NULL)
     PHP_FALIAS(crop,           crop,          NULL)
+    PHP_FALIAS(iskeyframe,     isKeyFrame,    NULL)
 #if HAVE_LIBGD20
     PHP_FALIAS(togdimage,      toGDImage,     NULL)
 #endif // HAVE_LIBGD20
