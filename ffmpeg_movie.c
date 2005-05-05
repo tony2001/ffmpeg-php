@@ -314,7 +314,7 @@ static void _php_free_ffmpeg_movie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
-/* {{{ _php_free_ffmpeg_movie
+/* {{{ _php_free_ffmpeg_pmovie
  */
 static void _php_free_ffmpeg_pmovie(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
