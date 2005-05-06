@@ -14,14 +14,6 @@
  */
 #if HAVE_LIBGD20
 #include "include/gd.h" 
-#endif // HAVE_LIBGD20
-
-static zend_class_entry *ffmpeg_frame_class_entry_ptr;
-zend_class_entry ffmpeg_frame_class_entry;
- 
-int le_ffmpeg_frame; // not static since it is used in ffmpeg_output_movie
-
-#if HAVE_LIBGD20
 
 #define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
@@ -32,6 +24,11 @@ static int le_gd; // this is only valid after calling FFMPEG_PHP_FETCH_IMAGE_RES
 
 #endif // HAVE_LIBGD20
 
+int le_ffmpeg_frame; // not static since it is used in ffmpeg_output_movie
+
+static zend_class_entry *ffmpeg_frame_class_entry_ptr;
+zend_class_entry ffmpeg_frame_class_entry;
+ 
 /* {{{ ffmpeg_frame methods[]
     Methods of the ffmpeg_frame class 
 */
@@ -40,6 +37,10 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
 #if HAVE_LIBGD20
     /* contructor */
     PHP_FE(ffmpeg_frame, NULL)
+
+    /* gd methods */
+    PHP_FALIAS(togdimage,      toGDImage,     NULL)
+    
 #endif // HAVE_LIBGD20
 
     /* methods */
@@ -48,11 +49,6 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
     PHP_FALIAS(resize,         resize,        NULL)
     PHP_FALIAS(crop,           crop,          NULL)
     PHP_FALIAS(iskeyframe,     isKeyFrame,    NULL)
-#if HAVE_LIBGD20
-    PHP_FALIAS(togdimage,      toGDImage,     NULL)
-#endif // HAVE_LIBGD20
-
-
 	{NULL, NULL, NULL}
 };
 /* }}} */
