@@ -22,7 +22,14 @@ zend_class_entry ffmpeg_frame_class_entry;
 int le_ffmpeg_frame; // not static since it is used in ffmpeg_output_movie
 
 #if HAVE_LIBGD20
-static int le_gd;
+
+#define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
+    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
+    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
+}
+
+static int le_gd; // this is only valid after calling FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
+
 #endif // HAVE_LIBGD20
 
 /* {{{ ffmpeg_frame methods[]
@@ -120,11 +127,6 @@ static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 void register_ffmpeg_frame_class(int module_number)
 {
     TSRMLS_FETCH();
-
-#if HAVE_LIBGD20
-    ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd");
-#endif // HAVE_LIBGD20
-
 
     le_ffmpeg_frame = zend_register_list_destructors_ex(_php_free_ffmpeg_frame,
             NULL, "ffmpeg_frame", module_number);
@@ -395,7 +397,7 @@ PHP_FUNCTION(toGDImage)
 
     return_value->type = IS_RESOURCE;
 
-    ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, &return_value, -1, "Image", le_gd);
+    FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
 
     if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img,
             ff_frame->width, ff_frame->height)) {
@@ -461,7 +463,7 @@ PHP_FUNCTION(ffmpeg_frame)
             //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
-            ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, argv[0], -1, "Image", le_gd);
+            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
 
             if (!gd_img->trueColor) {
                 php_error_docref(NULL TSRMLS_CC, E_ERROR,
