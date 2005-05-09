@@ -959,7 +959,7 @@ PHP_FUNCTION(getAudioChannels)
 #define GETFRAME_KEYFRAME -1
 #define GETFRAME_NEXTFRAME 0
 static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_frame,
-        int *is_keyframe)
+        int *is_keyframe, int64_t *pts)
 {
     AVCodecContext *decoder_ctx = NULL;
     AVPacket packet;
@@ -1026,6 +1026,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
                         (packet.flags & PKT_FLAG_KEY)) {
                     /* free wanted frame packet */
                     *is_keyframe = 1;
+                    *pts = packet.pts;
                     av_free_packet(&packet);
                     goto found_frame; 
                 }
@@ -1034,6 +1035,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
                         ffmovie_ctx->frame_number == wanted_frame) {
                     /* free wanted frame packet */
                     *is_keyframe = (packet.flags & PKT_FLAG_KEY);
+                    *pts = packet.pts;
                     av_free_packet(&packet);
                     goto found_frame; 
                 }
@@ -1060,10 +1062,11 @@ found_frame:
 static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, 
         int wanted_frame, INTERNAL_FUNCTION_PARAMETERS) {
     int is_keyframe = 0;
+    int64_t pts;
     AVFrame *frame = NULL;
     ff_frame_context *ff_frame;
  
-    frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe);
+    frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts);
     if (frame) { 
         /*
          * _php_create_ffmpeg_frame sets PHP return_value to a ffmpeg_frame
@@ -1082,6 +1085,7 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
         ff_frame->height = _php_get_frameheight(ffmovie_ctx);
         ff_frame->pixel_format = _php_get_pixelformat(ffmovie_ctx);
         ff_frame->keyframe = is_keyframe;
+        ff_frame->pts = pts;
         
         ff_frame->av_frame = avcodec_alloc_frame();
         avpicture_alloc((AVPicture*)ff_frame->av_frame, ff_frame->pixel_format,
