@@ -10,6 +10,7 @@ PHP_FUNCTION(getHeight);
 PHP_FUNCTION(resize);
 PHP_FUNCTION(crop);
 PHP_FUNCTION(isKeyFrame);
+PHP_FUNCTION(getPresentationTimestamp);
 
 #if HAVE_LIBGD20
 PHP_FUNCTION(toGDImage);

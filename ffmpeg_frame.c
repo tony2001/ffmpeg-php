@@ -44,11 +44,13 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
 #endif // HAVE_LIBGD20
 
     /* methods */
-    PHP_FALIAS(getwidth,       getWidth,      NULL)
-    PHP_FALIAS(getheight,      getHeight,     NULL)
-    PHP_FALIAS(resize,         resize,        NULL)
-    PHP_FALIAS(crop,           crop,          NULL)
-    PHP_FALIAS(iskeyframe,     isKeyFrame,    NULL)
+    PHP_FALIAS(getwidth,                    getWidth,                   NULL)
+    PHP_FALIAS(getheight,                   getHeight,                  NULL)
+    PHP_FALIAS(resize,                      resize,                     NULL)
+    PHP_FALIAS(crop,                        crop,                       NULL)
+    PHP_FALIAS(iskeyframe,                  isKeyFrame,                 NULL)
+    PHP_FALIAS(getpresentationtimestamp,    getPresentationTimestamp,   NULL)
+    PHP_FALIAS(getpts,                      getPresentationTimestamp,   NULL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -486,6 +488,19 @@ PHP_FUNCTION(ffmpeg_frame)
 /* }}} */
 
 #endif /* HAVE_LIBGD20 */
+
+
+/* {{{ proto int getPresentationTimestamp()
+ */
+PHP_FUNCTION(getPresentationTimestamp)
+{
+    ff_frame_context *ff_frame;
+
+    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    
+    RETURN_LONG(ff_frame->av_frame->pts);
+}
+/* }}} */
 
 
 /* {{{ proto int isKeyFrame()
