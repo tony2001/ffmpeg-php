@@ -1,6 +1,6 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
-version 0.4.4 (04/27/2005)
+version 0.4.4 (05/09/2005)
     New Features:
     * Added flag to php.ini to allow server admins to disable persistent
       movies since injudicious use of persistent movies in scripts can eat 
@@ -12,6 +12,9 @@ version 0.4.4 (04/27/2005)
       a movie. (tkirby)
 	* Patch to use native time bases. This allows building against libavcodec 
 	  build 4754 (Steve Brown)
+	* Patch to corrctly init gd before attempting to fetch gd image resources.
+	  This fixes the "togdimage() supplied resource is not a valid Image 
+	  resource" error that a few people have reported (Steve Brown)
 	
 version 0.4.3 (03/12/2005)
     Bug Fixes:
