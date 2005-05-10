@@ -498,7 +498,7 @@ PHP_FUNCTION(getPresentationTimestamp)
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
     
-    RETURN_LONG(ff_frame->pts);
+    RETURN_DOUBLE((double)ff_frame->pts / AV_TIME_BASE);
 }
 /* }}} */
 
