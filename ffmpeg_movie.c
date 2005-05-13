@@ -11,7 +11,7 @@
 #include "ffmpeg_movie.h"
    
 #define GET_MOVIE_RESOURCE(ff_movie_ctx) {\
-	zval **_tmp_zval;\
+    zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(getThis()), "ffmpeg_movie",\
                 sizeof("ffmpeg_movie"), (void **)&_tmp_zval) == FAILURE) {\
         zend_error(E_WARNING, "Invalid ffmpeg_movie object");\
@@ -23,8 +23,8 @@
 }\
 
 /* cross platform LRINT
-NOTE: This only works for postive values and is slow compared to 
-      the native implementation.
+NOTE: This only works for postive values and is slow compared a
+      native implementation.
 */
 #define LRINT(x) ((long) ((x)+0.5))
 
@@ -43,15 +43,15 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(ffmpeg_movie, NULL)
 
     /* methods */
-	PHP_FALIAS(getduration,         getDuration,        NULL)
-	PHP_FALIAS(getframecount,       getFrameCount,      NULL)
-	PHP_FALIAS(getframerate,        getFrameRate,       NULL)
-	PHP_FALIAS(getfilename,         getFileName,        NULL)
-	PHP_FALIAS(getcomment,          getComment,         NULL)
-	PHP_FALIAS(gettitle,            getTitle,           NULL)
+    PHP_FALIAS(getduration,         getDuration,        NULL)
+    PHP_FALIAS(getframecount,       getFrameCount,      NULL)
+    PHP_FALIAS(getframerate,        getFrameRate,       NULL)
+    PHP_FALIAS(getfilename,         getFileName,        NULL)
+    PHP_FALIAS(getcomment,          getComment,         NULL)
+    PHP_FALIAS(gettitle,            getTitle,           NULL)
     PHP_FALIAS(getauthor,           getAuthor,          NULL)
     PHP_FALIAS(getartist,           getAuthor,          NULL)
-	PHP_FALIAS(getcopyright,        getCopyright,       NULL)
+    PHP_FALIAS(getcopyright,        getCopyright,       NULL)
     PHP_FALIAS(getalbum,            getAlbum,           NULL)
     PHP_FALIAS(getgenre,            getGenre,           NULL)
     PHP_FALIAS(getyear,             getYear,            NULL)
@@ -67,7 +67,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getvideocodec,       getVideoCodec,      NULL)
     PHP_FALIAS(getaudiocodec,       getAudioCodec,      NULL)
     PHP_FALIAS(getaudiochannels,    getAudioChannels,   NULL)
-	{NULL, NULL, NULL}
+    {NULL, NULL, NULL}
 };
 /* }}} */
 
@@ -167,7 +167,7 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
        first frames to get it. */
     if (av_find_stream_info(ffmovie_ctx->fmt_ctx)) {
         /* This is not a problem for some formats like .mov */
-        /*zend_error(E_WARNING, "Can't find codec parameters for %s", filename); */
+        /*zend_error(E_WARNING, "Can't find codec params for %s", filename); */
     }
     return 0;
 }
@@ -816,7 +816,7 @@ PHP_FUNCTION(hasAudio)
 /* }}} */
 
 
-/* {{{ _php_get_video_codec()
+/* {{{ _php_get_codec_name()
    Returns a frame from the movie.
  */
 static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
@@ -891,7 +891,7 @@ PHP_FUNCTION(getVideoCodec)
 /* }}} */
 
 
-/* {{{ proto int getVideoCodec()
+/* {{{ proto int getAudioCodec()
  */
 PHP_FUNCTION(getAudioCodec)
 {
@@ -933,7 +933,7 @@ static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
 } 
 
 
-/* {{{ proto int getVideoCodec()
+/* {{{ proto int getAudioChannels()
  */
 PHP_FUNCTION(getAudioChannels)
 {
@@ -1010,8 +1010,8 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
              avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
         
-            ffmovie_ctx->frame_number++; 
             if (got_frame) {
+                ffmovie_ctx->frame_number++; 
                 /* FIXME: 
                  *        With the addition of the keyframe logic, this loop is 
                  *        getting a little too tricky. wanted_frame is way 
@@ -1105,7 +1105,7 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx,
 /* }}} */
 
 
-/* {{{ proto resource getFrame([int frame])
+/* {{{ proto resource getNextKeyFrame()
  */
 PHP_FUNCTION(getNextKeyFrame)
 {

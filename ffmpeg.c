@@ -1,7 +1,7 @@
 /*
    ffmpeg-php - a php module for accessing audio/video info from movie files.
 
-   Copyright (C) 2004  Todd Kirby (doubleshot at pacbell dot net)
+   Copyright (C) 2004,2005 Todd Kirby (ffmpeg.php@gmail.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

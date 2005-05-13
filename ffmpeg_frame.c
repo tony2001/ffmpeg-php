@@ -78,7 +78,7 @@ static ff_frame_context* _php_alloc_ff_frame()
 /* }}} */
 
 
-/* {{{ proto object ffmpeg_frame() 
+/* {{{ proto object _php_create_ffmpeg_frame() 
    creates an ffmpeg_frame object, adds a ffmpeg_frame resource to the
    object, registers the resource and returns a direct pointer to the 
    resource.
@@ -98,7 +98,8 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 }
 /* }}} */
 
-/* {{{ _php_free_av_frame
+
+/* {{{ _php_free_av_frame()
  */
 static void _php_free_av_frame(AVFrame *av_frame)
 {
@@ -111,7 +112,8 @@ static void _php_free_av_frame(AVFrame *av_frame)
     }
 }
 
-/* {{{ _php_free_ffmpeg_frame
+
+/* {{{ _php_free_ffmpeg_frame()
  */
 static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
@@ -122,6 +124,8 @@ static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 /* }}} */
 
 
+/* {{{ register_ffmpeg_frame_class()
+ */
 void register_ffmpeg_frame_class(int module_number)
 {
     TSRMLS_FETCH();
@@ -211,7 +215,7 @@ static int _php_crop_frame(ff_frame_context *ff_frame,
                 (AVPicture *)&crop_temp, ff_frame->pixel_format, 
                 cropped_width, cropped_height);
 
-    /* free non cropped frame */
+    /* free non-cropped frame */
     _php_free_av_frame(ff_frame->av_frame);
 
     ff_frame->av_frame = cropped_frame;
@@ -721,7 +725,7 @@ PHP_FUNCTION(resize)
 
     efree(argv);
 
-        /* resize frame */
+    /* resize frame */
     _php_resample_frame(ff_frame, wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
 

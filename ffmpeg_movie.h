@@ -41,3 +41,13 @@ typedef struct {
 } ff_movie_context;
 
 #endif // FFMPEG_MOVIE_H
+
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4
+ * vim<600: noet sw=4 ts=4
+ */
