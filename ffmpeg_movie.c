@@ -43,30 +43,31 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FE(ffmpeg_movie, NULL)
 
     /* methods */
-    PHP_FALIAS(getduration,         getDuration,        NULL)
-    PHP_FALIAS(getframecount,       getFrameCount,      NULL)
-    PHP_FALIAS(getframerate,        getFrameRate,       NULL)
-    PHP_FALIAS(getfilename,         getFileName,        NULL)
-    PHP_FALIAS(getcomment,          getComment,         NULL)
-    PHP_FALIAS(gettitle,            getTitle,           NULL)
-    PHP_FALIAS(getauthor,           getAuthor,          NULL)
-    PHP_FALIAS(getartist,           getAuthor,          NULL)
-    PHP_FALIAS(getcopyright,        getCopyright,       NULL)
-    PHP_FALIAS(getalbum,            getAlbum,           NULL)
-    PHP_FALIAS(getgenre,            getGenre,           NULL)
-    PHP_FALIAS(getyear,             getYear,            NULL)
-    PHP_FALIAS(gettracknumber,      getTrackNumber,     NULL)
-    PHP_FALIAS(getframewidth,       getFrameWidth,      NULL)
-    PHP_FALIAS(getframeheight,      getFrameHeight,     NULL)
-    PHP_FALIAS(getframenumber,      getFrameNumber,     NULL)
-    PHP_FALIAS(getpixelformat,      getPixelFormat,     NULL)
-    PHP_FALIAS(getbitrate,          getBitRate,         NULL)
-    PHP_FALIAS(hasaudio,            hasAudio,           NULL)
-    PHP_FALIAS(getnextkeyframe,     getNextKeyFrame,    NULL)
-    PHP_FALIAS(getframe,            getFrame,           NULL)
-    PHP_FALIAS(getvideocodec,       getVideoCodec,      NULL)
-    PHP_FALIAS(getaudiocodec,       getAudioCodec,      NULL)
-    PHP_FALIAS(getaudiochannels,    getAudioChannels,   NULL)
+    PHP_FALIAS(getduration,         getDuration,         NULL)
+    PHP_FALIAS(getframecount,       getFrameCount,       NULL)
+    PHP_FALIAS(getframerate,        getFrameRate,        NULL)
+    PHP_FALIAS(getfilename,         getFileName,         NULL)
+    PHP_FALIAS(getcomment,          getComment,          NULL)
+    PHP_FALIAS(gettitle,            getTitle,            NULL)
+    PHP_FALIAS(getauthor,           getAuthor,           NULL)
+    PHP_FALIAS(getartist,           getAuthor,           NULL)
+    PHP_FALIAS(getcopyright,        getCopyright,        NULL)
+    PHP_FALIAS(getalbum,            getAlbum,            NULL)
+    PHP_FALIAS(getgenre,            getGenre,            NULL)
+    PHP_FALIAS(getyear,             getYear,             NULL)
+    PHP_FALIAS(gettracknumber,      getTrackNumber,      NULL)
+    PHP_FALIAS(getframewidth,       getFrameWidth,       NULL)
+    PHP_FALIAS(getframeheight,      getFrameHeight,      NULL)
+    PHP_FALIAS(getframenumber,      getFrameNumber,      NULL)
+    PHP_FALIAS(getpixelformat,      getPixelFormat,      NULL)
+    PHP_FALIAS(getbitrate,          getBitRate,          NULL)
+    PHP_FALIAS(hasaudio,            hasAudio,            NULL)
+    PHP_FALIAS(getnextkeyframe,     getNextKeyFrame,     NULL)
+    PHP_FALIAS(getframe,            getFrame,            NULL)
+    PHP_FALIAS(getvideocodec,       getVideoCodec,       NULL)
+    PHP_FALIAS(getaudiocodec,       getAudioCodec,       NULL)
+    PHP_FALIAS(getaudiochannels,    getAudioChannels,    NULL)
+    PHP_FALIAS(getpixelaspectratio, getPixelAspectRatio, NULL)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -195,8 +196,8 @@ PHP_FUNCTION(ffmpeg_movie)
 
     switch (ZEND_NUM_ARGS()) {
         case 2:
-            convert_to_long_ex(argv[1]);
-
+            convert_to_boolean_ex(argv[1]);
+            
             if (INI_INT("ffmpeg.allow_persistent")) {
                 persistent = Z_LVAL_PP(argv[1]);
             } else {
@@ -557,7 +558,7 @@ PHP_FUNCTION(getDuration)
  */
 static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
 {
-    float duration = 0.0, frame_rate = 0.0;
+    double duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
     if (!st) {
@@ -566,7 +567,8 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     
     duration = _php_get_duration(ffmovie_ctx);
 #if LIBAVCODEC_BUILD > 4753 
-    frame_rate = (float)st->codec.time_base.den / st->codec.time_base.num;
+    frame_rate = av_q2d(st->codec.time_base);
+// frame_rate = float)st->codec.time_base.den / st->codec.time_base.num;
 #else
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 #endif
@@ -1159,6 +1161,53 @@ PHP_FUNCTION(getFrame)
     if (! _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
         RETURN_FALSE;
     }
+}
+/* }}} */
+
+
+/* {{{ _php_get_pixelaspect()
+ */
+static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
+{
+    AVCodecContext *decoder_ctx;
+	
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
+    if (!decoder_ctx) {
+        return 0;
+    }
+
+
+	if (decoder_ctx->sample_aspect_ratio.num == 0) {
+		AVFrame *frame = NULL;
+		int is_keyframe;
+		int64_t pts;
+
+		// pre read a frame to try to get pixel aspect
+		frame = _php_get_av_frame(ffmovie_ctx, _php_get_framenumber(ffmovie_ctx) - 1, &is_keyframe, &pts);
+		av_free(frame);
+		if (decoder_ctx->sample_aspect_ratio.num == 0) {
+			return 0;
+		}
+	}
+
+    return av_q2d(decoder_ctx->sample_aspect_ratio);
+}
+/* }}} */
+
+
+/* {{{ proto double getPixelAspectRatio()
+ */
+PHP_FUNCTION(getPixelAspectRatio)
+{
+    double aspect;
+    ff_movie_context *ffmovie_ctx;
+    
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+   
+    aspect = _php_get_sample_aspect_ratio(ffmovie_ctx); 
+
+    RETURN_DOUBLE(aspect);
 }
 /* }}} */
 
