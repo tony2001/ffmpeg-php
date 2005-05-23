@@ -31,6 +31,7 @@ PHP_FUNCTION(getFrame);
 PHP_FUNCTION(getVideoCodec);
 PHP_FUNCTION(getAudioCodec);
 PHP_FUNCTION(getAudioChannels);
+PHP_FUNCTION(getPixelAspectRatio);
 
 typedef struct {
     AVFormatContext *fmt_ctx;
