@@ -72,6 +72,7 @@ foreach($movies as $movie) {
     printf("frame width = %d pixels\n", $mov->getFrameWidth());
     printf("has audio = %s\n", $mov->hasAudio() == 0 ? 'No' : 'Yes');
     printf("get pixel format = %s\n", $mov->getPixelFormat());
+    printf("get pixel aspect ratio = %s\n", $mov->getPixelAspectRatio());
     printf("get video codec = %s\n", $mov->getVideoCodec());
     printf("get audio codec = %s\n", $mov->getAudioCodec());
     printf("get audio channels = %s\n", $mov->getAudioChannels());
