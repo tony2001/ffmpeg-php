@@ -599,12 +599,6 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
       return 0.0f;
     }
 
-    /*
-    if (st->codec.frame_rate > 1000 && st->codec.frame_rate_base==1) {
-        st->codec.frame_rate_base = 1000;
-    }
-     */
-
 #if LIBAVCODEC_BUILD > 4753 
     return (float)st->codec.time_base.den / st->codec.time_base.num;
 #else
@@ -1165,6 +1159,23 @@ PHP_FUNCTION(getFrame)
 /* }}} */
 
 
+/* {{{ _php_pre_read_frame()
+ * ffmpeg seems not to fill in some AVCodecContext fields until at least
+ * one frame is read. This function will read a frame without moving the
+ * frame counter.
+ */
+static void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
+    AVFrame *frame = NULL;
+    int is_keyframe;
+    int64_t pts;
+
+    frame = _php_get_av_frame(ffmovie_ctx,
+            _php_get_framenumber(ffmovie_ctx) - 1, &is_keyframe, &pts);
+
+    av_free(frame);
+}
+
+
 /* {{{ _php_get_pixelaspect()
  */
 static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
@@ -1179,13 +1190,9 @@ static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
 
 
 	if (decoder_ctx->sample_aspect_ratio.num == 0) {
-		AVFrame *frame = NULL;
-		int is_keyframe;
-		int64_t pts;
-
-		// pre read a frame to try to get pixel aspect
-		frame = _php_get_av_frame(ffmovie_ctx, _php_get_framenumber(ffmovie_ctx) - 1, &is_keyframe, &pts);
-		av_free(frame);
+		// pre read a frame so ffmpeg will fill in sample aspect ratio field.
+        _php_pre_read_frame(ffmovie_ctx);
+        
 		if (decoder_ctx->sample_aspect_ratio.num == 0) {
 			return 0;
 		}
