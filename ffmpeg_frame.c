@@ -20,7 +20,8 @@
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
 }
 
-static int le_gd; // this is only valid after calling FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
+static int le_gd; // this is only valid after calling 
+                  // FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
 
 #endif // HAVE_LIBGD20
 
@@ -334,7 +335,8 @@ static int _php_get_gd_image(int w, int h)
 
 /* {{{ _php_avframe_to_gd_image()
  */
-static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, int height)
+static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, 
+        int height)
 {
     int x, y;
     int *src = (int*)frame->data[0];
@@ -362,14 +364,16 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, in
 
 /* {{{ _php_gd_image_to_avframe()
  */
-static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, int height) 
+static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, 
+        int height) 
 {
     int x, y;
     int *dest = (int*)frame->data[0];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-			// FIXME: don't do bounds check until we fix the gd.h incompatiblity problem 
+			// FIXME: don't do bounds check until we fix the gd.h 
+            // incompatiblity problem 
             //if (gdImageBoundsSafe(src, x, y)) {
                 dest[x] = src->tpixels[y][x];
             /*} else {
@@ -422,7 +426,8 @@ PHP_FUNCTION(toGDImage)
     // open the input file with generic libav function
     err = av_open_input_file(&ic, filename, NULL, 0, ap);
     if (err < 0) {
-        zend_error(E_ERROR, "Can't open image file %d, %d", err, AVERROR_NOFMT);
+        zend_error(E_ERROR, "Can't open image file %d, %d", err, 
+        AVERROR_NOFMT);
     }
 
     
@@ -461,7 +466,8 @@ PHP_FUNCTION(ffmpeg_frame)
         case IS_STRING:
             /* TODO: test for resource or string */
             convert_to_string_ex(argv[0]);
-            zend_error(E_ERROR, "Creating an ffmpeg_frame from a file is not implemented yet\n");
+            zend_error(E_ERROR, 
+                  "Creating an ffmpeg_frame from a file is not implemented\n");
             //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
