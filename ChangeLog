@@ -6,8 +6,10 @@ version 0.4.4 (05/09/2005)
       movies since injudicious use of persistent movies in scripts can eat 
       up server resources quickly (tkirby)
     * Added frame->isKeyFrame() and movie->getNextKeyFrame() methods (tkirby)
+    * Now displays ffmpeg-php ini values in php_info() table
 
     Bug Fixes:
+    * Fixed parsing of 'persistent' boolean flag in ffmpeg_movie constructor
     * Fixed segfault when a script tries to read more frames than exist in
       a movie. (tkirby)
 	* Patch to use native time bases. This allows building against libavcodec 
