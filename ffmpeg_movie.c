@@ -167,7 +167,7 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. */
     if (av_find_stream_info(ffmovie_ctx->fmt_ctx)) {
-        /* This is not a problem for some formats like .mov */
+        /* Don't fail here since this is not a problem for formats like .mov */
         /*zend_error(E_WARNING, "Can't find codec params for %s", filename); */
     }
     return 0;
@@ -197,14 +197,15 @@ PHP_FUNCTION(ffmpeg_movie)
     switch (ZEND_NUM_ARGS()) {
         case 2:
             convert_to_boolean_ex(argv[1]);
-            
-            if (INI_INT("ffmpeg.allow_persistent")) {
-                persistent = Z_LVAL_PP(argv[1]);
-            } else {
-                persistent = 0;
+
+            if (! INI_BOOL("ffmpeg.allow_persistent") && Z_LVAL_PP(argv[1])) {
                 zend_error(E_WARNING, 
                         "Persistent movies have been disabled in php.ini");
-            }
+                break;
+            } 
+
+            persistent = Z_LVAL_PP(argv[1]);
+
             /* fallthru */
         case 1:
             convert_to_string_ex(argv[0]);
@@ -213,7 +214,7 @@ PHP_FUNCTION(ffmpeg_movie)
         default:
             WRONG_PARAM_COUNT;
     } 
-    
+
     if (persistent) {
         list_entry *le;
         /* resolve the fully-qualified path name to use as the hash key */
@@ -252,9 +253,8 @@ PHP_FUNCTION(ffmpeg_movie)
             list_entry new_le;
             ffmovie_ctx = _php_alloc_ffmovie_ctx(1);
 
-            if (_php_open_movie_file(ffmovie_ctx, Z_STRVAL_PP(argv[0]))) {
-                zend_error(E_WARNING, "Can't open movie file %s", 
-                        Z_STRVAL_PP(argv[0]));
+            if (_php_open_movie_file(ffmovie_ctx, filename)) {
+                zend_error(E_WARNING, "Can't open movie file %s", filename);
                 efree(argv);
                 ZVAL_BOOL(getThis(), 0);
                 RETURN_FALSE;
@@ -614,7 +614,8 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
     }
 
 #if LIBAVCODEC_BUILD > 4753 
-    return (float)st->codec.time_base.den / st->codec.time_base.num;
+    return av_q2d(st->codec.time_base);
+//    return (float)st->codec.time_base.den / st->codec.time_base.num;
 #else
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 #endif
