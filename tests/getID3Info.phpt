@@ -1,10 +1,10 @@
 --TEST--
-ffmpeg getFileName test
+ffmpeg getID3Info() test
 --SKIPIF--
 <?php extension_loaded('ffmpeg') or die("ffmpeg extension not loaded"); ?>
 --FILE--
 <?php
-$mov = new ffmpeg_movie('test_media/Ballad of the Sneak.mp3');
+$mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/Ballad of the Sneak.mp3');
 printf("ffmpeg getTitle(): %s\n", $mov->getTitle());
 printf("ffmpeg getArtist(): %s\n", $mov->getArtist());
 printf("ffmpeg getAlbum(): %s\n", $mov->getAlbum());

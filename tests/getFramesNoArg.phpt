@@ -1,5 +1,5 @@
 --TEST--
-ffmpeg getFrame without an argument test
+ffmpeg getFramesNoArg test
 --SKIPIF--
 <?php 
 extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded"); 
