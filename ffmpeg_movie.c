@@ -572,7 +572,7 @@ PHP_FUNCTION(getDuration)
  */
 static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
 {
-    double duration = 0.0, frame_rate = 0.0;
+    float duration = 0.0, frame_rate = 0.0;
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
     if (!st) {
@@ -581,8 +581,8 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     
     duration = _php_get_duration(ffmovie_ctx);
 #if LIBAVCODEC_BUILD > 4753 
-    frame_rate = av_q2d(st->codec.time_base);
-// frame_rate = float)st->codec.time_base.den / st->codec.time_base.num;
+    frame_rate = 1.0/av_q2d(st->codec.time_base);
+//    frame_rate = (float)st->codec.time_base.den / st->codec.time_base.num;
 #else
     frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
 #endif
