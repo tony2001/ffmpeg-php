@@ -60,6 +60,7 @@ ZEND_GET_MODULE(ffmpeg);
 #endif
 
 extern void register_ffmpeg_movie_class(int);
+extern void register_ffmpeg_animated_gif_class(int);
 extern void register_ffmpeg_frame_class(int);
 
 PHP_INI_BEGIN()
@@ -80,8 +81,8 @@ PHP_MINIT_FUNCTION(ffmpeg)
     REGISTER_INI_ENTRIES();
     
     register_ffmpeg_movie_class(module_number);
+    register_ffmpeg_animated_gif_class(module_number);
     register_ffmpeg_frame_class(module_number);
-
 
     REGISTER_STRING_CONSTANT("FFMPEG_VERSION_NUMBER", FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
@@ -115,8 +116,6 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "libavcodec version", LIBAVCODEC_IDENT);
     php_info_print_table_row(2, "libavformat version", LIBAVFORMAT_IDENT);
     php_info_print_table_end();
-
-    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
