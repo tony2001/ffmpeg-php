@@ -60,7 +60,6 @@ ZEND_GET_MODULE(ffmpeg);
 #endif
 
 extern void register_ffmpeg_movie_class(int);
-//extern void register_ffmpeg_output_movie_class(int);
 extern void register_ffmpeg_frame_class(int);
 
 PHP_INI_BEGIN()
@@ -81,7 +80,6 @@ PHP_MINIT_FUNCTION(ffmpeg)
     REGISTER_INI_ENTRIES();
     
     register_ffmpeg_movie_class(module_number);
-//   register_ffmpeg_output_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
 
