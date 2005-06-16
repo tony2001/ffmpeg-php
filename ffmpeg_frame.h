@@ -29,6 +29,11 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
 
 int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
 
+int _php_resample_frame(ff_frame_context *ff_frame,
+        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
+        int crop_left, int crop_right);
+
+
 #define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
