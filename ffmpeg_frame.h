@@ -27,6 +27,8 @@ typedef struct {
 
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
 
+int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
+
 #define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\

@@ -145,7 +145,7 @@ void register_ffmpeg_frame_class(int module_number)
 
 /* {{{ _php_convert_frame()
  */
-static int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt) {
+int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt) {
     AVFrame *new_fmt_frame;
 
     if (!ff_frame->av_frame) {
