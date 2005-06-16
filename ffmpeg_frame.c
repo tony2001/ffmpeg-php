@@ -479,7 +479,7 @@ PHP_FUNCTION(ffmpeg_frame)
             //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
-            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
+            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, argv[0]);
 
             if (!gd_img->trueColor) {
                 php_error_docref(NULL TSRMLS_CC, E_ERROR,
