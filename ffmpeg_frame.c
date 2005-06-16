@@ -472,7 +472,6 @@ PHP_FUNCTION(ffmpeg_frame)
     
     switch (Z_TYPE_PP(argv[0])) {
         case IS_STRING:
-            /* TODO: test for resource or string */
             convert_to_string_ex(argv[0]);
             zend_error(E_ERROR, 
                   "Creating an ffmpeg_frame from a file is not implemented\n");
@@ -489,18 +488,23 @@ PHP_FUNCTION(ffmpeg_frame)
             width = gdImageSX(gd_img);
             height = gdImageSY(gd_img);
 
+            /* create a an av_frame and allocate space for it */
             frame = avcodec_alloc_frame();
             avpicture_alloc((AVPicture*)frame, PIX_FMT_RGBA32, width, height);
+
+            /* copy the gd image to the av_frame */
             _php_gd_image_to_avframe(gd_img, frame, width, height);
             
+            /* set the ffmepg_frame to point to this av_frame */
             ff_frame->av_frame = frame;
+            
+            /* set the ffpmeg_frame's properties */
             ff_frame->width = width;
             ff_frame->height = height;
             ff_frame->pixel_format = PIX_FMT_RGBA32;
             break;
         default:
             zend_error(E_ERROR, "Invalid argument\n");
-            
     }
 }
 /* }}} */
