@@ -159,9 +159,13 @@ PHP_FUNCTION(ffmpeg_animated_gif)
         WRONG_PARAM_COUNT;
     }
 
+    /* get filename arg */
     convert_to_string_ex(argv[0]);
     filename = Z_STRVAL_PP(argv[0]);
 
+    // TODO: check if filepath is writeable before going further
+   
+    /* get width arg */
     convert_to_long_ex(argv[1]);
     width = Z_LVAL_PP(argv[1]);
     
@@ -171,6 +175,7 @@ PHP_FUNCTION(ffmpeg_animated_gif)
                 "Width must be an even number");
     }
 
+    /* get height arg */
     convert_to_long_ex(argv[2]);
     height = Z_LVAL_PP(argv[2]);
 
@@ -180,10 +185,12 @@ PHP_FUNCTION(ffmpeg_animated_gif)
                 "Height must be an even number");
     }
 
+    /* get frame rate arg */
     convert_to_long_ex(argv[3]);
     frame_rate = Z_LVAL_PP(argv[3]);
-
   
+    /* TODO: bound check rate (1-100?) */
+
 	ff_animated_gif = _php_alloc_ff_animated_gif();
 
     ff_animated_gif->fmt_ctx->oformat->flags &= AVFMT_RAWPICTURE;

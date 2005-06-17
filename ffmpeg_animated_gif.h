@@ -8,10 +8,6 @@
 PHP_FUNCTION(ffmpeg_animated_gif);
 
 /* animated gif methods */
-PHP_FUNCTION(setFrameRate);
-PHP_FUNCTION(setWidth);
-PHP_FUNCTION(setHeight);
-PHP_FUNCTION(setLooping);
 PHP_FUNCTION(addFrame);
 
 typedef struct {

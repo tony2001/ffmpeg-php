@@ -240,15 +240,17 @@ int _php_resample_frame(ff_frame_context *ff_frame,
         return -1;
     }
 
-    /* do nothing if width and height are the same as the frame */
+    /* 
+     * do nothing if width and height are the same as the frame and no 
+     * cropping was specified
+     * */
     if (wanted_width == ff_frame->width && 
             wanted_height == ff_frame->height &&
             (!crop_left && !crop_right && !crop_top && !crop_bottom)) {
-        // do nothing
         return 0;
     }
     
-    /* just crop if wanted dimensions - crop bands = zero resampling */
+    /* just crop if wanted dimensions - crop bands = same width/height */
     if (wanted_width == ff_frame->width - (crop_left + crop_right) && 
             wanted_height == ff_frame->height - (crop_left + crop_right)) {
         _php_crop_frame(ff_frame, crop_top, crop_bottom, crop_left, crop_right);
