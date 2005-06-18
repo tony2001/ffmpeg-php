@@ -65,7 +65,7 @@ static ff_animated_gif_context* _php_alloc_ff_animated_gif()
 /* {{{ _php_add_video_stream()
  */
 AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width, 
-        int height, int frame_rate)
+        int height, int frame_rate, int loop_count)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -75,6 +75,10 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
         zend_error(E_ERROR, "could not alloc stream\n");
     }
 
+#if LIBAVCODEC_BUILD > 4626 
+    oc->loop_output = loop_count;
+#endif
+    
     c = &st->codec;
     c->codec_id = CODEC_ID_RAWVIDEO;
     c->codec_type = CODEC_TYPE_VIDEO;
@@ -88,8 +92,9 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
     /* frames per second */
     c->time_base.den = frame_rate;
     c->time_base.num = 1;
+
+    /* probably doesn't matter for animated gif */
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
-    // some formats want stream headers to be seperate
 
     return st;
 }
@@ -142,54 +147,65 @@ static void _php_open_movie_file(ff_animated_gif_context *ff_animated_gif,
  */
 PHP_FUNCTION(ffmpeg_animated_gif)
 {
-    int argc, ret, width, height, frame_rate;
-    zval **argv[4];
+    zval ***argv;
+    int ret, width, height, frame_rate, loop_count = AVFMT_NOOUTPUTLOOP;
     char *filename = NULL;
     ff_animated_gif_context *ff_animated_gif;
     
-    /* set the number of arguments */
-    argc = ZEND_NUM_ARGS();
-
-    if (argc != 4) {
-        WRONG_PARAM_COUNT;
-    }
-
-    /* argument count is correct, now retrieve arguments */
-    if (zend_get_parameters_array_ex(argc, argv) != SUCCESS) {
-        WRONG_PARAM_COUNT;
-    }
-
-    /* get filename arg */
-    convert_to_string_ex(argv[0]);
-    filename = Z_STRVAL_PP(argv[0]);
-
-    // TODO: check if filepath is writeable before going further
-   
-    /* get width arg */
-    convert_to_long_ex(argv[1]);
-    width = Z_LVAL_PP(argv[1]);
+    /* retrieve arguments */ 
+    argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
     
-    /* width must be even number for ffmpeg encoders */
-    if (width % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Width must be an even number");
+    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
+        efree(argv);
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Error parsing arguments");
     }
 
-    /* get height arg */
-    convert_to_long_ex(argv[2]);
-    height = Z_LVAL_PP(argv[2]);
+    switch (ZEND_NUM_ARGS()) {
+        case 5:
+#if LIBAVCODEC_BUILD < 4627 
+            zend_error(E_WARNING, "Animated GIF looping not supported \
+                    by this version of ffmpeg.\n");
+#endif
+            /* parse optional loop count */
+            convert_to_long_ex(argv[4]);
+            loop_count = Z_LVAL_PP(argv[4]);
 
-    /* height must be even number for ffmpeg encoders */
-    if (height % 2) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Height must be an even number");
-    }
+            if (loop_count < 0 || loop_count > 65535) {
+                zend_error(E_ERROR, "Loop count must be a number between 0 and 65535.\n");
+            }
+        case 4:
+            /* parse file path */
+            convert_to_string_ex(argv[0]);
+            filename = Z_STRVAL_PP(argv[0]);
 
-    /* get frame rate arg */
-    convert_to_long_ex(argv[3]);
-    frame_rate = Z_LVAL_PP(argv[3]);
-  
-    /* TODO: bound check rate (1-100?) */
+            /* parse width */
+            convert_to_long_ex(argv[1]);
+            width = Z_LVAL_PP(argv[1]);
+
+            /* width must be even number for ffmpeg encoders */
+            if (width % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Width must be an even number");
+            }
+
+            /* parse height */
+            convert_to_long_ex(argv[2]);
+            height = Z_LVAL_PP(argv[2]);
+
+            /* height must be even number for ffmpeg encoders */
+            if (height % 2) {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "Height must be an even number");
+            }
+
+            /* parse frame rate */
+            /* TODO: bound check rate (1-100?) */
+            convert_to_long_ex(argv[3]);
+            frame_rate = Z_LVAL_PP(argv[3]);
+            break;
+        default:
+            WRONG_PARAM_COUNT;
+    } 
 
 	ff_animated_gif = _php_alloc_ff_animated_gif();
 
@@ -202,11 +218,10 @@ PHP_FUNCTION(ffmpeg_animated_gif)
         ff_animated_gif->video_st =
             _php_add_video_stream(ff_animated_gif->fmt_ctx, 
                     ff_animated_gif->fmt->video_codec, width, height,
-                    frame_rate);
+                    frame_rate, loop_count);
     } else {
         zend_error(E_ERROR, "Codec not found\n");\
     }
-        
 
     /* set the output parameters (must be done even if no parameters). */
     if (av_set_parameters(ff_animated_gif->fmt_ctx, NULL) < 0) {
