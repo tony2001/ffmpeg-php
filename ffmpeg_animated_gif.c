@@ -106,7 +106,6 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
 static void _php_open_movie_file(ff_animated_gif_context *ff_animated_gif, 
         char* filename)
 {
-    //AVFormatParameters params;
     AVCodec *codec;
     AVCodecContext *c = &ff_animated_gif->video_st->codec;
 
@@ -206,6 +205,8 @@ PHP_FUNCTION(ffmpeg_animated_gif)
         default:
             WRONG_PARAM_COUNT;
     } 
+
+    efree(argv);
 
 	ff_animated_gif = _php_alloc_ff_animated_gif();
 
