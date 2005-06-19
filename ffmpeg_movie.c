@@ -180,7 +180,7 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
  */
 PHP_FUNCTION(ffmpeg_movie)
 {
-    int persistent = 0, hashkey_length;
+    int persistent = 0, hashkey_length = 0;
     char *filename = NULL, *fullpath = NULL, *hashkey = NULL;
     zval ***argv;
     ff_movie_context *ffmovie_ctx = NULL;
@@ -223,7 +223,7 @@ PHP_FUNCTION(ffmpeg_movie)
         hashkey_length = sizeof("ffmpeg-php_")-1 + 
             strlen(SAFE_STRING(filename));
         hashkey = (char *) emalloc(hashkey_length+1);
-        sprintf(hashkey, "ffmpeg-php_%s", SAFE_STRING(filename));
+        snprintf(hashkey, hashkey_length, "ffmpeg-php_%s", SAFE_STRING(filename));
 
         
         /* do we have an existing persistent movie? */
