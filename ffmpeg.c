@@ -116,6 +116,8 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "libavcodec version", LIBAVCODEC_IDENT);
     php_info_print_table_row(2, "libavformat version", LIBAVFORMAT_IDENT);
     php_info_print_table_end();
+
+    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
