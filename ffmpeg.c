@@ -22,11 +22,8 @@
 #include "config.h"
 #endif
 
-#include <assert.h>
 #include <avcodec.h>
 #include <avformat.h>
-#include <inttypes.h>
-#include <math.h>
 
 #include "php.h"
 #include "php_ini.h"
@@ -97,7 +94,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
-    // TODO: Free persistent movies
+    // TODO: Free any remaining persistent movies here?
     
     UNREGISTER_INI_ENTRIES();
 
