@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include "php.h"
 #include "php_ini.h"
 #include "php_globals.h"
@@ -22,11 +20,16 @@
             "ffmpeg_movie", le_ffmpeg_movie, le_ffmpeg_pmovie);\
 }\
 
-/* cross platform LRINT
-NOTE: This only works for postive values and is slow compared a
-      native implementation.
-*/
-#define LRINT(x) ((long) ((x)+0.5))
+#ifndef PHP_WIN32
+#include <math.h>
+#else
+/* 
+ * Windows doesn't have lrint() so this will have to do.
+ * This only works for postive values and is slow compared a
+ * native implementation. 
+ * */
+#define lrint(x) ((long) ((x)+0.5))
+#endif
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
@@ -568,41 +571,6 @@ PHP_FUNCTION(getDuration)
 /* }}} */
 
 
-/* {{{ _php_get_framecount()
- */
-static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
-{
-    float duration = 0.0, frame_rate = 0.0;
-    AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
-
-    if (!st) {
-      return 0;
-    }
-    
-    duration = _php_get_duration(ffmovie_ctx);
-#if LIBAVCODEC_BUILD > 4753 
-    frame_rate = 1.0/av_q2d(st->codec.time_base);
-//    frame_rate = (float)st->codec.time_base.den / st->codec.time_base.num;
-#else
-    frame_rate = (float)st->codec.frame_rate / st->codec.frame_rate_base;
-#endif
-    /* TODO: Find a pre C99 replacement for lrint */
-    return LRINT(frame_rate * duration);
-}
-/* }}} */
-
-
-/* {{{ proto int getFrameCount()
- */
-PHP_FUNCTION(getFrameCount)
-{
-    ff_movie_context *ffmovie_ctx;
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-    RETURN_LONG(_php_get_framecount(ffmovie_ctx));
-}
-/* }}} */
-
-
 /* {{{ _php_get_framerate()
  */
 static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
@@ -618,6 +586,32 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
 #else
     return (float)st->codec.frame_rate / st->codec.frame_rate_base;
 #endif
+}
+/* }}} */
+
+
+/* {{{ _php_get_framecount()
+ */
+static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
+{
+    /* does this movie have a video stream?  */
+    if (!_php_get_video_stream(ffmovie_ctx->fmt_ctx)) {
+      return 0;
+    }
+    
+    /* TODO: Find a pre C99 replacement for lrint */
+    return lrint(_php_get_framerate(ffmovie_ctx) * _php_get_duration(ffmovie_ctx));
+}
+/* }}} */
+
+
+/* {{{ proto int getFrameCount()
+ */
+PHP_FUNCTION(getFrameCount)
+{
+    ff_movie_context *ffmovie_ctx;
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+    RETURN_LONG(_php_get_framecount(ffmovie_ctx));
 }
 /* }}} */
 
