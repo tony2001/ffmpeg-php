@@ -103,7 +103,7 @@ A: Your version of php is compiled without gd support. Make sure to use the
 
 Q: I get 'avcodec.h: No such file or directory' when I try to 'make' ffmpeg-php 
 
-A: ffmpeg-php can't fond ffmpeg header files. Make sure when you configure 
+A: ffmpeg-php can't find ffmpeg header files. Make sure when you configure 
    ffmpeg you use the '--enable-shared' option and make sure it installs 
    somewhere where other programs can find the libs/headers. See 
    'BUILDING FFMPEG' above for an example.
@@ -112,7 +112,7 @@ HELP
 ----
 
 This INSTALL doc is not very comprehensive. If you get stuck, post a message 
-to the ffmpeg-php help forum (http://sourceforge.net/forum/forum.php?forum_id=417245)
+to the ffmpeg-php google group (http://groups-beta.google.com/group/ffmpeg-php)
 and I'll try to help. 
 
     - Todd Kirby
