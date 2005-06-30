@@ -3,24 +3,24 @@ ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 version 0.4.4 (05/09/2005)
     New Features:
     * Added ability to create animated gifs via new ffmpeg_animated_gif
-      class.
+      class (tkirby)
     * Fixed ffmpeg_frame constructor to allow creating ffmpeg_frames from
       gd images. This allows to make animated gifs directly from a series
       of gd images. I believe this is currently the only way to make 
       animated gifs using PHP since the bundled version of gd does not
-      support animated gif creation.
+      support animated gif creation (tkirby)
     * Added flag to php.ini to allow server admins to disable persistent
       movies since injudicious use of persistent movies in scripts can eat 
       up server resources quickly (tkirby)
     * Added frame->isKeyFrame() and movie->getNextKeyFrame() methods (tkirby)
-    * Now displays ffmpeg-php ini values in php_info() table
+    * Now displays ffmpeg-php ini values in php_info() table (tkirby)
 
     Bug Fixes:
     * Fixed parsing of 'persistent' boolean flag in ffmpeg_movie constructor
     * Fixed segfault when a script tries to read more frames than exist in
       a movie. (tkirby)
     * Patch to use native time bases. This allows building against libavcodec 
-      build 4754 (Steve Brown)
+      build 4754+ (Steve Brown)
     * Patch to corrctly init gd before attempting to fetch gd image resources.
       This fixes the "togdimage() supplied resource is not a valid Image 
       resource" error that a few people have reported (Steve Brown)
