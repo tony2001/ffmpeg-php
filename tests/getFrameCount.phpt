@@ -5,7 +5,7 @@ ffmpeg getFrameCount test
 --FILE--
 <?php
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
-printf("ffmpeg getFrameCount(): %0.2f\n", $mov->getFrameCount());
+printf("ffmpeg getFrameCount(): %d\n", $mov->getFrameCount());
 ?>
 --EXPECT--
-ffmpeg getFrameCount(): 120.00
+ffmpeg getFrameCount(): 120
