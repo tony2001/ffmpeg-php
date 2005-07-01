@@ -9,7 +9,7 @@ function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecol
 --FILE--
 <?php
 $frame = 73;
-$mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi');
+$mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test_with_framecounter.avi');
 $img = sprintf("%s/test-%04d.png", dirname(__FILE__), $frame);
 
 $ff_frame = $mov->getFrame($frame);
@@ -22,9 +22,9 @@ if ($ff_frame) {
         // md5 hashes since resampling has been changed slightly due to a fix. Need to
         // use EXPECTREX to test for both md5 possibilities.
         printf("ffmpeg getFrame(): md5 = %s\n", md5(file_get_contents($img)));
-//        unlink($img);
+        unlink($img);
     }
 }
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = cc36d30fb5b269146802e740ce4ab239
+ffmpeg getFrame(): md5 = aceb26b8b03489d2f1e80626c857f9a8
