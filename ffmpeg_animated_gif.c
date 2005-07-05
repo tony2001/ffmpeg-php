@@ -75,7 +75,7 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
         zend_error(E_ERROR, "could not alloc stream\n");
     }
 
-#if LIBAVCODEC_BUILD > 4626 
+#if LIBAVFORMAT_BUILD > 4626
     oc->loop_output = loop_count;
 #endif
     
@@ -89,9 +89,15 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
     /* resolution must be a multiple of two */
     c->width = width;
     c->height = height;
+
     /* frames per second */
+#if LIBAVCODEC_BUILD > 4753
     c->time_base.den = frame_rate;
     c->time_base.num = 1;
+#else
+	c->frame_rate = frame_rate;
+	c->frame_rate_base = 1;
+#endif
 
     /* probably doesn't matter for animated gif */
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
@@ -147,7 +153,7 @@ static void _php_open_movie_file(ff_animated_gif_context *ff_animated_gif,
 PHP_FUNCTION(ffmpeg_animated_gif)
 {
     zval ***argv;
-    int ret, width, height, frame_rate, loop_count = AVFMT_NOOUTPUTLOOP;
+    int ret, width, height, frame_rate, loop_count;
     char *filename = NULL;
     ff_animated_gif_context *ff_animated_gif;
     
@@ -159,13 +165,17 @@ PHP_FUNCTION(ffmpeg_animated_gif)
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "Error parsing arguments");
     }
 
+#if LIBAVCODEC_BUILD > 4753
+	loop_count = AVFMT_NOOUTPUTLOOP;
+#endif
+
     switch (ZEND_NUM_ARGS()) {
         case 5:
 #if LIBAVCODEC_BUILD < 4627 
             zend_error(E_WARNING, "Animated GIF looping not supported \
                     by this version of ffmpeg.\n");
 #endif
-            /* parse optional loop count */
+			/* parse optional loop count */
             convert_to_long_ex(argv[4]);
             loop_count = Z_LVAL_PP(argv[4]);
 

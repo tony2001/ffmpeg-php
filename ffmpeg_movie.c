@@ -582,10 +582,8 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
     }
 
 #if LIBAVCODEC_BUILD > 4753 
-//    return 1.0/av_q2d(st->codec.time_base);
     return av_q2d(st->r_frame_rate);
 #else
-    //return (float)st->codec.frame_rate / st->codec.frame_rate_base;
     return (float)st->r_frame_rate / st->r_frame_rate_base;
 #endif
 }
@@ -602,6 +600,10 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
     }
     
     /* TODO: Find a pre C99 replacement for lrint */
+    /* TODO: The test_framecounter.avi movie reports one more frame than it
+     *       contains. Make sure this is rounding correctly or maybe use floor
+     *       to be safe.
+     */
     return lrint(_php_get_framerate(ffmovie_ctx) * 
             _php_get_duration(ffmovie_ctx));
 }
