@@ -81,9 +81,12 @@ PHP_MINIT_FUNCTION(ffmpeg)
     register_ffmpeg_animated_gif_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
-    REGISTER_STRING_CONSTANT("FFMPEG_VERSION_NUMBER", FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", avcodec_version(), CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", avcodec_build(), CONST_CS | CONST_PERSISTENT);
+    REGISTER_STRING_CONSTANT("FFMPEG_VERSION_NUMBER", 
+		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
+		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", 
+		    avcodec_build(), CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 /* }}} */
@@ -94,6 +97,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     av_free_static();
+
     // TODO: Free any remaining persistent movies here?
     
     UNREGISTER_INI_ENTRIES();

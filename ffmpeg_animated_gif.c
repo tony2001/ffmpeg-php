@@ -95,8 +95,8 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
     c->time_base.den = frame_rate;
     c->time_base.num = 1;
 #else
-	c->frame_rate = frame_rate;
-	c->frame_rate_base = 1;
+    c->frame_rate = frame_rate;
+    c->frame_rate_base = 1;
 #endif
 
     /* probably doesn't matter for animated gif */
@@ -136,7 +136,8 @@ static void _php_open_movie_file(ff_animated_gif_context *ff_animated_gif,
 
     /* open the output file, if needed */
     if (!(ff_animated_gif->fmt->flags & AVFMT_NOFILE)) {
-        if (url_fopen(&ff_animated_gif->fmt_ctx->pb, filename, URL_WRONLY) < 0) {
+        if (url_fopen(&ff_animated_gif->fmt_ctx->pb, filename,
+		    URL_WRONLY) < 0) {
             zend_error(E_ERROR, "Could not open '%s'\n", filename);
         }
     }
@@ -180,7 +181,8 @@ PHP_FUNCTION(ffmpeg_animated_gif)
             loop_count = Z_LVAL_PP(argv[4]);
 
             if (loop_count < 0 || loop_count > 65535) {
-                zend_error(E_ERROR, "Loop count must be a number between 0 and 65535.\n");
+                zend_error(E_ERROR, 
+			"Loop count must be a number between 0 and 65535.\n");
             }
         case 4:
             /* parse file path */

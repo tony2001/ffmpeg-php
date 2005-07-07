@@ -134,12 +134,10 @@ static ff_movie_context* _php_alloc_ffmovie_ctx(int persistent)
     int i;
     ff_movie_context *ffmovie_ctx;
     
-    
     ffmovie_ctx = persistent ? malloc(sizeof(ff_movie_context)) : 
                                emalloc(sizeof(ff_movie_context));
     ffmovie_ctx->fmt_ctx = NULL;
     ffmovie_ctx->frame_number = 0;
-
 
     for (i = 0; i < MAX_STREAMS; i++) {
         ffmovie_ctx->codec_ctx[i] = NULL;
@@ -226,7 +224,8 @@ PHP_FUNCTION(ffmpeg_movie)
         hashkey_length = sizeof("ffmpeg-php_")-1 + 
             strlen(SAFE_STRING(filename));
         hashkey = (char *) emalloc(hashkey_length+1);
-        snprintf(hashkey, hashkey_length, "ffmpeg-php_%s", SAFE_STRING(filename));
+        snprintf(hashkey, hashkey_length, "ffmpeg-php_%s",
+			SAFE_STRING(filename));
 
         
         /* do we have an existing persistent movie? */
@@ -655,11 +654,7 @@ static int _php_get_framewidth(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    if (!st) {
-      return 0;
-    }
- 
-    return st->codec.width;
+    return  st ? st->codec.width : 0;
 }
 /* }}} */
 
@@ -683,11 +678,7 @@ static int _php_get_frameheight(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    if (!st) {
-      return 0;
-    }
- 
-    return st->codec.height;
+    return  st ? st->codec.height : 0;
 }
 /* }}} */
 
@@ -752,11 +743,8 @@ static int _php_get_pixelformat(ff_movie_context *ffmovie_ctx)
     AVCodecContext *decoder_ctx;
     
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_VIDEO);
-    if (!decoder_ctx) {
-        return 0;
-    }
 
-    return decoder_ctx->pix_fmt;
+    return decoder_ctx ? decoder_ctx->pix_fmt : 0;
 }
 /* }}} */
 
