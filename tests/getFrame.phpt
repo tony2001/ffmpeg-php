@@ -27,4 +27,4 @@ if ($ff_frame) {
 }
 ?>
 --EXPECT--
-ffmpeg getFrame(): md5 = aceb26b8b03489d2f1e80626c857f9a8
+ffmpeg getFrame(): md5 = cc36d30fb5b269146802e740ce4ab239
