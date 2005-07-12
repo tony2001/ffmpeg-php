@@ -1,5 +1,9 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.5 (07/12/2005)
+    Bug Fixes:
+    * Minor build fixes for older ffmpeg versions
+
 version 0.4.4 (06/24/2005)
     New Features:
     * Added ability to create animated gifs via new ffmpeg_animated_gif
