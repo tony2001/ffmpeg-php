@@ -20,16 +20,7 @@
             "ffmpeg_movie", le_ffmpeg_movie, le_ffmpeg_pmovie);\
 }\
 
-#ifndef PHP_WIN32
-#include <math.h>
-#else
-/* 
- * Windows doesn't have lrint() so this will have to do.
- * This only works for postive values and is slow compared a
- * native implementation. 
- * */
-#define lrint(x) ((long) ((x)+0.5))
-#endif
+#define LRINT(x) ((long) ((x)+0.5))
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
@@ -598,12 +589,11 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
       return 0;
     }
     
-    /* TODO: Find a pre C99 replacement for lrint */
     /* TODO: The test_framecounter.avi movie reports one more frame than it
      *       contains. Make sure this is rounding correctly or maybe use floor
      *       to be safe.
      */
-    return lrint(_php_get_framerate(ffmovie_ctx) * 
+    return LRINT(_php_get_framerate(ffmovie_ctx) * 
             _php_get_duration(ffmovie_ctx));
 }
 /* }}} */
