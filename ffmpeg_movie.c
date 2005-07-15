@@ -991,10 +991,20 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx,
     
     /* read frames looking for wanted_frame */ 
     while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
+       
+		/* hurry up if we're still a ways from the target frame */
+        if (wanted_frame != GETFRAME_KEYFRAME &&
+                wanted_frame != GETFRAME_NEXTFRAME &&
+                wanted_frame - ffmovie_ctx->frame_number > 
+				decoder_ctx->gop_size + 1) {
+           decoder_ctx->hurry_up = 1;
+        } else {
+           decoder_ctx->hurry_up = 0;
+        }
 
         if (packet.stream_index == video_stream) {
         
-             avcodec_decode_video(decoder_ctx, frame, &got_frame,
+            avcodec_decode_video(decoder_ctx, frame, &got_frame,
                     packet.data, packet.size);
         
             if (got_frame) {
