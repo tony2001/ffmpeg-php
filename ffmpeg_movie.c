@@ -22,6 +22,14 @@
 
 #define LRINT(x) ((long) ((x)+0.5))
 
+#if LIBAVFORMAT_BUILD > 4628
+#define GET_CODEC_FIELD(codec, field) codec->field
+#define GET_CODEC_PTR(codec) codec 
+#else
+#define GET_CODEC_FIELD(codec, field) codec.field
+#define GET_CODEC_PTR(codec) &codec
+#endif
+
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
@@ -75,7 +83,7 @@ static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
     
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         if (fmt_ctx->streams[i] && 
-                fmt_ctx->streams[i]->codec.codec_type == type) {
+                GET_CODEC_FIELD(fmt_ctx->streams[i]->codec, codec_type) == type) {
             return i;
         }
     }
@@ -396,8 +404,10 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
     if (!ffmovie_ctx->codec_ctx[stream_index]) {
       
         /* find the decoder */
-        decoder = avcodec_find_decoder(
-                ffmovie_ctx->fmt_ctx->streams[stream_index]->codec.codec_id);
+        decoder = avcodec_find_decoder(GET_CODEC_FIELD(
+                    ffmovie_ctx->fmt_ctx->streams[stream_index]->codec, 
+                    codec_id));
+
         if (!decoder) {
             return NULL;
             /*zend_error(E_ERROR, "Could not find decoder for %s", 
@@ -405,8 +415,8 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
         }
 
         ffmovie_ctx->codec_ctx[stream_index] = 
-            &ffmovie_ctx->fmt_ctx->streams[stream_index]->codec;
- 
+            GET_CODEC_PTR(ffmovie_ctx->fmt_ctx->streams[stream_index]->codec);
+
        /* open the decoder */
         if (avcodec_open(ffmovie_ctx->codec_ctx[stream_index], decoder) < 0) {
             zend_error(E_ERROR, "Could not open codec for %s",
@@ -572,9 +582,10 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
     }
 
 #if LIBAVCODEC_BUILD > 4753 
-    return av_q2d(st->r_frame_rate);
+    return av_q2d(GET_CODEC_FIELD(st->codec, time_base));
 #else
-    return (float)st->r_frame_rate / st->r_frame_rate_base;
+    return (float)GET_CODEC_FIELD(st->codec, frame_rate) / 
+                        GET_CODEC_FIELD(st->codec, frame_rate_base);
 #endif
 }
 /* }}} */
@@ -644,7 +655,11 @@ static int _php_get_framewidth(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    return  st ? st->codec.width : 0;
+    if (!st) {
+      return 0;
+    }
+ 
+    return GET_CODEC_FIELD(st->codec, width);
 }
 /* }}} */
 
@@ -668,7 +683,11 @@ static int _php_get_frameheight(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
 
-    return  st ? st->codec.height : 0;
+    if (!st) {
+      return 0;
+    }
+ 
+    return GET_CODEC_FIELD(st->codec, height);
 }
 /* }}} */
 
