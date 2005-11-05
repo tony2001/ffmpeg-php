@@ -4,6 +4,11 @@
 #include <avcodec.h>
 #include <avformat.h>
 
+// Uncomment the folowing line if you're sure you have gd support but the 
+// ffmpeg-php configure script is failing to detect it. I haven't had much
+// luck getting configure to detect gd in every case.
+//#define HAVE_LIBGD20
+
 PHP_FUNCTION(ffmpeg_frame);
 PHP_FUNCTION(getWidth);
 PHP_FUNCTION(getHeight);
