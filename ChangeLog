@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.6 (08/30/2005)
+
+    Bug Fixes:
+    * Fixed compatiblity with ffmpeg cvs after 7/30/05 or so
+
 version 0.4.5 (07/12/2005)
     Bug Fixes:
     * Minor build fixes for older ffmpeg versions
