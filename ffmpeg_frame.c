@@ -356,7 +356,7 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
 		
 			// FIXME: gdImageBoundsSafe is implemented as a macro in the gd library
             //        bundled with php and as a function in other gd libraries.
-            //        The macro and the function are incompatible so diable this
+            //        The macro and the function are incompatible so disable this
             //        until I can come up with a way to work around the problem.
 			//if (gdImageBoundsSafe(dest, x, y)) {
                 /* copy pixel to gdimage buffer zeroing the alpha channel */
