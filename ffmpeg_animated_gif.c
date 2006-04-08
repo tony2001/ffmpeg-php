@@ -107,9 +107,9 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
 /* }}} */
 
 
-/* {{{ _php_open_movie_file()
+/* {{{ php_open_agif_file()
  */
-static void _php_open_movie_file(ff_animated_gif_context *ff_animated_gif, 
+static void php_open_agif_file(ff_animated_gif_context *ff_animated_gif, 
         char* filename)
 {
     AVCodec *codec;
@@ -242,7 +242,7 @@ PHP_FUNCTION(ffmpeg_animated_gif)
     }
     
     /* TODO: hold of on the open until the first frame is added */
-    _php_open_movie_file(ff_animated_gif, filename);
+    php_open_agif_file(ff_animated_gif, filename);
     
     /* pass NULL for resource result since we're not returning the resource
      directly, but adding it to the returned object. */
