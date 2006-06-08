@@ -576,13 +576,21 @@ PHP_FUNCTION(getDuration)
 static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
+    float rate = 0.0f;
 
     if (!st) {
-      return 0.0f;
+      return rate;
     }
 
 #if LIBAVCODEC_BUILD > 4753 
-    return av_q2d(GET_CODEC_FIELD(st->codec, time_base));
+    if(GET_CODEC_FIELD(st->codec, codec_type) == CODEC_TYPE_VIDEO){
+        if(st->r_frame_rate.den && st->r_frame_rate.num) {
+            rate = av_q2d(st->r_frame_rate);
+        } else {
+            rate = 1 / av_q2d(GET_CODEC_FIELD(st->codec, time_base));
+        }
+    }
+    return (float)rate;
 #else
     return (float)GET_CODEC_FIELD(st->codec, frame_rate) / 
                         GET_CODEC_FIELD(st->codec, frame_rate_base);
