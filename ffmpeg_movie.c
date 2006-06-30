@@ -831,7 +831,7 @@ PHP_FUNCTION(hasAudio)
 
 
 /* {{{ _php_get_codec_name()
-   Returns a frame from the movie.
+   Returns the name of a video or audio codec from a movie
  */
 static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
 {
