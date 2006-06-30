@@ -926,7 +926,7 @@ PHP_FUNCTION(getAudioCodec)
 
 
 /* {{{ _php_get_audio_channels()
-   Returns a frame from the movie.
+   Returns the number of audio channels in a movie.
  */
 static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
 {
