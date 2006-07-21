@@ -9,9 +9,11 @@ if test "$PHP_FFMPEG" != "no"; then
     if test -f $i/include/ffmpeg/avcodec.h; then
       FFMPEG_DIR=$i
       FFMPEG_INCDIR=$i/include/ffmpeg
+      break
     elif test -f $i/include/avcodec.h; then
       FFMPEG_DIR=$i
       FFMPEG_INCDIR=$i/include
+      break
     fi
   done
 
@@ -26,6 +28,7 @@ if test "$PHP_FFMPEG" != "no"; then
   for i in $PHP_FFMPEG /usr/local /usr ; do
     if test -f $i/lib/libavcodec.so; then
       FFMPEG_LIBDIR=$i/lib
+      break
     fi
   done
 
