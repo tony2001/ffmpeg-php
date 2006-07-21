@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.7 (06/08/2006)
+
+    Bug Fixes:
+    * Fixed framerate calculation to be compatible with ffmpeg cvs 6/8/06 
+
 version 0.4.6 (08/30/2005)
 
     Bug Fixes:
