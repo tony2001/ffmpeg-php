@@ -107,6 +107,10 @@ A: Your version of php is compiled without gd support. Make sure to use the
 
    #define HAVE_LIBGD20
 
+   ...in ffmpeg_frame.h and run...
+   
+   make clean && make 
+   
    ...to force ffmpeg to compile with gd support.
 
 Q: I get 'avcodec.h: No such file or directory' when I try to 'make' ffmpeg-php 
