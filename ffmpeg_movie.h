@@ -31,6 +31,9 @@ PHP_FUNCTION(getFrame);
 PHP_FUNCTION(getVideoCodec);
 PHP_FUNCTION(getAudioCodec);
 PHP_FUNCTION(getAudioChannels);
+PHP_FUNCTION(getAudioSampleRate);
+PHP_FUNCTION(getAudioBitRate);
+PHP_FUNCTION(getVideoBitRate);
 PHP_FUNCTION(getPixelAspectRatio);
 
 typedef struct {

@@ -76,7 +76,10 @@ foreach($movies as $movie) {
     printf("get video codec = %s\n", $mov->getVideoCodec());
     printf("get audio codec = %s\n", $mov->getAudioCodec());
     printf("get audio channels = %s\n", $mov->getAudioChannels());
-    printf("get bit rate = %d kb/s\n", $mov->getBitRate());
+    printf("get bit rate = %d\n", $mov->getBitRate());
+    printf("get audio bit rate = %d\n", $mov->getAudioBitRate());
+    printf("get audio sample rate = %d \n", $mov->getAudioSampleRate());
+    printf("get video bit rate = %d\n", $mov->getVideoBitRate());
 /*    
     while (1) {
         $frame = $mov->getFrame();

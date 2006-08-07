@@ -1,18 +1,34 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+
+version 0.4.8 (08/04/2006)
+    
+New Features:
+    * Added new functions for audio streams: getAudioSampleRate(), 
+      getAudioBitRate() (Martin Prangl)
+    * Changed getBitRate function to like getAudioSampleRate() and
+      getAudioBitRate(). Now returns bits per second instead of
+      calculating kb/s. (To get kb/s just do movie->getBitRate() / 1000
+      in php.) (tkirby)
+
+    Bug Fixes:
+    * Fix possible error in hasAudio calculation if audio stream is the
+      first stream. (tkirby)
+
 version 0.4.7 (06/08/2006)
 
     Bug Fixes:
     * Fixed framerate calculation to be compatible with ffmpeg cvs 6/8/06 
+      (tkirby)
 
 version 0.4.6 (08/30/2005)
 
     Bug Fixes:
-    * Fixed compatiblity with ffmpeg cvs after 7/30/05 or so
+    * Fixed compatiblity with ffmpeg cvs after 7/30/05 or so (tkirby)
 
 version 0.4.5 (07/12/2005)
     Bug Fixes:
-    * Minor build fixes for older ffmpeg versions
+    * Minor build fixes for older ffmpeg versions (tkirby)
 
 version 0.4.4 (06/24/2005)
     New Features:

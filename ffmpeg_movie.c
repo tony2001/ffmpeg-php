@@ -30,6 +30,7 @@
 #define GET_CODEC_PTR(codec) &codec
 #endif
 
+
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
 zend_class_entry ffmpeg_movie_class_entry;
 
@@ -69,6 +70,9 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     PHP_FALIAS(getvideocodec,       getVideoCodec,       NULL)
     PHP_FALIAS(getaudiocodec,       getAudioCodec,       NULL)
     PHP_FALIAS(getaudiochannels,    getAudioChannels,    NULL)
+    PHP_FALIAS(getaudiosamplerate,  getAudioSampleRate,  NULL)
+    PHP_FALIAS(getaudiobitrate,     getAudioBitRate,     NULL)
+    PHP_FALIAS(getvideobitrate,     getVideoBitRate,     NULL)
     PHP_FALIAS(getpixelaspectratio, getPixelAspectRatio, NULL)
     {NULL, NULL, NULL}
 };
@@ -115,6 +119,11 @@ static AVStream *_php_get_audio_stream(AVFormatContext *fmt_ctx)
     return i < 0 ? NULL : fmt_ctx->streams[i];
 }
 /* }}} */
+
+
+static int has_audio(ff_movie_context *ffmovie_ctx) {
+    return _php_get_audio_stream(ffmovie_ctx->fmt_ctx) != NULL;
+}
 
 
 /* {{{ _php_get_filename()
@@ -608,10 +617,6 @@ static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
       return 0;
     }
     
-    /* TODO: The test_framecounter.avi movie reports one more frame than it
-     *       contains. Make sure this is rounding correctly or maybe use floor
-     *       to be safe.
-     */
     return LRINT(_php_get_framerate(ffmovie_ctx) * 
             _php_get_duration(ffmovie_ctx));
 }
@@ -804,15 +809,11 @@ static int _php_get_bitrate(ff_movie_context *ffmovie_ctx)
  */
 PHP_FUNCTION(getBitRate)
 {
-    int bitrate;
     ff_movie_context *ffmovie_ctx;
     
     GET_MOVIE_RESOURCE(ffmovie_ctx);
    
-    /* convert to kb/s */
-    bitrate = _php_get_bitrate(ffmovie_ctx) / 1000; 
-
-    RETURN_LONG(bitrate);
+    RETURN_LONG(_php_get_bitrate(ffmovie_ctx));
 }
 /* }}} */
 
@@ -825,7 +826,7 @@ PHP_FUNCTION(hasAudio)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    RETURN_BOOL( _php_get_audio_stream(ffmovie_ctx->fmt_ctx) > 0);
+    RETURN_BOOL(has_audio(ffmovie_ctx));
 }
 /* }}} */
 
@@ -839,12 +840,6 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
     AVCodec *p = NULL;
     const char *codec_name;
     char buf1[32];
-    int stream;
-
-    stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, type);
-    if (stream < 0) {
-        return NULL;
-    }
 
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
     if (!decoder_ctx) {
@@ -883,6 +878,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
     
     return codec_name;
 } 
+/* }}} */
 
 
 /* {{{ proto int getVideoCodec()
@@ -926,25 +922,19 @@ PHP_FUNCTION(getAudioCodec)
 
 
 /* {{{ _php_get_audio_channels()
-   Returns the number of audio channels in a movie.
  */
-static int _php_get_audio_channels(ff_movie_context *ffmovie_ctx)
+static int _php_get_codec_channels(ff_movie_context *ffmovie_ctx, int type)
 {
     AVCodecContext *decoder_ctx = NULL;
-    int stream;
 
-    stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx, CODEC_TYPE_AUDIO);
-    if (stream < 0) {
-        return 0;
-    }
-
-    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, CODEC_TYPE_AUDIO);
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
     if (!decoder_ctx) {
         return 0;
     }
 
     return decoder_ctx->channels;
 } 
+/* }}} */
 
 
 /* {{{ proto int getAudioChannels()
@@ -956,7 +946,7 @@ PHP_FUNCTION(getAudioChannels)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    channels = _php_get_audio_channels(ffmovie_ctx);
+    channels = _php_get_codec_channels(ffmovie_ctx, CODEC_TYPE_AUDIO);
  
     if (channels) {
         RETURN_LONG(channels);
@@ -965,6 +955,99 @@ PHP_FUNCTION(getAudioChannels)
     }
 }
 /* }}} */
+
+
+/* {{{ _php_get_codec_sample_rate()
+ */
+static int _php_get_codec_sample_rate(ff_movie_context *ffmovie_ctx, int type)
+{
+    AVCodecContext *decoder_ctx = NULL;
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
+    if (!decoder_ctx) {
+        return 0;
+    }
+
+    return decoder_ctx->sample_rate;
+} 
+/* }}} */
+
+
+/* {{{ proto int getAudioSampleRate()
+ */
+PHP_FUNCTION(getAudioSampleRate)
+{
+    ff_movie_context *ffmovie_ctx = NULL;
+    int sample_rate = 0;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    sample_rate = _php_get_codec_sample_rate(ffmovie_ctx, CODEC_TYPE_AUDIO);
+ 
+    if (sample_rate) {
+        RETURN_LONG(sample_rate);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+
+/* {{{ _php_get_codec_bit_rate()
+   Returns the bit rate for codec of type.
+ */
+static int _php_get_codec_bit_rate(ff_movie_context *ffmovie_ctx, int type)
+{
+    AVCodecContext *decoder_ctx = NULL;
+
+    decoder_ctx = _php_get_decoder_context(ffmovie_ctx, type);
+    if (!decoder_ctx) {
+        return 0;
+    }
+
+    return decoder_ctx->bit_rate;
+} 
+
+
+/* {{{ proto int getAudioBitRate()
+ */
+PHP_FUNCTION(getAudioBitRate)
+{
+    ff_movie_context *ffmovie_ctx = NULL;
+    int bit_rate = 0;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    bit_rate = _php_get_codec_bit_rate(ffmovie_ctx, CODEC_TYPE_AUDIO);
+ 
+    if (bit_rate) {
+        RETURN_LONG(bit_rate);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+
+/* {{{ proto int getVideoBitRate()
+ */
+PHP_FUNCTION(getVideoBitRate)
+{
+    ff_movie_context *ffmovie_ctx = NULL;
+    int bit_rate = 0;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    bit_rate = _php_get_codec_bit_rate(ffmovie_ctx, CODEC_TYPE_VIDEO);
+ 
+    if (bit_rate) {
+        RETURN_LONG(bit_rate);
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
 
 
 /* {{{ _php_get_av_frame()
@@ -1196,7 +1279,7 @@ PHP_FUNCTION(getFrame)
  * one frame is read. This function will read a frame without moving the
  * frame counter.
  */
-static void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
+void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
     AVFrame *frame = NULL;
     int is_keyframe;
     int64_t pts;
@@ -1208,7 +1291,7 @@ static void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
 }
 
 
-/* {{{ _php_get_pixelaspect()
+/* {{{ _php_get_sample_aspec_ratio()
  */
 static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
 {
