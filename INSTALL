@@ -25,7 +25,7 @@ make install
 BUILDING FFMPEG-PHP AS A SHARED EXTENSION 
 -----------------------------------------
 
-1. Build php if not already built (See the file INSTALL in your php source directory)
+1. Build php if not already built or installed by your distro (See the file INSTALL in your php source directory)
 
 2. Unpack the archive
 
@@ -35,7 +35,7 @@ BUILDING FFMPEG-PHP AS A SHARED EXTENSION
 
         cd ffmpeg-php.X.XX/
 
-4. Run phpize (included in the php installation) to build configuration files
+4. Run phpize (included with your php install) to build configuration files
 
         phpize
 
