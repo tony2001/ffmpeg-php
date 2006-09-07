@@ -158,18 +158,54 @@ static ff_movie_context* _php_alloc_ffmovie_ctx(int persistent)
 
 /* {{{ _php_open_movie_file()
  */
+static void _php_print_av_error(const char *filename, int err) 
+{
+    switch(err) {   
+       case AVERROR_IO:
+            zend_error(E_WARNING, "%s: I/O error.\n", filename);
+            break;  
+       case AVERROR_NOMEM:
+            zend_error(E_WARNING, "%s: Not enough memory.\n", filename);
+            break;  
+        case AVERROR_NOTSUPP:
+            zend_error(E_WARNING, "%s: Operation not supported.\n", filename);
+            break;  
+ 
+       case AVERROR_NUMEXPECTED:
+            zend_error(E_WARNING, "%s: Incorrect image filename syntax.\n", filename);  
+            break;  
+        case AVERROR_INVALIDDATA:   
+            zend_error(E_WARNING, "%s: Error while parsing header\n", filename);  
+            break;  
+        case AVERROR_NOFMT:     
+            zend_error(E_WARNING, "%s: Unknown format\n", filename);  
+        case AVERROR_UNKNOWN:
+            /* Fall thru to default case */
+        default:    
+            zend_error(E_WARNING, "%s: Error while opening file (%d)\n", filename, err);  
+            break;  
+    }   
+}
+/* }}} */
+
+
+/* {{{ _php_open_movie_file()
+ */
 static int _php_open_movie_file(ff_movie_context *ffmovie_ctx, 
         char* filename)
 {
     AVFormatParameters params;
+    int err;
 
     if (ffmovie_ctx->fmt_ctx) {
         av_close_input_file(ffmovie_ctx->fmt_ctx);
     }
     
     /* open the file with generic libav function */
-    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
+    if (err = av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
                 &params)) {
+        
+        _php_print_av_error(filename, err);
         return -1;
     }
     
