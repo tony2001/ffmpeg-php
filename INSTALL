@@ -27,15 +27,13 @@ BUILDING FFMPEG-PHP AS A SHARED EXTENSION
 
 1. Build php if not already built (See the file INSTALL in your php source directory)
 
-2. Unpack the archive and copy the ffmpeg extension directory into your the 
-   php sources extensions directory
+2. Unpack the archive
 
         tar -xjf ffmpeg-php.X.XX.tar.gz
-        cp ffmpeg /path/to/php_sources/ext
 
 3. cd into the ffmpeg extension directory
 
-        cd /path/to/php_sources/ext/ffmpeg
+        cd ffmpeg-php.X.XX/
 
 4. Run phpize (included in the php installation) to build configuration files
 
@@ -47,7 +45,7 @@ BUILDING FFMPEG-PHP AS A SHARED EXTENSION
 
 6. Install the shared extension 
 
-        make install (you may need to become root depending on your installation)
+        make install (as root)
 
 If everything went as planned, ffmpeg-php is now installed as a shared library. 
 You must explicitly load it in your scripts using dl(ffmpeg.so) or if you want 
