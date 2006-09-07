@@ -4,7 +4,7 @@
  * as a simple manual test script and an example of the syntax for calling
  * the ffmpeg-php functions
  * 
- * To run it from the command line type 'php -q ffmpeg_test.php'or from a 
+ * To run it from the command line type 'php -q ffmpeg_test.php 'or from a 
  * browser * copy this file into your web root and point your browser at it.
  */
 
@@ -17,44 +17,29 @@ if (!extension_loaded($extension)) {
     dl($extension_soname) or die("Can't load extension $extension_fullname\n");
 }
 
-
-function getDirFiles($dirPath)
-{
-    if ($handle = opendir($dirPath))
-    {
-        while (false !== ($file = readdir($handle))) {
-            $fullpath = $dirPath . '/' . $file;
-            if (!is_dir($fullpath) && $file != "CVS" && $file != "." && $file != "..")
-                $filesArr[] = trim($fullpath);
-        }
-        closedir($handle);
-    } 
-
-    return $filesArr;   
-}
-
-
 if (php_sapi_name() != 'cgi') {
     echo '<pre>';
 }
 
-// print available functions and aliases
 printf("libavcodec version number: %d\n", LIBAVCODEC_VERSION_NUMBER);
 printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
 
 // print available functions and aliases
 echo "\nFunctions available in $extension_fullname extension:\n";
-foreach(get_extension_funcs($extension) as $func) {
-    echo $func."\n";
+$functions = get_extension_funcs($extension);
+if (is_array($functions)) {
+    foreach($functions as $func) {
+        echo $func . "\n";
+    }
+} else {
+    echo "No Functions Defined\n";
 }
 
-$class = "ffmpeg_movie";
-echo "\nMethods available in class $class:\n";
-foreach(get_class_methods($class) as $method) {
-    echo $method."\n";
-}
+print_class_methods("ffmpeg_movie");
+print_class_methods("ffmpeg_frame");
+print_class_methods("ffmpeg_animated_gif");
 
-// put some movie files into this array to test the ffmpeg functions
+// get an array for movies from the test media directory 
 $movies = getDirFiles(dirname(__FILE__) . '/test_media');
 
 echo "--------------------\n\n";
@@ -80,15 +65,6 @@ foreach($movies as $movie) {
     printf("get audio bit rate = %d\n", $mov->getAudioBitRate());
     printf("get audio sample rate = %d \n", $mov->getAudioSampleRate());
     printf("get video bit rate = %d\n", $mov->getVideoBitRate());
-/*    
-    while (1) {
-        $frame = $mov->getFrame();
-        if (!is_resource($frame)) {
-            break;
-        }
-        echo "get frame() $frame" . "\n";
-    }
- */    
     printf("get frame = %s\n", is_object($mov->getFrame(10)) ? 'true' : 'false');
     printf("get frame number = %d\n", $mov->getFrameNumber());
     echo "\n--------------------\n\n";
@@ -97,5 +73,34 @@ foreach($movies as $movie) {
 if (php_sapi_name() != 'cgi') {
     echo '</pre>';
 }
+
+/* FUNCTIONS */
+function print_class_methods($class) {
+    echo "\nMethods available in class '$class':\n";
+    $methods = get_class_methods($class);
+    if (is_array($methods)) {
+        foreach($methods as $method) {
+            echo $method . "\n";
+        }
+    } else {
+        echo "No Methods Defined\n";
+    }
+}
+
+function getDirFiles($dirPath)
+{
+    if ($handle = opendir($dirPath))
+    {
+        while (false !== ($file = readdir($handle))) {
+            $fullpath = $dirPath . '/' . $file;
+            if (!is_dir($fullpath) && $file != "CVS" && $file != "." && $file != "..")
+                $filesArr[] = trim($fullpath);
+        }
+        closedir($handle);
+    } 
+
+    return $filesArr;   
+}
+
 
 ?>
