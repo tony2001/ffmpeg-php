@@ -21,19 +21,10 @@ if (php_sapi_name() != 'cgi') {
     echo '<pre>';
 }
 
+printf("ffmpeg-php version number: %d\n", FFMPEG_VERSION_NUMBER);
+printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
 printf("libavcodec version number: %d\n", LIBAVCODEC_VERSION_NUMBER);
 printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
-
-// print available functions and aliases
-echo "\nFunctions available in $extension_fullname extension:\n";
-$functions = get_extension_funcs($extension);
-if (is_array($functions)) {
-    foreach($functions as $func) {
-        echo $func . "\n";
-    }
-} else {
-    echo "No Functions Defined\n";
-}
 
 print_class_methods("ffmpeg_movie");
 print_class_methods("ffmpeg_frame");
