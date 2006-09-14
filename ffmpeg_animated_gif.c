@@ -20,6 +20,15 @@
             "ffmpeg_animated_gif", le_ffmpeg_animated_gif);\
 }\
 
+//TODO Put this somewhere central
+#if LIBAVFORMAT_BUILD > 4628
+#define GET_CODEC_FIELD(codec, field) codec->field
+#define GET_CODEC_PTR(codec) codec
+#else
+#define GET_CODEC_FIELD(codec, field) codec.field
+#define GET_CODEC_PTR(codec) &codec
+#endif
+
 static zend_class_entry *ffmpeg_animated_gif_class_entry_ptr;
 zend_class_entry ffmpeg_animated_gif_class_entry;
 
@@ -79,7 +88,7 @@ AVStream * _php_add_video_stream(AVFormatContext *oc, int codec_id, int width,
     oc->loop_output = loop_count;
 #endif
     
-    c = st->codec;
+    c = GET_CODEC_PTR(st->codec);
     c->codec_id = CODEC_ID_RAWVIDEO;
     c->codec_type = CODEC_TYPE_VIDEO;
     c->pix_fmt = PIX_FMT_RGB24;
@@ -113,7 +122,7 @@ static void php_open_agif_file(ff_animated_gif_context *ff_animated_gif,
         char* filename)
 {
     AVCodec *codec;
-    AVCodecContext *c = ff_animated_gif->video_st->codec;
+    AVCodecContext *c = GET_CODEC_PTR(ff_animated_gif->video_st->codec);
 
     snprintf(ff_animated_gif->fmt_ctx->filename, 
             sizeof(ff_animated_gif->fmt_ctx->filename), "%s", filename);
@@ -263,7 +272,7 @@ static void _php_free_ffmpeg_animated_gif(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 
     /* close each codec */
     if (ff_animated_gif->video_st) {
-        avcodec_close(ff_animated_gif->video_st->codec);
+        avcodec_close(GET_CODEC_PTR(ff_animated_gif->video_st->codec));
         av_free(ff_animated_gif->video_outbuf);
     }
 
@@ -321,7 +330,7 @@ static int _php_addframe(ff_animated_gif_context *ff_animated_gif, ff_frame_cont
     int out_size;
     AVCodecContext *c;
 
-    c = ff_animated_gif->video_st->codec;
+    c = GET_CODEC_PTR(ff_animated_gif->video_st->codec);
 
     if (frame->width != c->width || frame->height != c->height) {
         _php_resample_frame(frame, c->width, c->height, 0,0,0,0);
