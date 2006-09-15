@@ -1,9 +1,19 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.4.9 (09/04/2006)
+
+    New Features:
+    * Better error reporting when opening a movie fails
+    * INSTALL doc clarifications
+
+    Bug Fixes:
+    * Fixed compilation error in ffmpeg_animated_gif.c when building against 
+      old ffmpeg
+
 
 version 0.4.8 (08/04/2006)
     
-New Features:
+    New Features:
     * Added new functions for audio streams: getAudioSampleRate(), 
       getAudioBitRate() (Martin Prangl)
     * Changed getBitRate function to like getAudioSampleRate() and
