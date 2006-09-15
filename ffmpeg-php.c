@@ -32,7 +32,7 @@
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.4.8"
+#define FFMPEG_PHP_VERSION "0.4.9"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -81,7 +81,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
     register_ffmpeg_animated_gif_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
-    REGISTER_STRING_CONSTANT("FFMPEG_VERSION_NUMBER", 
+    REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING", 
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
 		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
