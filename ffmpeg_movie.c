@@ -158,6 +158,7 @@ static ff_movie_context* _php_alloc_ffmovie_ctx(int persistent)
 
 /* {{{ _php_open_movie_file()
  */
+/*
 static void _php_print_av_error(const char *filename, int err) 
 {
     switch(err) {   
@@ -180,12 +181,13 @@ static void _php_print_av_error(const char *filename, int err)
         case AVERROR_NOFMT:     
             zend_error(E_WARNING, "%s: Unknown format\n", filename);  
         case AVERROR_UNKNOWN:
-            /* Fall thru to default case */
+            // Fall thru to default case 
         default:    
             zend_error(E_WARNING, "%s: Error while opening file (%d)\n", filename, err);  
             break;  
     }   
 }
+*/
 /* }}} */
 
 
@@ -195,17 +197,15 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
         char* filename)
 {
     AVFormatParameters params;
-    int err;
 
     if (ffmovie_ctx->fmt_ctx) {
         av_close_input_file(ffmovie_ctx->fmt_ctx);
+        ffmovie_ctx->fmt_ctx == NULL;
     }
     
     /* open the file with generic libav function */
-    if (err = av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
+    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
                 &params)) {
-        
-        _php_print_av_error(filename, err);
         return -1;
     }
     
