@@ -196,16 +196,13 @@ static void _php_print_av_error(const char *filename, int err)
 static int _php_open_movie_file(ff_movie_context *ffmovie_ctx, 
         char* filename)
 {
-    AVFormatParameters params;
-
     if (ffmovie_ctx->fmt_ctx) {
         av_close_input_file(ffmovie_ctx->fmt_ctx);
         ffmovie_ctx->fmt_ctx == NULL;
     }
     
     /* open the file with generic libav function */
-    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, 
-                &params)) {
+    if (av_open_input_file(&(ffmovie_ctx->fmt_ctx), filename, NULL, 0, NULL)) {
         return -1;
     }
     
