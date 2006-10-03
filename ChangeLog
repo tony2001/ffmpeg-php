@@ -1,5 +1,11 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.5.0 (09/29/2006)
+
+    Bug Fixes:
+    * Fixed problem with params to av_open_input_file not getting initialized
+      correctly. (Thanks to SilverCode for the fix)
+
 version 0.4.9 (09/04/2006)
 
     New Features:
