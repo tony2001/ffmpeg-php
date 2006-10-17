@@ -198,7 +198,7 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
 {
     if (ffmovie_ctx->fmt_ctx) {
         av_close_input_file(ffmovie_ctx->fmt_ctx);
-        ffmovie_ctx->fmt_ctx == NULL;
+        ffmovie_ctx->fmt_ctx = NULL;
     }
     
     /* open the file with generic libav function */
