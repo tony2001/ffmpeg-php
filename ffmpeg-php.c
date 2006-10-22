@@ -22,8 +22,7 @@
 #include "config.h"
 #endif
 
-#include <avcodec.h>
-#include <avformat.h>
+#include "qp_util.h"
 
 #include "php.h"
 #include "php_ini.h"
@@ -69,11 +68,8 @@ PHP_INI_END()
  */
 PHP_MINIT_FUNCTION(ffmpeg)
 {
-    /* must be called before using avcodec libraries. */ 
-    avcodec_init();
-
-    /* register all codecs */
-    av_register_all();
+    /* must be called before using quadrupel library. */ 
+    quadrupel_init();
 
     REGISTER_INI_ENTRIES();
     
@@ -84,9 +80,9 @@ PHP_MINIT_FUNCTION(ffmpeg)
     REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING", 
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
-		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
+		    qp_avcodec_version(), CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", 
-		    avcodec_build(), CONST_CS | CONST_PERSISTENT);
+		    qp_avcodec_build(), CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 /* }}} */
@@ -96,7 +92,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
  */
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
-    av_free_static();
+    quadrupel_shutdown();
 
     // TODO: Free any remaining persistent movies here?
     

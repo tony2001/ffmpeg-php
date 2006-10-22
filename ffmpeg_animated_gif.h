@@ -1,8 +1,6 @@
 #ifndef FFMPEG_ANIMATED_GIF_H
 #define FFMPEG_ANIMATED_GIF_H
 
-#include <avcodec.h>
-#include <avformat.h>
 
 /* animated gif constructor */
 PHP_FUNCTION(ffmpeg_animated_gif);

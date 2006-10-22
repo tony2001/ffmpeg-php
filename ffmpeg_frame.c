@@ -5,6 +5,7 @@
 
 #include "php_ffmpeg.h"
 
+#include "quadrupel/qp_frame.h"
 #include "ffmpeg_frame.h"
 
 /* 
@@ -57,70 +58,33 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
 /* }}} */
 
 
-/* {{{ _php_alloc_ff_frame()
- */
-static ff_frame_context* _php_alloc_ff_frame()
-{
-    ff_frame_context *ff_frame = NULL;
-
-    ff_frame = emalloc(sizeof(ff_frame_context));
-    
-    if (!ff_frame) {
-        zend_error(E_ERROR, "Error allocating ffmpeg_frame");
-    }
-
-    ff_frame->av_frame = NULL;
-    ff_frame->width = 0;
-    ff_frame->height = 0;
-    ff_frame->pixel_format = 0;
-
-    return ff_frame;
-}
-/* }}} */
-
-
 /* {{{ proto object _php_create_ffmpeg_frame() 
    creates an ffmpeg_frame object, adds a ffmpeg_frame resource to the
    object, registers the resource and returns a direct pointer to the 
    resource.
  */
-ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
+qp_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
 {
     int ret;
-	ff_frame_context *ff_frame;
+	qp_frame_context *qp_frame;
     
-    ff_frame = _php_alloc_ff_frame();
+    qp_frame = qp_alloc_frame_ctx(&_emalloc);
     
-	ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
+	ret = ZEND_REGISTER_RESOURCE(NULL, qp_frame, le_ffmpeg_frame);
     
     object_init_ex(return_value, ffmpeg_frame_class_entry_ptr);
     add_property_resource(return_value, "ffmpeg_frame", ret);
-    return ff_frame;
+    return qp_frame;
 }
 /* }}} */
-
-
-/* {{{ _php_free_av_frame()
- */
-static void _php_free_av_frame(AVFrame *av_frame)
-{
-    if (av_frame) {
-        if (av_frame->data[0]) {
-            av_free(av_frame->data[0]);
-            av_frame->data[0] = NULL;
-        }
-        av_free(av_frame);
-    }
-}
 
 
 /* {{{ _php_free_ffmpeg_frame()
  */
 static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
-    ff_frame_context *ff_frame = (ff_frame_context*)rsrc->ptr;    
-    _php_free_av_frame(ff_frame->av_frame);
-    efree(ff_frame);
+    qp_frame_context *qp_frame = (qp_frame_context*)rsrc->ptr;    
+    qp_free_frame_ctx(qp_frame, _efree);
 }
 /* }}} */
 
@@ -141,152 +105,6 @@ void register_ffmpeg_frame_class(int module_number)
     ffmpeg_frame_class_entry_ptr = 
         zend_register_internal_class(&ffmpeg_frame_class_entry TSRMLS_CC);
 }
-
-
-/* {{{ _php_convert_frame()
- */
-int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt) {
-    AVFrame *new_fmt_frame;
-
-    if (!ff_frame->av_frame) {
-        return -1;
-    }
-
-    if (ff_frame->pixel_format == new_fmt) {
-        return 0;
-    }
-
-    new_fmt_frame = avcodec_alloc_frame();
-    avpicture_alloc((AVPicture*)new_fmt_frame, new_fmt, ff_frame->width,
-                            ff_frame->height);
-    if (img_convert((AVPicture*)new_fmt_frame, new_fmt, 
-                (AVPicture *)ff_frame->av_frame, 
-                ff_frame->pixel_format, ff_frame->width, 
-                ff_frame->height) < 0) {
-        zend_error(E_ERROR, "Error converting frame");
-    }
-
-    _php_free_av_frame(ff_frame->av_frame);
-
-    ff_frame->av_frame = new_fmt_frame;
-    ff_frame->pixel_format = new_fmt;
-    return 0;
-}
-/* }}} */
-
-
-/* {{{ _php_crop_frame()
- */
-static int _php_crop_frame(ff_frame_context *ff_frame, 
-        int crop_top, int crop_bottom, int crop_left, int crop_right) {
-    AVFrame *cropped_frame, *tmp_src;
-    AVFrame crop_temp;
-    int cropped_width, cropped_height;
-
-    if (!ff_frame->av_frame) {
-        return -1;
-    }
-
-    tmp_src =ff_frame->av_frame;
-    
-    crop_temp.data[0] = tmp_src->data[0] +
-        (crop_top * tmp_src->linesize[0]) + crop_left;
-
-    crop_temp.data[1] = tmp_src->data[1] +
-        ((crop_top >> 1) * tmp_src->linesize[1]) +
-        (crop_left >> 1);
-
-    crop_temp.data[2] = tmp_src->data[2] +
-        ((crop_top >> 1) * tmp_src->linesize[2]) +
-        (crop_left >> 1);
-
-    crop_temp.linesize[0] = tmp_src->linesize[0];
-    crop_temp.linesize[1] = tmp_src->linesize[1];
-    crop_temp.linesize[2] = tmp_src->linesize[2];
-
-    cropped_frame = avcodec_alloc_frame();
-
-    cropped_width = ff_frame->width - (crop_left + crop_right);
-    cropped_height = ff_frame->height - (crop_top + crop_bottom);
-    
-    avpicture_alloc((AVPicture*)cropped_frame, ff_frame->pixel_format,
-            cropped_width, cropped_height);
-    
-    img_copy((AVPicture*)cropped_frame, 
-                (AVPicture *)&crop_temp, ff_frame->pixel_format, 
-                cropped_width, cropped_height);
-
-    /* free non-cropped frame */
-    _php_free_av_frame(ff_frame->av_frame);
-
-    ff_frame->av_frame = cropped_frame;
-    ff_frame->width = cropped_width;
-    ff_frame->height = cropped_height;
-    return 0;
-}
-/* }}} */
-
-
-/* {{{ _php_resample_frame()
- */
-int _php_resample_frame(ff_frame_context *ff_frame,
-        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
-        int crop_left, int crop_right)
-{
-    AVFrame *resampled_frame;
-    ImgReSampleContext *img_resample_ctx = NULL;
- 
-    if (!ff_frame->av_frame) {
-        return -1;
-    }
-
-    /* 
-     * do nothing if width and height are the same as the frame and no 
-     * cropping was specified
-     * */
-    if (wanted_width == ff_frame->width && 
-            wanted_height == ff_frame->height &&
-            (!crop_left && !crop_right && !crop_top && !crop_bottom)) {
-        return 0;
-    }
-    
-    /* just crop if wanted dimensions - crop bands = same width/height */
-    if (wanted_width == ff_frame->width - (crop_left + crop_right) && 
-            wanted_height == ff_frame->height - (crop_left + crop_right)) {
-        _php_crop_frame(ff_frame, crop_top, crop_bottom, crop_left, crop_right);
-        return 0;
-    } 
-    
-    /* convert to PIX_FMT_YUV420P required for resampling */
-    _php_convert_frame(ff_frame, PIX_FMT_YUV420P);
-
-    img_resample_ctx = img_resample_full_init(
-            wanted_width, wanted_height,
-            ff_frame->width, ff_frame->height,
-            crop_top, crop_bottom, crop_left, crop_right,
-            0, 0, 0, 0);
-    if (!img_resample_ctx) {
-        return -1;
-    }
-
-    resampled_frame = avcodec_alloc_frame();
-    avpicture_alloc((AVPicture*)resampled_frame, PIX_FMT_YUV420P, 
-            wanted_width, wanted_height);
-
-    img_resample(img_resample_ctx, (AVPicture*)resampled_frame, 
-            (AVPicture*)ff_frame->av_frame);
-
-    _php_free_av_frame(ff_frame->av_frame);
-
-    img_resample_close(img_resample_ctx);
-
-    ff_frame->av_frame = resampled_frame;
-    ff_frame->width = wanted_width;
-    ff_frame->height = wanted_height;
-
-    return 0;
-}
-/* }}} */
 
 #if HAVE_LIBGD20
 
@@ -401,22 +219,22 @@ static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width,
  */
 PHP_FUNCTION(toGDImage)
 {
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
     gdImage *gd_img;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
 
-    _php_convert_frame(ff_frame, PIX_FMT_RGBA32);
+    qp_convert_frame(qp_frame, PIX_FMT_RGBA32);
 
-    return_value->value.lval = _php_get_gd_image(ff_frame->width, 
-            ff_frame->height);
+    return_value->value.lval = _php_get_gd_image(qp_frame->width, 
+            qp_frame->height);
 
     return_value->type = IS_RESOURCE;
 
     FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
 
-    if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img,
-            ff_frame->width, ff_frame->height)) {
+    if (_php_avframe_to_gd_image(qp_frame->av_frame, gd_img,
+            qp_frame->width, qp_frame->height)) {
         // don't error until we fix the gdImageBounds problem with older GD
         //zend_error(E_ERROR, "failed to convert frame to gd image");
     }
@@ -426,7 +244,7 @@ PHP_FUNCTION(toGDImage)
 
 /* {{{ proto object _php_read_frame_from_file(mixed)
  */
-/*_php_read_frame_from_file(ff_frame_context *ff_frame, char* filename)
+/*_php_read_frame_from_file(qp_frame_context *qp_frame, char* filename)
 {
     AVFrame *frame = NULL;
     AVFormatContext *ic;
@@ -452,7 +270,7 @@ PHP_FUNCTION(ffmpeg_frame)
     zval **argv[1];
     AVFrame *frame;
     gdImage *gd_img;
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
     int width, height, ret;
 
     if (ZEND_NUM_ARGS() != 1) {
@@ -465,9 +283,9 @@ PHP_FUNCTION(ffmpeg_frame)
                 "Error parsing arguments");
     }
 
-    ff_frame = _php_alloc_ff_frame();
+    qp_frame = qp_alloc_frame_ctx(&_emalloc);
     
-	ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
+	ret = ZEND_REGISTER_RESOURCE(NULL, qp_frame, le_ffmpeg_frame);
     
     object_init_ex(getThis(), ffmpeg_frame_class_entry_ptr);
     add_property_resource(getThis(), "ffmpeg_frame", ret);
@@ -477,7 +295,7 @@ PHP_FUNCTION(ffmpeg_frame)
             convert_to_string_ex(argv[0]);
             zend_error(E_ERROR, 
                   "Creating an ffmpeg_frame from a file is not implemented\n");
-            //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
+            //_php_read_frame_from_file(qp_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
             FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, argv[0]);
@@ -498,12 +316,12 @@ PHP_FUNCTION(ffmpeg_frame)
             _php_gd_image_to_avframe(gd_img, frame, width, height);
             
             /* set the ffmepg_frame to point to this av_frame */
-            ff_frame->av_frame = frame;
+            qp_frame->av_frame = frame;
             
             /* set the ffpmeg_frame's properties */
-            ff_frame->width = width;
-            ff_frame->height = height;
-            ff_frame->pixel_format = PIX_FMT_RGBA32;
+            qp_frame->width = width;
+            qp_frame->height = height;
+            qp_frame->pixel_format = PIX_FMT_RGBA32;
             break;
         default:
             zend_error(E_ERROR, "Invalid argument\n");
@@ -518,11 +336,11 @@ PHP_FUNCTION(ffmpeg_frame)
  */
 PHP_FUNCTION(getPresentationTimestamp)
 {
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
     
-    RETURN_DOUBLE((double)ff_frame->pts / AV_TIME_BASE);
+    RETURN_DOUBLE(qp_get_pts(qp_frame));
 }
 /* }}} */
 
@@ -531,11 +349,11 @@ PHP_FUNCTION(getPresentationTimestamp)
  */
 PHP_FUNCTION(isKeyFrame)
 {
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
     
-    RETURN_LONG(ff_frame->keyframe);
+    RETURN_LONG(qp_frame_is_keyframe(qp_frame));
 }
 /* }}} */
 
@@ -544,11 +362,11 @@ PHP_FUNCTION(isKeyFrame)
  */
 PHP_FUNCTION(getWidth)
 {
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
     
-    RETURN_LONG(ff_frame->width);
+    RETURN_LONG(qp_frame->width);
 }
 /* }}} */
 
@@ -557,11 +375,11 @@ PHP_FUNCTION(getWidth)
  */
 PHP_FUNCTION(getHeight)
 {
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
     
-    RETURN_LONG(ff_frame->height);
+    RETURN_LONG(qp_frame->height);
 }
 /* }}} */
 
@@ -571,10 +389,10 @@ PHP_FUNCTION(getHeight)
 PHP_FUNCTION(crop)
 {
     zval ***argv;
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
 
     /* retrieve arguments */ 
     argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
@@ -635,7 +453,7 @@ PHP_FUNCTION(crop)
     efree(argv);
 
     /* crop frame */
-    _php_crop_frame(ff_frame, crop_top, crop_bottom, crop_left, crop_right);
+    qp_crop_frame(qp_frame, crop_top, crop_bottom, crop_left, crop_right);
 
     RETURN_TRUE;
 }
@@ -647,11 +465,11 @@ PHP_FUNCTION(crop)
 PHP_FUNCTION(resize)
 {
     zval ***argv;
-    ff_frame_context *ff_frame;
+    qp_frame_context *qp_frame;
     int wanted_width = 0, wanted_height = 0;
     int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
 
-    GET_FRAME_RESOURCE(getThis(), ff_frame);
+    GET_FRAME_RESOURCE(getThis(), qp_frame);
 
     /* retrieve arguments */ 
     argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
@@ -746,7 +564,7 @@ PHP_FUNCTION(resize)
     efree(argv);
 
     /* resize frame */
-    _php_resample_frame(ff_frame, wanted_width, wanted_height, 
+    qp_resample_frame(qp_frame, wanted_width, wanted_height, 
             crop_top, crop_bottom, crop_left, crop_right);
 
     RETURN_TRUE;

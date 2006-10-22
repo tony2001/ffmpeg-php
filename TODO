@@ -1,1 +1,3 @@
 * add a configure option to allow to force compilation of the gd stuff.
+* persistent movies broken in qp branch
+* add config m4 stuff to inject quadrupel build step into ffmpeg-php Makefile 
