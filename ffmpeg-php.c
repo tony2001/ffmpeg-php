@@ -118,8 +118,6 @@ PHP_MINIT_FUNCTION(ffmpeg)
  */
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
-    av_free_static();
-
     // TODO: Free any remaining persistent movies here?
     
     UNREGISTER_INI_ENTRIES();

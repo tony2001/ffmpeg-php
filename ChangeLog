@@ -1,5 +1,10 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.5.3.1-svn
+    New Features:
+    * Remove deprecated av_free_static function to allow building with ffmpeg
+      svn.
+
 version 0.5.3 (05/30/2008)
     New Features:
     * Added 'ffmpeg.show_warnings' ini flag to control whether ffmpeg 
