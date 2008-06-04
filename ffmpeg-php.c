@@ -1,7 +1,7 @@
 /*
-   ffmpeg-php - a php module for accessing audio/video info from movie files.
+   This file is part of ffmpeg-php
 
-   Copyright (C) 2004,2005 Todd Kirby (ffmpeg.php@gmail.com)
+   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,22 +16,39 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+   In addition, as a special exception, the copyright holders of ffmpeg-php 
+   give you permission to combine ffmpeg-php with code included in the 
+   standard release of PHP under the PHP license (or modified versions of 
+   such code, with unchanged license). You may copy and distribute such a 
+   system following the terms of the GNU GPL for ffmpeg-php and the licenses 
+   of the other code concerned, provided that you include the source code of 
+   that other code when and as the GNU GPL requires distribution of source code.
+
+   You must obey the GNU General Public License in all respects for all of the 
+   code used other than standard release of PHP. If you modify this file, you 
+   may extend this exception to your version of the file, but you are not 
+   obligated to do so. If you do not wish to do so, delete this exception 
+   statement from your version.
+
  */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "qp_util.h"
-
 #include "php.h"
+
+#include <avcodec.h>
+#include <avformat.h>
+
 #include "php_ini.h"
 #include "php_globals.h"
 #include "ext/standard/info.h"
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.5.0"
+#define FFMPEG_PHP_VERSION "0.5.3"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -58,9 +75,11 @@ ZEND_GET_MODULE(ffmpeg);
 extern void register_ffmpeg_movie_class(int);
 extern void register_ffmpeg_animated_gif_class(int);
 extern void register_ffmpeg_frame_class(int);
+extern void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list args);
 
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("ffmpeg.show_warnings", "0", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 
@@ -68,11 +87,18 @@ PHP_INI_END()
  */
 PHP_MINIT_FUNCTION(ffmpeg)
 {
-    /* must be called before using quadrupel library. */ 
-    quadrupel_init();
+    /* must be called before using avcodec libraries. */ 
+    avcodec_init();
 
-    REGISTER_INI_ENTRIES();
+    /* register all codecs */
+    av_register_all();
     
+    REGISTER_INI_ENTRIES();
+ 
+    if (INI_BOOL("ffmpeg.show_warnings")) {
+        av_log_set_callback(ffmpeg_errorhandler);
+    } 
+   
     register_ffmpeg_movie_class(module_number);
     register_ffmpeg_animated_gif_class(module_number);
     register_ffmpeg_frame_class(module_number);
@@ -80,9 +106,9 @@ PHP_MINIT_FUNCTION(ffmpeg)
     REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING", 
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
-		    qp_avcodec_version(), CONST_CS | CONST_PERSISTENT);
+		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", 
-		    qp_avcodec_build(), CONST_CS | CONST_PERSISTENT);
+		    avcodec_build(), CONST_CS | CONST_PERSISTENT);
     return SUCCESS;
 }
 /* }}} */
@@ -92,7 +118,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
  */
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
-    quadrupel_shutdown();
+    av_free_static();
 
     // TODO: Free any remaining persistent movies here?
     
@@ -112,6 +138,11 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "ffmpeg-php version", FFMPEG_PHP_VERSION);
     php_info_print_table_row(2, "libavcodec version", LIBAVCODEC_IDENT);
     php_info_print_table_row(2, "libavformat version", LIBAVFORMAT_IDENT);
+#if HAVE_LIBGD20
+    php_info_print_table_row(2, "ffmpeg-php gd support ", "enabled");
+#else
+    php_info_print_table_row(2, "ffmpeg-php gd support ", "disabled");
+#endif // HAVE_LIBGD20
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();

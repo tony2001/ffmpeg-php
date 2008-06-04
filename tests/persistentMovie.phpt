@@ -5,11 +5,10 @@ ffmpeg persistent movie test
 --FILE--
 <?php
 $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi', 1);
-$mov->getFrame(10);
-printf("ffmpeg getFrameNumber(): %d\n", $mov->getFrameNumber());
 $mov2 = new ffmpeg_movie(dirname(__FILE__) . '/test_media/test.avi', 1);
-printf("ffmpeg getFrameNumber(): %d\n", $mov2->getFrameNumber());
+printf("ffmpeg getDuration(): %0.2f\n", $mov->getDuration());
+printf("ffmpeg getDuration(): %0.2f\n", $mov2->getDuration());
 ?>
 --EXPECTREGEX--
-ffmpeg getFrameNumber(): 10
-ffmpeg getFrameNumber(): 10
+ffmpeg getDuration(): 5.00
+ffmpeg getDuration(): 5.00

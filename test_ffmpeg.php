@@ -31,11 +31,11 @@ print_class_methods("ffmpeg_frame");
 print_class_methods("ffmpeg_animated_gif");
 
 // get an array for movies from the test media directory 
-$movies = getDirFiles(dirname(__FILE__) . '/test_media');
+$movies = getDirFiles(dirname(__FILE__) . '/tests/test_media');
 
 echo "--------------------\n\n";
 foreach($movies as $movie) {        
-    $mov = new ffmpeg_movie($movie, 0, 1);
+    $mov = new ffmpeg_movie($movie);
     printf("file name = %s\n", $mov->getFileName());
     printf("duration = %s seconds\n", $mov->getDuration());
     printf("frame count = %s\n", $mov->getFrameCount());
@@ -44,23 +44,27 @@ foreach($movies as $movie) {
     printf("title = %s\n", $mov->getTitle());
     printf("author = %s\n", $mov->getAuthor());
     printf("copyright = %s\n", $mov->getCopyright());
-    printf("frame height = %d pixels\n", $mov->getFrameHeight());
-    printf("frame width = %d pixels\n", $mov->getFrameWidth());
-    printf("get pixel format = %s\n", $mov->getPixelFormat());
-    printf("get pixel aspect ratio = %s\n", $mov->getPixelAspectRatio());
     printf("get bit rate = %d\n", $mov->getBitRate());
-    printf("get video codec = %s\n", $mov->getVideoCodec());
-    printf("get video bit rate = %d\n", $mov->getVideoBitRate());
     printf("has audio = %s\n", $mov->hasAudio() == 0 ? 'No' : 'Yes');
-    if($mov->hasAudio()) {
+    if ($mov->hasAudio()) {
+        printf("get audio stream id= %s\n", $mov->getAudioStreamId());
         printf("get audio codec = %s\n", $mov->getAudioCodec());
-        printf("get audio channels = %s\n", $mov->getAudioChannels());
         printf("get audio bit rate = %d\n", $mov->getAudioBitRate());
         printf("get audio sample rate = %d \n", $mov->getAudioSampleRate());
+        printf("get audio channels = %s\n", $mov->getAudioChannels());
     }
-    printf("get video bit rate = %d\n", $mov->getVideoBitRate());
-    printf("get frame = %s\n", is_object($mov->getFrame(10)) ? 'true' : 'false');
-    printf("get frame number = %d\n", $mov->getFrameNumber());
+    printf("has video = %s\n", $mov->hasVideo() == 0 ? 'No' : 'Yes');
+    if ($mov->hasVideo()) {
+        printf("frame height = %d pixels\n", $mov->getFrameHeight());
+        printf("frame width = %d pixels\n", $mov->getFrameWidth());
+        printf("get video stream id= %s\n", $mov->getVideoStreamId());
+        printf("get video codec = %s\n", $mov->getVideoCodec());
+        printf("get video bit rate = %d\n", $mov->getVideoBitRate());
+        printf("get pixel format = %s\n", $mov->getPixelFormat());
+        printf("get pixel aspect ratio = %s\n", $mov->getPixelAspectRatio());
+        printf("get frame = %s\n", is_object($mov->getFrame(10)) ? 'true' : 'false');
+        printf("get frame number = %d\n", $mov->getFrameNumber());
+    }
     echo "\n--------------------\n\n";
 }
 

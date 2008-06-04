@@ -1,5 +1,41 @@
 ChangeLog for ffmpeg-php (ffmpeg-php.sourceforge.net)
 
+version 0.5.3 (05/30/2008)
+    New Features:
+    * Added 'ffmpeg.show_warnings' ini flag to control whether ffmpeg 
+      warnings are converted to php warnings.
+    * Applied patch to add getAudioStreamId and getVideoStreamId functions 
+
+version 0.5.2.1 (04/03/2008)
+
+    Bug Fixes:
+    * Minor build fixes and cleanups
+
+version 0.5.2 (04/02/2008)
+
+    Bug Fixes:
+    * ffmpeg-php should compile on macos-x now
+    * Failure to find the proper codec is not a fatal error anymore
+    * Updated build script to deal with new ffmpeg include file layout.
+
+    
+    New Features:
+    * Added gd image bounds checking.
+    * Added config flag to skip the compile-time gd check.
+    * ffmpeg's logs are mapped to php's warnings and notices (no more stderr pollution)
+
+version 0.5.1 (06/11/2007)
+
+    Bug Fixes:
+    * Fixed some of the tests (Thanks to Raphael Geissert for the patch)
+    * Improved build process (Thanks to Raphael Geissert for the suggestions)
+    * Fixed the test script so it won't generate warnings when video/audio
+      stream is missing.
+
+    New Features:
+    * Added $movie->hasVideo() function to test for video stream.
+    * Copyright updated for better compatibilty with the PHP license.
+
 version 0.5.0 (09/29/2006)
 
     Bug Fixes:

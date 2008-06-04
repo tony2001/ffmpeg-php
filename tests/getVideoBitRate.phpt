@@ -8,4 +8,4 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/robot.avi');
 printf("ffmpeg getVideoBitRate(): %s\n", $mov->getVideoBitRate());
 ?>
 --EXPECT--
-ffmpeg getBitRate(): 104857200
+ffmpeg getVideoBitRate(): 104857200

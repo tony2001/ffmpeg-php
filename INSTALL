@@ -10,7 +10,7 @@ INSTALLATION INSTRUCTIONS
 
 These instructions are for Linux since I don't have windows. If you
 successfully build on windows, let me know how you did it and I'll update 
-the instructions.
+these instructions.
 
 BUILDING FFMPEG
 ---------------
@@ -29,11 +29,11 @@ BUILDING FFMPEG-PHP AS A SHARED EXTENSION
 
 2. Unpack the archive
 
-        tar -xjf ffmpeg-php.X.XX.tar.gz
+        tar -xjf ffmpeg-php.X.x.x.tbz2 -C /path/to/php_sources/ext/
 
 3. cd into the ffmpeg extension directory
 
-        cd ffmpeg-php.X.XX/
+        cd /path/to/php_sources/ext/ffmpeg-php.X.X.X/
 
 4. Run phpize (included with your php install) to build configuration files
 
@@ -59,8 +59,7 @@ BUILDING FFMPEG-PHP AS PART OF THE PHP BINARY
 1. Unpack the archive and copy the ffmpeg extension directory into your the php 
    sources extensions directory
 
-        tar -xjf ffmpeg-php.X.XX.tar.gz
-        cp ffmpeg /path/to/php_sources/ext
+        tar -xjf ffmpeg-php.X.x.x.tbz2 -C /path/to/php_sources/ext/
 
 2. Run autoconf to rebuild the php configure script and add the --with-ffmpeg 
    option
@@ -97,19 +96,8 @@ Q: I get '`gdImage' undeclared or `gdImagePtr''undeclared when I try to
 
 A: Your version of php is compiled without gd support. Make sure to use the 
    '--with-gd' flag when configuring php. If you're sure you have gd but 
-   it is not being detected you can change the line...
-
-   //#define HAVE_LIBGD20
-
-   ...to...
-
-   #define HAVE_LIBGD20
-
-   ...in ffmpeg_frame.h and run...
-   
-   make clean && make 
-   
-   ...to force ffmpeg to recompile with gd support.
+   it is not being detected, reconfigure the build with 
+   '--enable-skip-gd-check' to force ffmpeg-php to build with gd support.
 
 Q: I get 'avcodec.h: No such file or directory' when I try to 'make' ffmpeg-php 
 
@@ -118,11 +106,7 @@ A: ffmpeg-php can't find ffmpeg header files. Make sure when you configure
    somewhere where other programs can find the libs/headers. See 
    'BUILDING FFMPEG' above for an example.
  
-HELP
-----
+FURTHER HELP
+------------
 
-This INSTALL doc is not very comprehensive. If you get stuck, post a message 
-to the ffmpeg-php google group (http://groups-beta.google.com/group/ffmpeg-php)
-and I'll try to help. 
-
-    - Todd Kirby
+If you get stuck, post a message to the ffmpeg-php google group (http://groups-beta.google.com/group/ffmpeg-php)

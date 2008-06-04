@@ -1,3 +1,38 @@
+/*
+   This file is part of ffmpeg-php
+
+   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+   In addition, as a special exception, the copyright holders of ffmpeg-php
+   give you permission to combine ffmpeg-php with code included in the
+   standard release of PHP under the PHP license (or modified versions of
+   such code, with unchanged license). You may copy and distribute such a
+   system following the terms of the GNU GPL for ffmpeg-php and the licenses
+   of the other code concerned, provided that you include the source code of
+   that other code when and as the GNU GPL requires distribution of source code.
+
+   You must obey the GNU General Public License in all respects for all of the
+   code used other than standard release of PHP. If you modify this file, you
+   may extend this exception to your version of the file, but you are not
+   obligated to do so. If you do not wish to do so, delete this exception
+   statement from your version.
+
+ */
+
 #include "php.h"
 #include "php_ini.h"
 #include "php_globals.h"
@@ -5,7 +40,6 @@
 
 #include "php_ffmpeg.h"
 
-#include "quadrupel/qp_frame.h"
 #include "ffmpeg_frame.h"
 #include "ffmpeg_animated_gif.h"
 
@@ -164,7 +198,7 @@ static void php_open_agif_file(ff_animated_gif_context *ff_animated_gif,
 PHP_FUNCTION(ffmpeg_animated_gif)
 {
     zval ***argv;
-    int ret, width, height, frame_rate, loop_count;
+    int ret, width, height, frame_rate, loop_count = 0;
     char *filename = NULL;
     ff_animated_gif_context *ff_animated_gif;
     
@@ -326,7 +360,7 @@ void register_ffmpeg_animated_gif_class(int module_number)
 /* {{{ _php_addframe()
    add a frame to the animated gif.
  */
-static int _php_addframe(ff_animated_gif_context *ff_animated_gif, qp_frame_context *frame)
+static int _php_addframe(ff_animated_gif_context *ff_animated_gif, ff_frame_context *frame)
 {
     int out_size;
     AVCodecContext *c;
@@ -334,11 +368,11 @@ static int _php_addframe(ff_animated_gif_context *ff_animated_gif, qp_frame_cont
     c = GET_CODEC_PTR(ff_animated_gif->video_st->codec);
 
     if (frame->width != c->width || frame->height != c->height) {
-        qp_resample_frame(frame, c->width, c->height, 0,0,0,0);
+        _php_resample_frame(frame, c->width, c->height, 0,0,0,0);
     }
  
     /* convert frame to the RGB24 if needed */
-    qp_convert_frame(frame, PIX_FMT_RGB24);
+    _php_convert_frame(frame, PIX_FMT_RGB24);
    
     /* encode the image */
     out_size = avcodec_encode_video(c, ff_animated_gif->video_outbuf, 
@@ -371,7 +405,7 @@ static int _php_addframe(ff_animated_gif_context *ff_animated_gif, qp_frame_cont
 PHP_FUNCTION(addFrame)
 {
     zval **argv[1];
-    qp_frame_context *ff_frame;
+    ff_frame_context *ff_frame;
     ff_animated_gif_context *ff_animated_gif;
 
     if (ZEND_NUM_ARGS() != 1) {

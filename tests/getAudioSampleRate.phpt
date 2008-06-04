@@ -8,4 +8,4 @@ $mov = new ffmpeg_movie(dirname(__FILE__) . '/test_media/robot.avi');
 printf("ffmpeg getAudioSampleRate(): %s\n", $mov->getAudioSampleRate());
 ?>
 --EXPECT--
-ffmpeg getSampleRate(): 32000
+ffmpeg getAudioSampleRate(): 32000

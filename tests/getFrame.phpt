@@ -2,8 +2,8 @@
 ffmpeg getFrame test
 --SKIPIF--
 <?php 
-extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded"); 
-extension_loaded('gd') or die("skip gd extension not avaliable.");
+extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded\n"); 
+extension_loaded('gd') or die("skip gd extension not avaliable.\n");
 function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecolor unavailable");
 ?>
 --FILE--
