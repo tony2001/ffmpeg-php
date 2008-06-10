@@ -4,6 +4,8 @@ version 0.5.3.1-svn
     New Features:
     * Remove deprecated av_free_static function to allow building with ffmpeg
       svn.
+    * Replaced copyrighted test media with public domain files. This reduces
+      the package size quite a bit.
 
 version 0.5.3 (05/30/2008)
     New Features:
