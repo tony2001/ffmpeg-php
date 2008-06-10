@@ -34,4 +34,4 @@ print_image_md5($gd_image);
 imagedestroy($gd_image);
 ?>
 --EXPECT--
-ffmpeg crop: md5 = d3973f39a33e89e53b03d9707c392cb2
+ffmpeg crop: md5 = 65674f816c24a67157653496295c42c8

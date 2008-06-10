@@ -28,4 +28,4 @@ if ($ff_frame) {
 }
 ?>
 --EXPECT--
-ffmpeg getFrameResampled(): md5 = f6198008e59b7f8618bde48c95593764
+ffmpeg getFrameResampled(): md5 = bc4801e1798ada6083e8c46cd2fc28a9
