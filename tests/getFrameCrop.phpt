@@ -15,7 +15,7 @@ function print_image_md5($gd_image) {
         imagepng($gd_image, $img);
         // generate md5 of file
         printf("%s\n", md5(file_get_contents($img)));
- //       unlink($img);
+        unlink($img);
     } else {
         printf("failed\n");
     }
