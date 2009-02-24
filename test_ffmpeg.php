@@ -4,8 +4,8 @@
  * as a simple manual test script and an example of the syntax for calling
  * the ffmpeg-php functions
  * 
- * To run it from the command line type 'php -q ffmpeg_test.php 'or from a 
- * browser * copy this file into your web root and point your browser at it.
+ * To run it from the command line type 'php -q ffmpeg_test.php ' or from a 
+ * browser copy this file into your web root and point your browser at it.
  */
 
 $extension = "ffmpeg";
@@ -17,18 +17,17 @@ if (!extension_loaded($extension)) {
     dl($extension_soname) or die("Can't load extension $extension_fullname\n");
 }
 
-if (php_sapi_name() != 'cgi') {
+if (php_sapi_name() != 'cli') {
     echo '<pre>';
 }
 
 printf("ffmpeg-php version string: %s\n", FFMPEG_PHP_VERSION_STRING);
+printf("ffmpeg-php build date string: %s\n", FFMPEG_PHP_BUILD_DATE_STRING);
 printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
 printf("libavcodec version number: %d\n", LIBAVCODEC_VERSION_NUMBER);
-printf("libavcodec build number: %d\n", LIBAVCODEC_BUILD_NUMBER);
 
 print_class_methods("ffmpeg_movie");
 print_class_methods("ffmpeg_frame");
-print_class_methods("ffmpeg_animated_gif");
 
 // get an array for movies from the test media directory 
 $movies = getDirFiles(dirname(__FILE__) . '/tests/test_media');
@@ -62,13 +61,16 @@ foreach($movies as $movie) {
         printf("get video bit rate = %d\n", $mov->getVideoBitRate());
         printf("get pixel format = %s\n", $mov->getPixelFormat());
         printf("get pixel aspect ratio = %s\n", $mov->getPixelAspectRatio());
-        printf("get frame = %s\n", is_object($mov->getFrame(10)) ? 'true' : 'false');
-        printf("get frame number = %d\n", $mov->getFrameNumber());
+        $frame = $mov->getFrame(10);
+        printf("get frame = %s\n", is_object($frame) ? 'true' : 'false');
+        printf("  get frame number = %d\n", $mov->getFrameNumber());
+        printf("  get frame width = %d\n", $frame->getWidth());
+        printf("  get frame height = %d\n", $frame->getHeight());
     }
     echo "\n--------------------\n\n";
 }
 
-if (php_sapi_name() != 'cgi') {
+if (php_sapi_name() != 'cli') {
     echo '</pre>';
 }
 

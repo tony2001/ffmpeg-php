@@ -3,12 +3,8 @@ PHP_ARG_WITH(ffmpeg,for ffmpeg support,
 
 PHP_ARG_ENABLE(skip-gd-check, whether to force gd support in ffmpeg-php, [  --enable-skip-gd-check     skip checks for gd libs and assume they are present.], no, no)
 
-AC_DEFUN([SKIP_GD_CK],[
-    AC_DEFINE(HAVE_LIBGD20, 1, [ ])
-])
-
 if test "$PHP_SKIP_GD_CHECK" != "no"; then
-    SKIP_GD_CK
+    AC_DEFINE(HAVE_LIBGD20, 1, [Define to 1 if the GD functions are available in php])
 fi
 
 dnl Determine path to ffmpeg libs
@@ -43,7 +39,7 @@ if test "$PHP_FFMPEG" != "no"; then
       PHP_ADD_INCLUDE($i/include/libswscale/)
       PHP_ADD_INCLUDE($i/include/libavfilter/)
       PHP_ADD_INCLUDE($i/include/libavdevice/)
-      FFMPEG_INC_FOUND=$i/include/libav*
+      FFMPEG_INC_FOUND=$i/include/libavcodec
       break
     fi
   done
@@ -71,6 +67,10 @@ if test "$PHP_FFMPEG" != "no"; then
     fi
     done
 
+    PHP_ADD_LIBRARY_WITH_PATH(avcodec, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
+    PHP_ADD_LIBRARY_WITH_PATH(avformat, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
+
+
   if test -z "$FFMPEG_LIBDIR"; then
     AC_MSG_RESULT()
     AC_MSG_ERROR(ffmpeg shared libraries not found. Make sure ffmpeg is compiled as shared libraries using the --enable-shared option)
@@ -79,12 +79,35 @@ if test "$PHP_FFMPEG" != "no"; then
     AC_MSG_RESULT(...found in $FFMPEG_LIBDIR)
   fi
 
+  dnl check if libavcodec contains img_convert
+  dnl if not, that means that libswscale is compiled in
+  AC_MSG_CHECKING(for ffmpeg swscale support)
+  SAVED_LIBS=$LIBS
+  LIBS="$LIBS -lavcodec"
+  SAVED_CFLAGS=$CFLAGS
+  CFLAGS="$CFLAGS -I $INCLUDES"
+
+  AC_TRY_LINK([ #include <avcodec.h> ],
+              [ img_convert(0, 0, 0, 0, 0, 0) ],
+              [ enable_ffmpeg_swscale=no ],
+              [ enable_ffmpeg_swscale=yes ] )
+  AC_MSG_RESULT($enable_ffmpeg_swscale)
+  LIBS=$SAVED_LIBS
+  CFLAGS=$SAVED_CFLAGS
+
+  if test "$enable_ffmpeg_swscale" == yes; then
+     AC_DEFINE(HAVE_SWSCALER, 1, [Define to 1 if software scaler is compiled into ffmpeg])
+     PHP_ADD_LIBRARY_WITH_PATH(swscale, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
+  else
+      dnl Ignore deprecation warnings that using img_convert generates these days
+      CFLAGS="$CFLAGS -Wno-deprecated-declarations"
+  fi
+
   CFLAGS="$CFLAGS -Wall -fno-strict-aliasing"
 
-  PHP_ADD_LIBRARY_WITH_PATH(avcodec, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
-  PHP_ADD_LIBRARY_WITH_PATH(avformat, $FFMPEG_LIBDIR, FFMPEG_SHARED_LIBADD)
+  PHP_NEW_EXTENSION(ffmpeg, ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_errorhandler.c ffmpeg_tools.c, $ext_shared,, \\$(GDLIB_CFLAGS))
+dnl PHP_ADD_EXTENSION_DEP(ffmpeg, gd)
 
-  PHP_NEW_EXTENSION(ffmpeg, ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_animated_gif.c ffmpeg_errorhandler.c, $ext_shared,, \\$(GDLIB_CFLAGS))
   PHP_SUBST(FFMPEG_SHARED_LIBADD)
   AC_DEFINE(HAVE_FFMPEG_PHP,1,[ ])
     

@@ -1,5 +1,5 @@
 --TEST--
-ffmpeg test key frame (FIXME: This test is no good with robot.avi) 
+ffmpeg test key frame
 --SKIPIF--
 <?php 
 extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded"); 

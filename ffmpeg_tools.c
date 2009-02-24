@@ -31,75 +31,68 @@
    obligated to do so. If you do not wish to do so, delete this exception
    statement from your version.
 
+*/
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <php.h>
+
+#include "ffmpeg_tools.h"
+
+#ifdef HAVE_SWSCALER
+#include <swscale.h>
+#endif
+
+/* {{{ ffmpeg_img_convert() 
+ * wrapper around ffmpeg image conversion routines
  */
+int ffmpeg_img_convert(AVPicture *dst, int dst_pix_fmt,
+        AVPicture *src, int src_pix_fmt,
+        int src_width, int src_height)
+{
+#ifndef HAVE_SWSCALER // No SWSCALER so just use img_convert
+    return img_convert(dst, dst_pix_fmt, 
+            src, src_pix_fmt, src_width, src_height);
+#else // Do swscale convert
+    int result = 0;
+    struct SwsContext *sws_ctx = NULL;
 
-#ifndef PHP_FFMPEG_H
-#define PHP_FFMPEG_H
+    if (src_pix_fmt == dst_pix_fmt) {
+        return 0;
+    }
 
-#include "php_version.h"
+    // TODO: Try to get cached sws_context first
+    sws_ctx = sws_getContext(
+            src_width, src_height, src_pix_fmt, 
+            src_width, src_height, dst_pix_fmt, 
+            SWS_BICUBIC, NULL, NULL, NULL);
 
+    if (sws_ctx == NULL){
+        return 1;
+    }
 
-/* 
- * PHP-4 doesn't have the METHOD, ME and MALIAS macros so map them back
- * to the function macros for PHP-4
- */
+    result = sws_scale(sws_ctx, 
+            src->data, src->linesize,
+            0, src_height,
+            dst->data, dst->linesize);
 
-#if PHP_MAJOR_VERSION <= 4 // PHP4; use FUNCTION macros
-#define FFMPEG_PHP_CONSTRUCTOR(a,b) PHP_FUNCTION(a)
-#define FFMPEG_PHP_METHOD(a,b) PHP_FUNCTION(b)
-#define FFMPEG_PHP_ME(a,b,c,d) PHP_FE(a,c)
-#define FFMPEG_PHP_MALIAS(a,b,c,d,e) PHP_FALIAS(b,c,d)
-#define FFMPEG_PHP_END_METHODS {NULL, NULL, NULL}
-#else /* PHP5; Use METHOD macros */
-#define FFMPEG_PHP_CONSTRUCTOR(a,b) PHP_METHOD(a,b)
-#define FFMPEG_PHP_METHOD(a,b) PHP_METHOD(a,b)
-#define FFMPEG_PHP_ME(a,b,c,d) PHP_ME(a,b,c,d)
-#define FFMPEG_PHP_MALIAS(a,b,c,d,e) PHP_MALIAS(a,b,c,d,e)
-#define FFMPEG_PHP_END_METHODS {NULL, NULL, NULL, 0, 0}
-#endif
+    sws_freeContext(sws_ctx);
 
-
-
-
-#define SAFE_STRING(s) ((s)?(s):"")
-
-#ifndef safe_emalloc
-    # define safe_emalloc(a,b,c) emalloc((a)*(b)+(c))
-#endif
-
-extern zend_module_entry ffmpeg_module_entry;
-#define phpext_ffmpeg_ptr &ffmpeg_module_entry
-
-#ifdef PHP_WIN32
-#define PHP_FFMPEG_API __declspec(dllexport)
-#else
-#define PHP_FFMPEG_API
-#endif
-
-#ifdef ZTS
-#include "TSRM.h"
-#endif
-
-PHP_MINIT_FUNCTION(ffmpeg);
-PHP_MSHUTDOWN_FUNCTION(ffmpeg);
-PHP_RINIT_FUNCTION(ffmpeg);
-PHP_RSHUTDOWN_FUNCTION(ffmpeg);
-PHP_MINFO_FUNCTION(ffmpeg);
-
-
-#ifdef ZTS
-#define FFMPEG_G(v) TSRMG(ffmpeg_globals_id, zend_ffmpeg_globals *, v)
-#else
-#define FFMPEG_G(v) (ffmpeg_globals.v)
-#endif
-
-#endif	/* PHP_FFMPEG_H */
-
+    if (result == 0){
+        return 2;
+    }
+#endif // NOT HAVE_SWSCALER
+    return 0;
+}
+/* }}} */
 
 /*
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
- * indent-tabs-mode: t
  * End:
+ * vim600: noet sw=4 ts=4
+ * vim<600: noet sw=4 ts=4
  */

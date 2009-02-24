@@ -1,7 +1,7 @@
 /*
    This file is part of ffmpeg-php
 
-   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
+   Copyright (C) 2004-2008 Todd Kirby (ffmpeg.php AT gmail.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,13 +42,17 @@
 #include <avcodec.h>
 #include <avformat.h>
 
+#if HAVE_SWSCALER
+#include <swscale.h>
+#endif
+
 #include "php_ini.h"
 #include "php_globals.h"
 #include "ext/standard/info.h"
 
 #include "php_ffmpeg.h"
 
-#define FFMPEG_PHP_VERSION "0.5.3"
+#define FFMPEG_PHP_VERSION "0.6.0-svn"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -73,7 +77,6 @@ ZEND_GET_MODULE(ffmpeg);
 #endif
 
 extern void register_ffmpeg_movie_class(int);
-extern void register_ffmpeg_animated_gif_class(int);
 extern void register_ffmpeg_frame_class(int);
 extern void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list args);
 
@@ -100,15 +103,22 @@ PHP_MINIT_FUNCTION(ffmpeg)
     } 
    
     register_ffmpeg_movie_class(module_number);
-    register_ffmpeg_animated_gif_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
     REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING", 
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
+    REGISTER_STRING_CONSTANT("FFMPEG_PHP_BUILD_DATE_STRING", 
+		    __DATE__ " " __TIME__, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
 		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
+#ifdef LIBAVCODEC_BUILD
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", 
-		    avcodec_build(), CONST_CS | CONST_PERSISTENT);
+		    LIBAVCODEC_BUILD, CONST_CS | CONST_PERSISTENT);
+#else
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
+            avcodec_build(), CONST_CS | CONST_PERSISTENT);
+#endif
+
     return SUCCESS;
 }
 /* }}} */
@@ -132,15 +142,21 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 PHP_MINFO_FUNCTION(ffmpeg)
 {
     php_info_print_table_start();
-    php_info_print_table_header(2, "ffmpeg support (ffmpeg-php)", "enabled");
+//    php_info_print_table_header(2, "ffmpeg-php", "enabled");
     php_info_print_table_row(2, "ffmpeg-php version", FFMPEG_PHP_VERSION);
-    php_info_print_table_row(2, "libavcodec version", LIBAVCODEC_IDENT);
-    php_info_print_table_row(2, "libavformat version", LIBAVFORMAT_IDENT);
+    php_info_print_table_row(2, "ffmpeg-php built on", __DATE__ " "  __TIME__);
 #if HAVE_LIBGD20
     php_info_print_table_row(2, "ffmpeg-php gd support ", "enabled");
 #else
     php_info_print_table_row(2, "ffmpeg-php gd support ", "disabled");
 #endif // HAVE_LIBGD20
+    php_info_print_table_row(2, "ffmpeg libavcodec version", LIBAVCODEC_IDENT);
+    php_info_print_table_row(2, "ffmpeg libavformat version", LIBAVFORMAT_IDENT);
+#if HAVE_SWSCALER
+    php_info_print_table_row(2, "ffmpeg swscaler version", LIBSWSCALE_IDENT);
+#else 
+    php_info_print_table_row(2, "ffmpeg swscaler", "disabled");
+#endif
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();

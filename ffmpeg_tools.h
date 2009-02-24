@@ -1,7 +1,7 @@
 /*
    This file is part of ffmpeg-php
 
-   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
+   Copyright (C) 2004-2008 Todd Kirby (ffmpeg.php AT gmail.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,6 +12,10 @@
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
    In addition, as a special exception, the copyright holders of ffmpeg-php
    give you permission to combine ffmpeg-php with code included in the
@@ -29,26 +33,23 @@
 
  */
 
-#ifndef FFMPEG_ANIMATED_GIF_H
-#define FFMPEG_ANIMATED_GIF_H
+#ifndef FFMPEG_TOOLS_H
+#define FFMPEG_TOOLS_H
 
 #include <avcodec.h>
-#include <avformat.h>
 
-/* animated gif constructor */
-PHP_FUNCTION(ffmpeg_animated_gif);
+int ffmpeg_img_convert(
+        AVPicture *dst, int dst_pix_fmt,
+        AVPicture *src, int src_pix_fmt,
+        int src_width, int src_height);
 
-/* animated gif methods */
-PHP_FUNCTION(addFrame);
+#endif // FFMPEG_TOOLS_H
 
-typedef struct {
-    AVStream *video_st;
-    AVOutputFormat *fmt;
-    AVFormatContext *fmt_ctx;
-    AVCodecContext *codec_ctx;
-
-    uint8_t *video_outbuf;
-    int video_outbuf_size;
-} ff_animated_gif_context;
-
-#endif // FFMPEG_ANIMATED_GIF_H
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4
+ * vim<600: noet sw=4 ts=4
+ */

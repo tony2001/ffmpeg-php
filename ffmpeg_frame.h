@@ -1,7 +1,7 @@
 /*
    This file is part of ffmpeg-php
 
-   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
+   Copyright (C) 2004-2008 Todd Kirby (ffmpeg.php AT gmail.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,24 +36,26 @@
 #ifndef FFMPEG_FRAME_H
 #define FFMPEG_FRAME_H
 
+#include "php_version.h"
+
 #include <avcodec.h>
 #include <avformat.h>
 
-// Uncomment the folowing line if you're sure you have gd support but the 
-// ffmpeg-php configure script is failing to detect it. I haven't had much
-// luck getting configure to detect gd in every case.
-//#define HAVE_LIBGD20
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-PHP_FUNCTION(ffmpeg_frame);
-PHP_FUNCTION(getWidth);
-PHP_FUNCTION(getHeight);
-PHP_FUNCTION(resize);
-PHP_FUNCTION(crop);
-PHP_FUNCTION(isKeyFrame);
-PHP_FUNCTION(getPresentationTimestamp);
+/* object can't be created from user space so no PHP constructor */
+//FFMPEG_PHP_CONSTRUCTOR(ffmpeg_frame, __construct);
+
+/* frame methods */
+FFMPEG_PHP_METHOD(ffmpeg_frame, getWidth);
+FFMPEG_PHP_METHOD(ffmpeg_frame, getHeight);
+FFMPEG_PHP_METHOD(ffmpeg_frame, isKeyFrame);
+FFMPEG_PHP_METHOD(ffmpeg_frame, getPresentationTimestamp);
 
 #if HAVE_LIBGD20
-PHP_FUNCTION(toGDImage);
+FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage);
 #endif // HAVE_LIBGD20
 
 typedef struct {
@@ -69,11 +71,6 @@ ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);
 
 int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
 
-int _php_resample_frame(ff_frame_context *ff_frame,
-        int wanted_width, int wanted_height, int crop_top, int crop_bottom,
-        int crop_left, int crop_right);
-
-
 #define GET_FRAME_RESOURCE(ffmpeg_frame_object, ffmpeg_frame) {\
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
@@ -87,7 +84,6 @@ int _php_resample_frame(ff_frame_context *ff_frame,
 }\
 
 #endif // FFMPEG_FRAME_H
-
 
 /*
  * Local variables:

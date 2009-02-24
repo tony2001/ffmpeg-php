@@ -1,8 +1,8 @@
 REQUIREMENTS
 ============
 
-ffmpeg-0.4.9pre1 or higher built with the --enable-shared option (ffmpeg cvs recommended)
-php-4.3.x or higher 
+ffmpeg-0.4.9pre1 or higher built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
+php-5.0.x or higher. For php-4.x.x, use ffmpeg-php-0.5.1 or older.
 gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS
@@ -105,6 +105,11 @@ A: ffmpeg-php can't find ffmpeg header files. Make sure when you configure
    ffmpeg you use the '--enable-shared' option and make sure it installs 
    somewhere where other programs can find the libs/headers. See 
    'BUILDING FFMPEG' above for an example.
+
+Q: Can I just pay you to install it?
+
+A: Yes. I will install ffmpeg-php and prerequisites on your server for $75 USD.
+   Shoot me an email at ffmpeg.php AT gmail.com if you are interested.
  
 FURTHER HELP
 ------------

@@ -1,7 +1,7 @@
 /*
    This file is part of ffmpeg-php
 
-   Copyright (C) 2004-2007 Todd Kirby (ffmpeg.php@gmail.com)
+   Copyright (C) 2004-2008 Alexey Zakhlestin <indeyets@gmail.com>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@
 #include "php.h"
 #include <avcodec.h>
 
+/* {{{ ffmpeg_errorhandler()
+ */
 void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list args)
 {
 	int php_level;
@@ -55,3 +57,13 @@ void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list args)
 
 	php_verror("", "", php_level, msg, args TSRMLS_CC);
 }
+/* }}} */
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4
+ * vim<600: noet sw=4 ts=4
+ */
