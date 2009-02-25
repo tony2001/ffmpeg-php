@@ -1,7 +1,7 @@
 REQUIREMENTS
 ============
 
-ffmpeg-0.4.9pre1 or higher built with the --enable-shared option and without the --enable-swscale option (ffmpeg svn recommended)
+ffmpeg-0.4.9pre1 or higher built with the --enable-shared option (ffmpeg svn recommended)
 php-5.0.x or higher. For php-4.x.x, use ffmpeg-php-0.5.1 or older.
 gd-2.0.x or higher or the version of GD bundled with PHP
 
@@ -11,6 +11,21 @@ INSTALLATION INSTRUCTIONS
 These instructions are for Linux since I don't have windows. If you
 successfully build on windows, let me know how you did it and I'll update 
 these instructions.
+
+INSTALLING FROM A PACKAGE MANAGER
+---------------------------------
+
+There are prebuilt packages for many Linux distros.
+
+Gentoo:
+    emerge ffmpeg-php
+
+Debian/Ubuntu:
+    apt-get install php5-ffmpeg
+
+Other:
+    check your docs for specific info on how to invoke the package manager.
+
 
 BUILDING FFMPEG
 ---------------

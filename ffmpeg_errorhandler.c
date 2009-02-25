@@ -59,6 +59,16 @@ void ffmpeg_errorhandler(void *ptr, int level, const char *msg, va_list args)
 }
 /* }}} */
 
+
+/* {{{ ffmpeg_hide_errors()
+ */
+void ffmpeg_hide_errors(void *ptr, int level, const char *msg, va_list args)
+{
+    // NO OP
+}
+/* }}} */
+
+
 /*
  * Local variables:
  * tab-width: 4
