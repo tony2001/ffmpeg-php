@@ -333,7 +333,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    _php_convert_frame(ff_frame, PIX_FMT_RGBA32);
+    _php_convert_frame(ff_frame, PIX_FMT_RGBA);
 
     return_value->value.lval = _php_get_gd_image(ff_frame->width, 
             ff_frame->height);
@@ -418,7 +418,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 
             /* create a an av_frame and allocate space for it */
             frame = avcodec_alloc_frame();
-            avpicture_alloc((AVPicture*)frame, PIX_FMT_RGBA32, width, height);
+            avpicture_alloc((AVPicture*)frame, PIX_FMT_RGBA, width, height);
 
             /* copy the gd image to the av_frame */
             _php_gd_image_to_avframe(gd_img, frame, width, height);
@@ -429,7 +429,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
             /* set the ffpmeg_frame's properties */
             ff_frame->width = width;
             ff_frame->height = height;
-            ff_frame->pixel_format = PIX_FMT_RGBA32;
+            ff_frame->pixel_format = PIX_FMT_RGBA;
             break;
         default:
             zend_error(E_ERROR, "Invalid argument\n");

@@ -40,6 +40,7 @@
 
 #include <avcodec.h>
 #include <avformat.h>
+#include <avutil.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
