@@ -123,7 +123,8 @@ A: ffmpeg-php can't find ffmpeg header files. Make sure when you configure
 
 Q: Can I just pay you to install it?
 
-A: Yes. I will install ffmpeg-php and prerequisites on your server for $75 USD.
+A: Yes. I will install ffmpeg + codecs, ffmpeg-php and flvtool2 on your server for $75 USD. This
+   is everything you need to convert just about any movie type to flash.
    Shoot me an email at ffmpeg.php AT gmail.com if you are interested.
  
 FURTHER HELP
