@@ -1,1 +1,0 @@
-Use ffmpeg's output_example.c to generate video for tests. This will allow to remove the test videos, making the distribution MUCH smaller.
