@@ -31,17 +31,64 @@
    obligated to do so. If you do not wish to do so, delete this exception
    statement from your version.
 
- */
+*/
 
 #ifndef FFMPEG_TOOLS_H
 #define FFMPEG_TOOLS_H
 
 #include <avcodec.h>
 
-int ffmpeg_img_convert(
-        AVPicture *dst, int dst_pix_fmt,
-        AVPicture *src, int src_pix_fmt,
-        int src_width, int src_height);
+#if LIBAVCODEC_VERSION_MAJOR >= 52
+
+#include <swscale.h>
+
+// Starting from this version, ImgReSampleContext doesn't exist anymore.
+// This code implements the previous functions with a similar interface
+typedef struct ImgReSampleContext {
+    /** The context used for resizing */
+    struct SwsContext *context;
+    /** The source's width */
+    int width;
+    /** The source's height */
+    int height;
+    /** The banding used */
+    int bandLeft;
+    /** The banding used */
+    int bandRight;
+    /** The banding used */
+    int bandTop;
+    /** The banding used */
+    int bandBottom;
+    /** The padding used */
+    int padLeft;
+    /** The padding used */
+    int padRight;
+    /** The padding used */
+    int padTop;
+    /** The padding used */
+    int padBottom;
+    /** The output width */
+    int outWidth;
+    /** The output height */
+    int outHeight;
+} ImgReSampleContext;
+
+int img_convert(AVPicture *dst, int dst_pix_fmt,
+        AVPicture *src, int src_pix_fmt, int src_width, int src_height);
+
+void img_resample_close(ImgReSampleContext *s);
+
+void img_resample(ImgReSampleContext * context, AVPicture * out, const AVPicture * in);
+
+ImgReSampleContext * img_resample_full_init (int owidth, int oheight, 
+        int iwidth, int iheight,
+        int topBand, int 
+        bottomBand, int leftBand, int rightBand,
+        int padtop, int 
+        padbottom, int padleft, int padright);
+
+ImgReSampleContext * img_resample_init (int owidth, int oheight, int iwidth, int iheight);
+#endif
 
 #endif // FFMPEG_TOOLS_H
 

@@ -52,6 +52,7 @@
 /* frame methods */
 FFMPEG_PHP_METHOD(ffmpeg_frame, getWidth);
 FFMPEG_PHP_METHOD(ffmpeg_frame, getHeight);
+FFMPEG_PHP_METHOD(ffmpeg_frame, resize);
 FFMPEG_PHP_METHOD(ffmpeg_frame, isKeyFrame);
 FFMPEG_PHP_METHOD(ffmpeg_frame, getPresentationTimestamp);
 

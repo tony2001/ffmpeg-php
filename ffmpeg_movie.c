@@ -45,6 +45,7 @@
 
 #include "ffmpeg_frame.h"
 #include "ffmpeg_movie.h"
+#include "ffmpeg_tools.h"
    
 #define GET_MOVIE_RESOURCE(ff_movie_ctx) {\
     zval **_tmp_zval;\
