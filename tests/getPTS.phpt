@@ -2,6 +2,7 @@
 ffmpeg getPTS test (Fixme: This test is no good with robot.avi)
 --SKIPIF--
 <?php 
+die("Skip because robot.avi doesn't have reasonable pts info");
 extension_loaded('ffmpeg') or die("skip ffmpeg extension not loaded"); 
 extension_loaded('gd') or die("skip gd extension not avaliable.");
 function_exists("imagecreatetruecolor") or die("skip function imagecreatetruecolor unavailable");
