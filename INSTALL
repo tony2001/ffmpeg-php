@@ -1,16 +1,16 @@
 REQUIREMENTS
 ============
 
-ffmpeg-0.4.9pre1 or higher built with the --enable-shared option
-php-5.0.x or higher. For php-4.x.x, use ffmpeg-php-0.5.1 or older.
+ffmpeg-0.5.0 or higher built with the --enable-shared option
+php-5.0.x or higher. For php-4, use ffmpeg-php-0.5.1 or older.
 gd-2.0.x or higher or the version of GD bundled with PHP
 
 INSTALLATION INSTRUCTIONS
 =========================
 
-These instructions are for Linux since I don't have windows. If you
-successfully build on windows, let me know how you did it and I'll update 
-these instructions.
+These instructions are for Linux/Unix. Windows is not offically supported at this time however,
+there are user-contributed builds that will run on window. Search the sourceforge downloads page
+for these.
 
 INSTALLING FROM A PACKAGE MANAGER
 ---------------------------------
@@ -107,7 +107,7 @@ TROUBLESHOOTING
 ---------------
 
 Q: I get '`gdImage' undeclared or `gdImagePtr''undeclared when I try to 
-   'make' ffmpeg-php
+   build ffmpeg-php
 
 A: Your version of php is compiled without gd support. Make sure to use the 
    '--with-gd' flag when configuring php. If you're sure you have gd but 
