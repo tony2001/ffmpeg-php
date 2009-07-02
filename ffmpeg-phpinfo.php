@@ -1,11 +1,7 @@
 <?
 /*
- * This test script is not part of the automatic regression tests. It serves
- * as a simple manual test script and an example of the syntax for calling
- * the ffmpeg-php functions
- * 
- * To run it from the command line type 'php -q ffmpeg_test.php 'or from a 
- * browser * copy this file into your web root and point your browser at it.
+ * browser * copy this file and the tests directory into your web root and point 
+ * your browser at it.
  */
 
 ob_start();
