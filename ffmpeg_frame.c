@@ -47,6 +47,10 @@
 #include "ffmpeg_frame.h"
 #include "ffmpeg_tools.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* 
    include gd header from local include dir. This is a copy of gd.h that is 
    distributed with php-5.2.5. It is distributed along with ffmpeg-php to
@@ -60,10 +64,11 @@
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
 }
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#if PIX_FMT_RGBA32
+#define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT PIX_FMT_RGBA32
+#else
+#define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT PIX_FMT_RGB32
 #endif
-
 
 static int le_gd; // this is only valid after calling 
 // FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
@@ -86,16 +91,18 @@ zend_function_entry ffmpeg_frame_class_methods[] = {
 #if HAVE_LIBGD20
     /* gd methods */
     FFMPEG_PHP_MALIAS(ffmpeg_frame, togdimage,      toGDImage,     NULL, 0)
+
+
 #endif // HAVE_LIBGD20
 
-        /* methods */
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, getwidth,                    getWidth,                   NULL, 0)
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, getheight,                   getHeight,                  NULL, 0)
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, resize,                      resize,                     NULL, 0)
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, iskeyframe,                  isKeyFrame,                 NULL, 0)
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, getpresentationtimestamp,    getPresentationTimestamp,   NULL, 0)
-        FFMPEG_PHP_MALIAS(ffmpeg_frame, getpts,                      getPresentationTimestamp,   NULL, 0)
-        FFMPEG_PHP_END_METHODS
+    /* methods */
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, getwidth,                    getWidth,                   NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, getheight,                   getHeight,                  NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, resize,                      resize,                     NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, iskeyframe,                  isKeyFrame,                 NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, getpresentationtimestamp,    getPresentationTimestamp,   NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_frame, getpts,                      getPresentationTimestamp,   NULL, 0)
+    FFMPEG_PHP_END_METHODS
 };
 /* }}} */
 
@@ -287,7 +294,7 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             /* copy pixel to gdimage buffer zeroing the alpha channel */
-            dest->tpixels[y][x] = src[x] & 0x00ffffff;
+            gdImageSetPixel(dest, x, y, src[x] & 0x00FFFFFF);
         }
         src += width;
     }
@@ -324,7 +331,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    _php_convert_frame(ff_frame, PIX_FMT_RGB32);
+    _php_convert_frame(ff_frame, FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT);
 
     return_value->value.lval = _php_get_gd_image(ff_frame->width, 
             ff_frame->height);
@@ -388,7 +395,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
 
             /* create a an av_frame and allocate space for it */
             frame = avcodec_alloc_frame();
-            avpicture_alloc((AVPicture*)frame, PIX_FMT_RGB32, width, height);
+            avpicture_alloc((AVPicture*)frame, FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT, width, height);
 
             /* copy the gd image to the av_frame */
             _php_gd_image_to_avframe(gd_img, frame, width, height);
@@ -399,7 +406,7 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
             /* set the ffpmeg_frame's properties */
             ff_frame->width = width;
             ff_frame->height = height;
-            ff_frame->pixel_format = PIX_FMT_RGB32;
+            ff_frame->pixel_format = FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT;
             break;
         default:
             zend_error(E_ERROR, "Invalid argument\n");
