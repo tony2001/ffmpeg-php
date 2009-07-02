@@ -60,8 +60,10 @@
     ZEND_FETCH_RESOURCE(gd_img, gdImagePtr, ret, -1, "Image", le_gd); \
 }
 
-// Borrowed from gd.c
-#define gdImageBoundsSafeMacro(im, x, y) (!((((y) < (im)->cy1) || ((y) > (im)->cy2)) || (((x) < (im)->cx1) || ((x) > (im)->cx2))))
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 
 static int le_gd; // this is only valid after calling 
 // FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
@@ -304,11 +306,7 @@ static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if (gdImageBoundsSafeMacro(src, x, y)) {
-                dest[x] = src->tpixels[y][x];
-            } else {
-                return -1;
-            }
+            dest[x] = src->tpixels[y][x];
         }
         dest += width;
     }
