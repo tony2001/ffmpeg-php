@@ -1,5 +1,5 @@
 PHP_ARG_WITH(ffmpeg,for ffmpeg support, 
-[  --with-ffmpeg[=DIR]       Include ffmpeg support (requires ffmpeg >= 0.49.0).])
+[  --with-ffmpeg[=DIR]       Include ffmpeg support (requires ffmpeg >= 0.5).])
 
 PHP_ARG_ENABLE(skip-gd-check, whether to force gd support in ffmpeg-php, [  --enable-skip-gd-check     skip checks for gd libs and assume they are present.], no, no)
 
