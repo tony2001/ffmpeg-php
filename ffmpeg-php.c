@@ -53,7 +53,7 @@
 #include "php_ffmpeg.h"
 #include "ffmpeg_errorhandler.h"
 
-#define FFMPEG_PHP_VERSION "0.6.3"
+#define FFMPEG_PHP_VERSION "0.7.0"
 
 zend_module_entry ffmpeg_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
@@ -77,6 +77,8 @@ zend_module_entry ffmpeg_module_entry = {
 ZEND_GET_MODULE(ffmpeg);
 #endif
 
+#define FFMPEG_AVMEDIA_TYPE(flag) (flag == AVMEDIA_TYPE_VIDEO ? "v" : (flag == AVMEDIA_TYPE_AUDIO ? "a" : (flag == AVMEDIA_TYPE_SUBTITLE ? "s" : "u")))
+
 extern void register_ffmpeg_movie_class(int);
 extern void register_ffmpeg_frame_class(int);
 
@@ -90,9 +92,6 @@ PHP_INI_END()
  */
 PHP_MINIT_FUNCTION(ffmpeg)
 {
-    /* must be called before using avcodec libraries. */ 
-    avcodec_init();
-
     /* register all codecs */
     av_register_all();
     
@@ -159,12 +158,46 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "ffmpeg-php gd support ", "disabled");
 #endif // HAVE_LIBGD20
     php_info_print_table_row(2, "ffmpeg libavcodec version", LIBAVCODEC_IDENT);
+    php_info_print_table_row(2, "ffmpeg libavcodec license", avcodec_license()); //people need to know if they can distribute
     php_info_print_table_row(2, "ffmpeg libavformat version", LIBAVFORMAT_IDENT);
+    php_info_print_table_row(2, "ffmpeg libavformat license", avformat_license());
 #if HAVE_SWSCALER
     php_info_print_table_row(2, "ffmpeg swscaler version", LIBSWSCALE_IDENT);
+    php_info_print_table_row(2, "ffmpeg swscaler license", swscale_license());
 #else 
     php_info_print_table_row(2, "ffmpeg swscaler", "disabled");
 #endif
+
+    //phpinfo should show the codec list available to aid developers
+    AVCodec *next_codec = NULL;
+    char *m_codec_list = NULL;
+    long m_codec_list_len = 0;
+    long m_codec_len = 0;
+    while((next_codec = av_codec_next(next_codec))) {
+      //go through each codec and add to the list
+      m_codec_len = (strlen(next_codec->name) + 5);
+      m_codec_list_len += m_codec_len;
+      m_codec_list = realloc(m_codec_list, m_codec_list_len);
+
+      //wtf? always gives buffer overflows... 
+      //sprintf(m_codec_list+(m_codec_list_len-m_codec_len), "%s(%c), ", next_codec->name, FFMPEG_AVMEDIA_TYPE(next_codec->type));
+
+      //doing it the long way instead
+      memcpy(m_codec_list+(m_codec_list_len-m_codec_len), next_codec->name, m_codec_len);
+      memcpy(m_codec_list+(m_codec_list_len-5), "(", 1);
+      memcpy(m_codec_list+(m_codec_list_len-4), FFMPEG_AVMEDIA_TYPE(next_codec->type), 1);
+      memcpy(m_codec_list+(m_codec_list_len-3), ")", 1);
+      memcpy(m_codec_list+(m_codec_list_len-2), ", ", 2);
+    }
+
+    m_codec_list = realloc(m_codec_list, m_codec_list_len+1);
+    m_codec_list[m_codec_list_len] = (char)NULL;
+
+    //give the user a list of available codecs
+    //should really add (dec/enc) on the end of each to show each is capable of
+    //consider giving each codec its own row in in a codec table displaying if the codec is cable of a/v/s and enc/dec
+    php_info_print_table_row(2, "ffmpeg codec_list", m_codec_list);
+
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();

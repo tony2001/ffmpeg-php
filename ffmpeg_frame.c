@@ -70,6 +70,8 @@
 #define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT PIX_FMT_RGB32
 #endif
 
+#define gdImageBoundsSafeMacro(im, x, y) (!((((y) < (im)->cy1) || ((y) > (im)->cy2)) || (((x) < (im)->cx1) || ((x) > (im)->cx2))))
+
 static int le_gd; // this is only valid after calling 
 // FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
 
@@ -293,12 +295,16 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            /* copy pixel to gdimage buffer zeroing the alpha channel */
-            gdImageSetPixel(dest, x, y, src[x] & 0x00FFFFFF);
+		
+			if (gdImageBoundsSafeMacro(dest, x, y)) {
+                /* copy pixel to gdimage buffer zeroing the alpha channel */
+                dest->tpixels[y][x] = src[x] & 0x00ffffff;
+            } else {
+                return -1;
+            }
         }
         src += width;
     }
-    return 0;
 }
 /* }}} */
 
