@@ -191,7 +191,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
     }
 
     m_codec_list = realloc(m_codec_list, m_codec_list_len+1);
-    m_codec_list[m_codec_list_len] = (char)NULL;
+    m_codec_list[m_codec_list_len] = '\0';
 
     //give the user a list of available codecs
     //should really add (dec/enc) on the end of each to show each is capable of

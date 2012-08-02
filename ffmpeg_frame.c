@@ -305,6 +305,7 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
         }
         src += width;
     }
+    return 0;
 }
 /* }}} */
 

@@ -315,7 +315,7 @@ FFMPEG_PHP_CONSTRUCTOR(ffmpeg_movie, __construct)
     } 
 
     if (persistent) {
-        list_entry *le;
+        zend_rsrc_list_entry *le;
         /* resolve the fully-qualified path name to use as the hash key */
         fullpath = expand_filepath(filename, NULL TSRMLS_CC);
 
@@ -350,7 +350,7 @@ FFMPEG_PHP_CONSTRUCTOR(ffmpeg_movie, __construct)
             }
             
         } else { /* no existing persistant movie, create one */
-            list_entry new_le;
+            zend_rsrc_list_entry new_le;
             ffmovie_ctx = _php_alloc_ffmovie_ctx(1);
 
             if (_php_open_movie_file(ffmovie_ctx, filename)) {
@@ -537,6 +537,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getComment)
     
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "comment", NULL, 0);
 
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
+
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
 /* }}} */
@@ -552,6 +556,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getTitle)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "title", NULL, 0);
+
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
 
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
@@ -569,6 +577,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getAuthor)
 
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "author", NULL, 0);
 
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
+
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
 /* }}} */
@@ -583,6 +595,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getCopyright)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "copyright", NULL, 0);
+
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
 
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
@@ -600,6 +616,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getAlbum)
 
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "album", NULL, 0);
 
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
+
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
 /* }}} */
@@ -614,6 +634,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getGenre)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "genre", NULL, 0);
+
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
 
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
@@ -631,6 +655,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getTrackNumber)
     
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "track", NULL, 0);
 
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
+
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
 /* }}} */
@@ -645,6 +673,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getYear)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
     
     AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "year", NULL, 0);
+
+    if (!m_entry) {
+        RETURN_FALSE;
+    }
 
     RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
 }
