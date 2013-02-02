@@ -36,11 +36,11 @@
 #ifndef FFMPEG_TOOLS_H
 #define FFMPEG_TOOLS_H
 
-#include <avcodec.h>
+#include <libavcodec/avcodec.h>
 
 #if LIBAVCODEC_VERSION_MAJOR >= 52
 
-#include <swscale.h>
+#include <libswscale/swscale.h>
 
 // Starting from this version, ImgReSampleContext doesn't exist anymore.
 // This code implements the previous functions with a similar interface

@@ -42,7 +42,7 @@
 #include "ffmpeg_tools.h"
 
 #if LIBAVCODEC_VERSION_MAJOR >= 52
-#include <swscale.h>
+#include <libswscale/swscale.h>
 
 /* {{{ ffmpeg_img_convert() 
  * wrapper around ffmpeg image conversion routines

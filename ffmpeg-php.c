@@ -39,11 +39,11 @@
 
 #include "php.h"
 
-#include <avcodec.h>
-#include <avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 
 #if HAVE_SWSCALER
-#include <swscale.h>
+#include <libswscale/swscale.h>
 #endif
 
 #include "php_ini.h"

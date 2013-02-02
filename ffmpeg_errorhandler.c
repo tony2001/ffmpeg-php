@@ -33,8 +33,12 @@
 
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "php.h"
-#include <avcodec.h>
+#include <libavcodec/avcodec.h>
 
 /* {{{ ffmpeg_errorhandler()
  */

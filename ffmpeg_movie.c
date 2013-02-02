@@ -29,19 +29,19 @@
 
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "php.h"
 #include "php_ini.h"
 #include "php_globals.h"
 #include "ext/standard/info.h"
 
-#include <avcodec.h>
-#include <avformat.h>
-#include <pixfmt.h>
-#include <pixdesc.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/pixfmt.h>
+#include <libavutil/pixdesc.h>
 
 #include "php_ffmpeg.h"
 
