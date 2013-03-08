@@ -55,13 +55,13 @@
 #include "config.h"
 #endif
 
-/* 
-   include gd header from local include dir. This is a copy of gd.h that is 
+/*
+   include gd header from local include dir. This is a copy of gd.h that is
    distributed with php-5.2.5. It is distributed along with ffmpeg-php to
    allow ffmpeg-php to be built without access to the php sources
    */
 #if HAVE_LIBGD20
-#include "gd.h" 
+#include "gd.h"
 
 #define FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, ret) { \
     ZEND_GET_RESOURCE_TYPE_ID(le_gd, "gd"); \
@@ -76,8 +76,8 @@
 
 #define gdImageBoundsSafeMacro(im, x, y) (!((((y) < (im)->cy1) || ((y) > (im)->cy2)) || (((x) < (im)->cx1) || ((x) > (im)->cx2))))
 
-static int le_gd; // this is only valid after calling 
-// FFMPEG_PHP_FETCH_IMAGE_RESOURCE() 
+static int le_gd; // this is only valid after calling
+// FFMPEG_PHP_FETCH_IMAGE_RESOURCE()
 
 #endif // HAVE_LIBGD20
 
@@ -87,18 +87,16 @@ static zend_class_entry *ffmpeg_frame_class_entry_ptr;
 zend_class_entry ffmpeg_frame_class_entry;
 
 /* {{{ ffmpeg_frame methods[]
-   Methods of the ffmpeg_frame class 
+   Methods of the ffmpeg_frame class
    */
 zend_function_entry ffmpeg_frame_class_methods[] = {
 
     /* object can't be created from user space so no PHP constructor */
-    //PHP_ME(ffmpeg_frame, __construct, NULL, 0)
 
 #if HAVE_LIBGD20
     /* gd methods */
     FFMPEG_PHP_MALIAS(ffmpeg_frame, togdimage,      toGDImage,     NULL, 0)
-
-
+    PHP_ME(ffmpeg_frame, __construct, NULL, 0)
 #endif // HAVE_LIBGD20
 
     /* methods */
@@ -121,10 +119,6 @@ static ff_frame_context* _php_alloc_ff_frame()
 
     ff_frame = emalloc(sizeof(ff_frame_context));
 
-    if (!ff_frame) {
-        zend_error(E_ERROR, "Error allocating ffmpeg_frame");
-    }
-
     ff_frame->av_frame = NULL;
     ff_frame->width = 0;
     ff_frame->height = 0;
@@ -135,9 +129,9 @@ static ff_frame_context* _php_alloc_ff_frame()
 /* }}} */
 
 
-/* {{{ proto object _php_create_ffmpeg_frame() 
+/* {{{ proto object _php_create_ffmpeg_frame()
    creates an ffmpeg_frame object, adds a ffmpeg_frame resource to the
-   object, registers the resource and returns a direct pointer to the 
+   object, registers the resource and returns a direct pointer to the
    resource.
    */
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS)
@@ -175,7 +169,7 @@ static void _php_free_av_frame(AVFrame *av_frame)
 */
 static void _php_free_ffmpeg_frame(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
-    ff_frame_context *ff_frame = (ff_frame_context*)rsrc->ptr;    
+    ff_frame_context *ff_frame = (ff_frame_context*)rsrc->ptr;
     _php_free_av_frame(ff_frame->av_frame);
     efree(ff_frame);
 }
@@ -191,11 +185,11 @@ void register_ffmpeg_frame_class(int module_number)
     le_ffmpeg_frame = zend_register_list_destructors_ex(_php_free_ffmpeg_frame,
             NULL, "ffmpeg_frame", module_number);
 
-    INIT_CLASS_ENTRY(ffmpeg_frame_class_entry, "ffmpeg_frame", 
+    INIT_CLASS_ENTRY(ffmpeg_frame_class_entry, "ffmpeg_frame",
             ffmpeg_frame_class_methods);
 
     /* register ffmpeg frame class */
-    ffmpeg_frame_class_entry_ptr = 
+    ffmpeg_frame_class_entry_ptr =
         zend_register_internal_class(&ffmpeg_frame_class_entry TSRMLS_CC);
 }
 /* }}} */
@@ -223,7 +217,7 @@ int _php_convert_frame(ff_frame_context *ff_frame, int dst_fmt) {
             (AVPicture *) ff_frame->av_frame, ff_frame->pixel_format, ff_frame->width, ff_frame->height);
 
     if (result) {
-        zend_error(E_ERROR, "Error converting frame");
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error converting frame");
         _php_free_av_frame(dst_frame);
     } else {
         ff_frame->av_frame = dst_frame;
@@ -238,7 +232,7 @@ int _php_convert_frame(ff_frame_context *ff_frame, int dst_fmt) {
 
 /* {{{ _php_get_gd_image()
 */
-static int _php_get_gd_image(int w, int h)
+static int _php_get_gd_image(int w, int h TSRMLS_DC)
 {
     zval *function_name, *width, *height;
     zval **argv[2];
@@ -246,11 +240,10 @@ static int _php_get_gd_image(int w, int h)
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
     int ret;
-    TSRMLS_FETCH();
 
-    if (zend_hash_find(EG(function_table), function_cname, 
-                strlen(function_cname) + 1, (void **)&func) == FAILURE) {
-        zend_error(E_ERROR, "Error can't find %s function", function_cname);
+    if (zend_hash_find(EG(function_table), function_cname, strlen(function_cname) + 1, (void **)&func) == FAILURE) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error can't find %s function", function_cname);
+        return -1;
     }
 
     MAKE_STD_ZVAL(function_name);
@@ -264,25 +257,28 @@ static int _php_get_gd_image(int w, int h)
     argv[0] = &width;
     argv[1] = &height;
 
-    if (call_user_function_ex(EG(function_table), NULL, function_name, 
+    if (call_user_function_ex(EG(function_table), NULL, function_name,
                 &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
-        zend_error(E_ERROR, "Error calling %s function", function_cname);
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error calling %s function", function_cname);
+
+        FREE_ZVAL(function_name);
+        FREE_ZVAL(width);
+        FREE_ZVAL(height);
+        return -1;
     }
 
-    FREE_ZVAL(function_name); 
-    FREE_ZVAL(width); 
-    FREE_ZVAL(height); 
+    FREE_ZVAL(function_name);
+    FREE_ZVAL(width);
+    FREE_ZVAL(height);
 
-    if (!retval || retval->type != IS_RESOURCE) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Error creating GD Image");
+    if (!retval || Z_TYPE_P(retval) != IS_RESOURCE) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error creating GD Image");
+        return -1;
     }
 
-    ret = retval->value.lval;
-    zend_list_addref(ret); 
-    if (retval) {
-        zval_ptr_dtor(&retval);
-    }
+    ret = Z_LVAL_P(retval);
+    zend_list_addref(ret);
+    zval_ptr_dtor(&retval);
 
     return ret;
 }
@@ -291,7 +287,7 @@ static int _php_get_gd_image(int w, int h)
 
 /* {{{ _php_avframe_to_gd_image()
 */
-static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width, 
+static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
         int height)
 {
     int x, y;
@@ -315,8 +311,8 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
 
 /* {{{ _php_gd_image_to_avframe()
 */
-static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width, 
-        int height) 
+static int _php_gd_image_to_avframe(gdImage *src, AVFrame *frame, int width,
+        int height)
 {
     int x, y;
     int *dest = (int*)frame->data[0];
@@ -338,67 +334,65 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage)
 {
     ff_frame_context *ff_frame;
     gdImage *gd_img;
+    int rsrc_id;
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
     _php_convert_frame(ff_frame, FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT);
 
-    return_value->value.lval = _php_get_gd_image(ff_frame->width, 
-            ff_frame->height);
+    rsrc_id = _php_get_gd_image(ff_frame->width, ff_frame->height TSRMLS_CC);
 
-    return_value->type = IS_RESOURCE;
+    if (rsrc_id < 0) {
+        RETURN_FALSE;
+    }
+
+    RETVAL_RESOURCE(rsrc_id);
 
     FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &return_value);
 
-    if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img,
-                ff_frame->width, ff_frame->height)) {
-        zend_error(E_ERROR, "failed to convert frame to gd image");
+    if (_php_avframe_to_gd_image(ff_frame->av_frame, gd_img, ff_frame->width, ff_frame->height)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "failed to convert frame to gd image");
+        zend_list_delete(rsrc_id);
+        RETURN_FALSE;
     }
+    /* return the resource */
 }
 /* }}} */
 
-
 /* {{{ proto object ffmpeg_frame(mixed)
 */
-FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
+FFMPEG_PHP_METHOD(ffmpeg_frame, __construct)
 {
-    zval **argv[1];
     AVFrame *frame;
     gdImage *gd_img;
     ff_frame_context *ff_frame;
     int width, height, ret;
+    zval *param;
 
-    if (ZEND_NUM_ARGS() != 1) {
-        WRONG_PARAM_COUNT;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &param) != SUCCESS) {
+        return;
     }
 
-    /* retrieve argument */
-    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Error parsing arguments");
-    }
-
-    ff_frame = _php_alloc_ff_frame();
-
-    ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
-
-    object_init_ex(getThis(), ffmpeg_frame_class_entry_ptr);
-    add_property_resource(getThis(), "ffmpeg_frame", ret);
-
-    switch (Z_TYPE_PP(argv[0])) {
+    switch (Z_TYPE_P(param)) {
         case IS_STRING:
-            convert_to_string_ex(argv[0]);
-            zend_error(E_ERROR, 
-                    "Creating an ffmpeg_frame from a file is not implemented\n");
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Creating an ffmpeg_frame from a file is not implemented");
+            RETURN_FALSE;
             //_php_read_frame_from_file(ff_frame, Z_STRVAL_PP(argv[0]));
             break;
         case IS_RESOURCE:
-            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, argv[0]);
+            FFMPEG_PHP_FETCH_IMAGE_RESOURCE(gd_img, &param);
 
             if (!gd_img->trueColor) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "First parameter must be a truecolor gd image.");
+                php_error_docref(NULL TSRMLS_CC, E_WARNING, "First parameter must be a truecolor GD image");
+                RETURN_FALSE;
             }
+
+            ff_frame = _php_alloc_ff_frame();
+
+            ret = ZEND_REGISTER_RESOURCE(NULL, ff_frame, le_ffmpeg_frame);
+
+            object_init_ex(getThis(), ffmpeg_frame_class_entry_ptr);
+            add_property_resource(getThis(), "ffmpeg_frame", ret);
 
             width = gdImageSX(gd_img);
             height = gdImageSY(gd_img);
@@ -419,7 +413,8 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, ffmpeg_frame)
             ff_frame->pixel_format = FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT;
             break;
         default:
-            zend_error(E_ERROR, "Invalid argument\n");
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid argument passed");
+            RETURN_FALSE;
     }
 }
 /* }}} */
@@ -492,11 +487,11 @@ int _php_resample_frame(ff_frame_context *ff_frame,
         return -1;
     }
 
-    /* 
-     * do nothing if width and height are the same as the frame and no 
+    /*
+     * do nothing if width and height are the same as the frame and no
      * cropping was specified
      * */
-    if (wanted_width == ff_frame->width && 
+    if (wanted_width == ff_frame->width &&
             wanted_height == ff_frame->height &&
             (!crop_left && !crop_right && !crop_top && !crop_bottom)) {
         return 0;
@@ -515,10 +510,10 @@ int _php_resample_frame(ff_frame_context *ff_frame,
     }
 
     resampled_frame = avcodec_alloc_frame();
-    avpicture_alloc((AVPicture*)resampled_frame, PIX_FMT_YUV420P, 
+    avpicture_alloc((AVPicture*)resampled_frame, PIX_FMT_YUV420P,
             wanted_width, wanted_height);
 
-    img_resample(img_resample_ctx, (AVPicture*)resampled_frame, 
+    img_resample(img_resample_ctx, (AVPicture*)resampled_frame,
             (AVPicture*)ff_frame->av_frame);
 
     _php_free_av_frame(ff_frame->av_frame);
@@ -538,109 +533,68 @@ int _php_resample_frame(ff_frame_context *ff_frame,
 */
 FFMPEG_PHP_METHOD(ffmpeg_frame, resize)
 {
-    zval ***argv;
     ff_frame_context *ff_frame = NULL;
-    int wanted_width = 0, wanted_height = 0;
-    int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
+    long wanted_width, wanted_height;
+    long crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
+    int res;
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    /* retrieve arguments */ 
-    argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
-
-    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
-        efree(argv);
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Error parsing arguments");
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll|llll", &wanted_width, &wanted_height, &crop_top, &crop_bottom, &crop_left, &crop_right) != SUCCESS) {
+        return;
     }
 
-    switch (ZEND_NUM_ARGS()) {
-        case 6:
-            convert_to_long_ex(argv[5]);
-            crop_right = Z_LVAL_PP(argv[5]);
+    if (crop_right % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop right must be an even number");
+        RETURN_FALSE;
+    }
 
-            /* crop right must be even number for lavc cropping */
-            if (crop_right % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop right must be an even number");
-            }
-            /* fallthru */
-        case 5:
-            convert_to_long_ex(argv[4]);
-            crop_left = Z_LVAL_PP(argv[4]);
+    if (crop_left % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop left must be an even number");
+        RETURN_FALSE;
+    }
 
-            /*  crop left must be even number for lavc cropping */
-            if (crop_left % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop left must be an even number");
-            }
+    if (crop_bottom % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop bottom must be an even number");
+        RETURN_FALSE;
+    }
 
-            /* fallthru */
-        case 4:
-            convert_to_long_ex(argv[3]);
-            crop_bottom = Z_LVAL_PP(argv[3]);
+    if (crop_top % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop top be an even number");
+        RETURN_FALSE;
+    }
 
-            /*  crop bottom must be even number for lavc cropping */
-            if (crop_bottom % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop bottom must be an even number");
-            }
+    /* bounds check wanted height */
+    if (wanted_height < 1) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Frame height must be greater than zero");
+        RETURN_FALSE;
+    }
 
-            /* fallthru */
-        case 3:
-            convert_to_long_ex(argv[2]);
-            crop_top = Z_LVAL_PP(argv[2]);
+    /* wanted height must be even number for lavc resample */
+    if (wanted_height % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Frame height must be an even number");
+        RETURN_FALSE;
+    }
 
-            /*  crop top must be even number for lavc cropping */
-            if (crop_top % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop top must be an even number");
-            }
+    /* bounds check wanted width */
+    if (wanted_width < 1) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Frame width must be greater than zero");
+        RETURN_FALSE;
+    }
 
-            /* fallthru */
-        case 2:
-            /* height arg */
-            convert_to_long_ex(argv[1]);
-            wanted_height = Z_LVAL_PP(argv[1]);
-
-            /* bounds check wanted height */
-            if (wanted_height < 1) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Frame height must be greater than zero");
-            }
-
-            /* wanted height must be even number for lavc resample */
-            if (wanted_height % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Frame height must be an even number");
-            }
-            /* fallthru */
-        case 1:
-            /* width arg */
-            convert_to_long_ex(argv[0]);
-            wanted_width = Z_LVAL_PP(argv[0]);
-
-            /* bounds check wanted width */
-            if (wanted_width < 1) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Frame width must be greater than zero");
-            }
-
-            /* wanted width must be even number for lavc resample */
-            if (wanted_width % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Frame width must be an even number");
-            }
-            break;
-        default:
-            WRONG_PARAM_COUNT;
-    } 
-
-    efree(argv);
+    /* wanted width must be even number for lavc resample */
+    if (wanted_width % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Frame width must be an even number");
+        RETURN_FALSE;
+    }
 
     /* resize frame */
-    _php_resample_frame(ff_frame, wanted_width, wanted_height, 
+    res = _php_resample_frame(ff_frame, wanted_width, wanted_height,
             crop_top, crop_bottom, crop_left, crop_right);
+
+    if (res < 0) {
+        RETURN_FALSE;
+    }
 
     RETURN_TRUE;
 }
@@ -651,73 +605,43 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, resize)
 */
 PHP_FUNCTION(crop)
 {
-    zval ***argv;
     ff_frame_context *ff_frame;
-    int crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
+    long crop_top = 0, crop_bottom = 0, crop_left = 0, crop_right = 0;
+    int res;
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    /* retrieve arguments */ 
-    argv = (zval ***) safe_emalloc(sizeof(zval **), ZEND_NUM_ARGS(), 0);
-
-    if (zend_get_parameters_array_ex(ZEND_NUM_ARGS(), argv) != SUCCESS) {
-        efree(argv);
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Error parsing arguments");
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|llll", &crop_top, &crop_bottom, &crop_left, &crop_bottom) != SUCCESS) {
+        return;
     }
 
-    switch (ZEND_NUM_ARGS()) {
-        case 4:
-            convert_to_long_ex(argv[3]);
-            crop_right = Z_LVAL_PP(argv[3]);
+    if (crop_right % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop right must be an even number");
+        RETURN_FALSE;
+    }
 
-            /* crop right must be even number for lavc cropping */
-            if (crop_right % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop right must be an even number");
-            }
-            /* fallthru */
-        case 3:
-            convert_to_long_ex(argv[2]);
-            crop_left = Z_LVAL_PP(argv[2]);
+    if (crop_left % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop left must be an even number");
+        RETURN_FALSE;
+    }
 
-            /*  crop left must be even number for lavc cropping */
-            if (crop_left % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop left must be an even number");
-            }
+    if (crop_bottom % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop bottom must be an even number");
+        RETURN_FALSE;
+    }
 
-            /* fallthru */
-        case 2:
-            convert_to_long_ex(argv[1]);
-            crop_bottom = Z_LVAL_PP(argv[1]);
-
-            /*  crop bottom must be even number for lavc cropping */
-            if (crop_bottom % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop bottom must be an even number");
-            }
-
-            /* fallthru */
-        case 1:
-            convert_to_long_ex(argv[0]);
-            crop_top = Z_LVAL_PP(argv[0]);
-
-            /*  crop top  must be even number for lavc cropping */
-            if (crop_top % 2) {
-                php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                        "Crop top must be an even number");
-            }
-            break;
-        default:
-            WRONG_PARAM_COUNT;
-    } 
-
-    efree(argv);
+    if (crop_top % 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Crop top be an even number");
+        RETURN_FALSE;
+    }
 
     /* resample with same dimensions */
-    _php_resample_frame(ff_frame, ff_frame->width, ff_frame->height, 
+    res = _php_resample_frame(ff_frame, ff_frame->width, ff_frame->height,
             crop_top, crop_bottom, crop_left, crop_right);
+
+    if (res < 0) {
+        RETURN_FALSE;
+    }
 
     RETURN_TRUE;
 }

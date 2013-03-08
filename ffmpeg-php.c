@@ -17,18 +17,18 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-   In addition, as a special exception, the copyright holders of ffmpeg-php 
-   give you permission to combine ffmpeg-php with code included in the 
-   standard release of PHP under the PHP license (or modified versions of 
-   such code, with unchanged license). You may copy and distribute such a 
-   system following the terms of the GNU GPL for ffmpeg-php and the licenses 
-   of the other code concerned, provided that you include the source code of 
+   In addition, as a special exception, the copyright holders of ffmpeg-php
+   give you permission to combine ffmpeg-php with code included in the
+   standard release of PHP under the PHP license (or modified versions of
+   such code, with unchanged license). You may copy and distribute such a
+   system following the terms of the GNU GPL for ffmpeg-php and the licenses
+   of the other code concerned, provided that you include the source code of
    that other code when and as the GNU GPL requires distribution of source code.
 
-   You must obey the GNU General Public License in all respects for all of the 
-   code used other than standard release of PHP. If you modify this file, you 
-   may extend this exception to your version of the file, but you are not 
-   obligated to do so. If you do not wish to do so, delete this exception 
+   You must obey the GNU General Public License in all respects for all of the
+   code used other than standard release of PHP. If you modify this file, you
+   may extend this exception to your version of the file, but you are not
+   obligated to do so. If you do not wish to do so, delete this exception
    statement from your version.
 
  */
@@ -67,7 +67,7 @@ zend_module_entry ffmpeg_module_entry = {
     NULL,
     PHP_MINFO(ffmpeg),
 #if ZEND_MODULE_API_NO >= 20010901
-    FFMPEG_PHP_VERSION, 
+    FFMPEG_PHP_VERSION,
 #endif
     STANDARD_MODULE_PROPERTIES
 };
@@ -94,26 +94,26 @@ PHP_MINIT_FUNCTION(ffmpeg)
 {
     /* register all codecs */
     av_register_all();
-    
+
     REGISTER_INI_ENTRIES();
- 
+
     if (INI_BOOL("ffmpeg.show_warnings")) {
         av_log_set_callback(ffmpeg_errorhandler);
     } else {
         av_log_set_callback(ffmpeg_hide_errors);
     }
-   
+
     register_ffmpeg_movie_class(module_number);
     register_ffmpeg_frame_class(module_number);
 
-    REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING", 
+    REGISTER_STRING_CONSTANT("FFMPEG_PHP_VERSION_STRING",
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
-    REGISTER_STRING_CONSTANT("FFMPEG_PHP_BUILD_DATE_STRING", 
+    REGISTER_STRING_CONSTANT("FFMPEG_PHP_BUILD_DATE_STRING",
 		    __DATE__ " " __TIME__, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER", 
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER",
 		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
 #ifdef LIBAVCODEC_BUILD
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER", 
+    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
 		    LIBAVCODEC_BUILD, CONST_CS | CONST_PERSISTENT);
 #else
     REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
@@ -125,7 +125,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 #else
     REGISTER_LONG_CONSTANT("FFMPEG_PHP_GD_ENABLED", 0, CONST_CS | CONST_PERSISTENT);
 #endif // HAVE_LIBGD20
- 
+
     return SUCCESS;
 }
 /* }}} */
@@ -136,7 +136,7 @@ PHP_MINIT_FUNCTION(ffmpeg)
 PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     // TODO: Free any remaining persistent movies here?
-    
+
     UNREGISTER_INI_ENTRIES();
 
     return SUCCESS;
@@ -164,7 +164,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
 #if HAVE_SWSCALER
     php_info_print_table_row(2, "ffmpeg swscaler version", LIBSWSCALE_IDENT);
     php_info_print_table_row(2, "ffmpeg swscaler license", swscale_license());
-#else 
+#else
     php_info_print_table_row(2, "ffmpeg swscaler", "disabled");
 #endif
 
@@ -179,7 +179,7 @@ PHP_MINFO_FUNCTION(ffmpeg)
       m_codec_list_len += m_codec_len;
       m_codec_list = realloc(m_codec_list, m_codec_list_len);
 
-      //wtf? always gives buffer overflows... 
+      //wtf? always gives buffer overflows...
       //sprintf(m_codec_list+(m_codec_list_len-m_codec_len), "%s(%c), ", next_codec->name, FFMPEG_AVMEDIA_TYPE(next_codec->type));
 
       //doing it the long way instead

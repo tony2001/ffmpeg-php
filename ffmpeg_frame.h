@@ -46,9 +46,6 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 
-/* object can't be created from user space so no PHP constructor */
-//FFMPEG_PHP_CONSTRUCTOR(ffmpeg_frame, __construct);
-
 /* frame methods */
 FFMPEG_PHP_METHOD(ffmpeg_frame, getWidth);
 FFMPEG_PHP_METHOD(ffmpeg_frame, getHeight);
@@ -57,6 +54,8 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, isKeyFrame);
 FFMPEG_PHP_METHOD(ffmpeg_frame, getPresentationTimestamp);
 
 #if HAVE_LIBGD20
+FFMPEG_PHP_CONSTRUCTOR(ffmpeg_frame, __construct);
+
 FFMPEG_PHP_METHOD(ffmpeg_frame, toGDImage);
 #endif // HAVE_LIBGD20
 
@@ -77,7 +76,7 @@ int _php_convert_frame(ff_frame_context *ff_frame, int new_fmt);
 	zval **_tmp_zval;\
     if (zend_hash_find(Z_OBJPROP_P(ffmpeg_frame_object), "ffmpeg_frame",\
                 sizeof("ffmpeg_frame"), (void **)&_tmp_zval) == FAILURE) {\
-        zend_error(E_ERROR, "Unable to locate ffmpeg_frame resource in this object.");\
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to locate ffmpeg_frame resource in this object.");\
         RETURN_FALSE;\
     }\
 \
