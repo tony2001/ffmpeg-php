@@ -297,15 +297,14 @@ static int _php_avframe_to_gd_image(AVFrame *frame, gdImage *dest, int width,
     int x, y;
     int *src = (int*)frame->data[0];
 
+    if (width > dest->sx || height > dest->sy) {
+        return -1;
+    }
+
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-		
-			if (gdImageBoundsSafeMacro(dest, x, y)) {
-                /* copy pixel to gdimage buffer zeroing the alpha channel */
-                dest->tpixels[y][x] = src[x] & 0x00ffffff;
-            } else {
-                return -1;
-            }
+            /* copy pixel to gdimage buffer zeroing the alpha channel */
+            dest->tpixels[y][x] = src[x] & 0x00ffffff;
         }
         src += width;
     }
@@ -730,6 +729,6 @@ PHP_FUNCTION(crop)
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: noet sw=4 ts=4
+ * vim600: noet sw=4 ts=4 expandtab
  * vim<600: noet sw=4 ts=4
  */
