@@ -105,7 +105,7 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
     FFMPEG_PHP_MALIAS(ffmpeg_movie, getcomment,          getComment,          NULL, 0)
     FFMPEG_PHP_MALIAS(ffmpeg_movie, gettitle,            getTitle,            NULL, 0)
     FFMPEG_PHP_MALIAS(ffmpeg_movie, getauthor,           getAuthor,           NULL, 0)
-    FFMPEG_PHP_MALIAS(ffmpeg_movie, getartist,           getAuthor,           NULL, 0)
+    FFMPEG_PHP_MALIAS(ffmpeg_movie, getartist,           getArtist,           NULL, 0)
     FFMPEG_PHP_MALIAS(ffmpeg_movie, getcopyright,        getCopyright,        NULL, 0)
     FFMPEG_PHP_MALIAS(ffmpeg_movie, getalbum,            getAlbum,            NULL, 0)
     FFMPEG_PHP_MALIAS(ffmpeg_movie, getgenre,            getGenre,            NULL, 0)
@@ -498,15 +498,13 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
 /* }}} */
 
 
-/* {{{ proto string getComment()
- */
-FFMPEG_PHP_METHOD(ffmpeg_movie, getComment)
+void php_get_dict_value(INTERNAL_FUNCTION_PARAMETERS, char *entry_name) /* {{{ */
 {
     ff_movie_context *ffmovie_ctx;
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "comment", NULL, 0);
+    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, entry_name, NULL, 0);
 
     if (!m_entry) {
         RETURN_FALSE;
@@ -516,82 +514,55 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getComment)
 }
 /* }}} */
 
+/* {{{ proto string getComment()
+ */
+FFMPEG_PHP_METHOD(ffmpeg_movie, getComment)
+{
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "comment");
+}
+/* }}} */
 
 /* {{{ proto string getTitle()
  * Return title field from movie or title ID3 tag from an MP3 file.
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getTitle)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "title", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "title");
 }
 /* }}} */
 
-
-/* {{{ proto string getAuthor() or getArtist()
- * Return author field from a movie or artist ID3 tag from am MP3 files.
+/* {{{ proto string getAuthor()
+ * Return author field from a movie.
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getAuthor)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "author", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "author");
 }
 /* }}} */
 
+/* {{{ proto string getArtist()
+ * Return artist field from MP3 files.
+ */
+FFMPEG_PHP_METHOD(ffmpeg_movie, getArtist)
+{
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "artist");
+}
+/* }}} */
 
 /* {{{ proto string getCopyright()
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getCopyright)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "copyright", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "copyright");
 }
 /* }}} */
-
 
 /* {{{ proto string getAlbum()
  *  Return ID3 album field from an mp3 file
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getAlbum)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "album", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "album");
 }
 /* }}} */
 
@@ -600,37 +571,16 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getAlbum)
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getGenre)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "genre", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "genre");
 }
 /* }}} */
-
 
 /* {{{ proto int getTrackNumber()
  *  Return ID3 track field from an mp3 file
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getTrackNumber)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "track", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "track");
 }
 /* }}} */
 
@@ -639,20 +589,9 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getTrackNumber)
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getYear)
 {
-    ff_movie_context *ffmovie_ctx;
-
-    GET_MOVIE_RESOURCE(ffmovie_ctx);
-
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "year", NULL, 0);
-
-    if (!m_entry) {
-        RETURN_FALSE;
-    }
-
-    RETURN_STRINGL(m_entry->value, strlen(m_entry->value), 1);
+	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "year");
 }
 /* }}} */
-
 
 /* {{{ _php_get_duration()
  */
@@ -668,7 +607,6 @@ static float _php_get_duration(ff_movie_context *ffmovie_ctx)
     return duration;
 }
 /* }}} */
-
 
 /* {{{ proto int getDuration()
  */

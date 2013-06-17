@@ -43,6 +43,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getFileName);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getComment);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getTitle);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getAuthor);
+FFMPEG_PHP_METHOD(ffmpeg_movie, getArtist);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getCopyright);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getAlbum);
 FFMPEG_PHP_METHOD(ffmpeg_movie, getGenre);
