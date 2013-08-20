@@ -201,6 +201,8 @@ int _php_convert_frame(ff_frame_context *ff_frame, int dst_fmt) {
     AVFrame *dst_frame;
     int result = 0;
 
+    TSRMLS_FETCH();
+
     if (!ff_frame->av_frame) {
         return -1;
     }
@@ -430,7 +432,8 @@ FFMPEG_PHP_METHOD(ffmpeg_frame, getPresentationTimestamp)
 
     GET_FRAME_RESOURCE(getThis(), ff_frame);
 
-    RETURN_DOUBLE((double)ff_frame->pts / AV_TIME_BASE);
+    //RETURN_DOUBLE((double)ff_frame->pts / AV_TIME_BASE);
+    RETURN_DOUBLE(ff_frame->pts);
 }
 /* }}} */
 

@@ -65,7 +65,7 @@ typedef struct {
     int height;
     int pixel_format;
     int keyframe;
-    int64_t pts;
+    double pts;
 } ff_frame_context;
 
 ff_frame_context* _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAMETERS);

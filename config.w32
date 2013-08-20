@@ -1,0 +1,36 @@
+// $Id$
+// vim:ft=javascript
+
+ARG_WITH("ffmpeg", "ffmpeg support", "no");
+
+if(PHP_FFMPEG != "no")
+{
+	if(
+	CHECK_LIB("avcodec.lib", "ffmpeg", PHP_FFMPEG + "\\lib") 
+	&& CHECK_LIB("avformat.lib", "ffmpeg", PHP_FFMPEG + "\\lib") 
+	&& CHECK_LIB("avutil.lib", "ffmpeg", PHP_FFMPEG + "\\lib")
+	&& CHECK_LIB("swscale.lib", "ffmpeg", PHP_FFMPEG + "\\lib")
+	&& CHECK_HEADER_ADD_INCLUDE("libavcodec\\avcodec.h", "CFLAGS_FFMPEG", PHP_FFMPEG + "\\include"))
+	{
+//	  Will crash in Release mode if you don't have the following compile
+//	  flag
+
+	  ADD_FLAG("LDFLAGS_FFMPEG", "/OPT:NOREF");
+
+	  AC_DEFINE("HAVE_LIBGD20", 1);
+	  AC_DEFINE("HAVE_SWSCALER", 1);
+	  AC_DEFINE("HAVE_FFMPEG_PHP", 1);
+	  AC_DEFINE("COMPILE_DL_FFMPEG", 1);
+	  EXTENSION("ffmpeg", "ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_errorhandler.c ffmpeg_tools.c", true);
+//    
+//    Use the following instead of above to build the extension into php
+//    instead of as ext DLL
+//
+//	  EXTENSION("ffmpeg", "ffmpeg-php.c ffmpeg_movie.c ffmpeg_frame.c ffmpeg_errorhandler.c ffmpeg_tools.c");
+	}
+	else
+	{
+		WARNING("ffmpeg not enabled; libraries and headers not found");
+	}
+}
+

@@ -92,10 +92,11 @@ void img_resample(ImgReSampleContext * context, AVPicture * pxOut, const AVPictu
 ImgReSampleContext * img_resample_full_init (int owidth, int oheight, int iwidth, int iheight, int topBand, int bottomBand, int leftBand, int rightBand, int padtop, int padbottom, int padleft, int padright)
 {
     ImgReSampleContext * s = (ImgReSampleContext *)av_malloc(sizeof(ImgReSampleContext));
+	int srcSurface;
     if (s == NULL) {
         return NULL;
     }
-    int srcSurface = (iwidth - rightBand - leftBand)* (iheight - topBand - bottomBand);
+    srcSurface = (iwidth - rightBand - leftBand)* (iheight - topBand - bottomBand);
     // We use bilinear when the source surface is big, and bicubic when the number of pixels to handle is less than 1 MPixels
     s->context = sws_getContext(iwidth - rightBand - leftBand,
             iheight - topBand - bottomBand, PIX_FMT_YUV420P, owidth, oheight,
