@@ -1175,8 +1175,16 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
             avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
 
             if (got_frame) {
+#if LIBAVCODEC_BUILD > 4640
+                *is_keyframe = frame->key_frame; // http://git.libav.org/?p=libav.git;a=commitdiff;h=1e491e29c27cf6a6925666e4f4eac41b65e263d7
+#else
                 *is_keyframe = (packet.flags & AV_PKT_FLAG_KEY);
+#endif
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,105,0)
+                *pts = frame->pkt_pts; // http://git.libav.org/?p=libav.git;a=commitdiff;h=393cbb963b83ecd98336502b1201f16f5eaed979
+#else
                 *pts = packet.pts;
+#endif
                 av_free_packet(&packet);
                 return frame;
             }
@@ -1211,7 +1219,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
         if (
 
 #if LIBAVFORMAT_BUILD >=  4619
-                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, 0)
+                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD)
 #else
                 av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0)
 #endif
