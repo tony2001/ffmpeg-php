@@ -42,18 +42,10 @@
 #include "php_globals.h"
 #include "ext/standard/info.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "php_ffmpeg.h"
 
 #include "ffmpeg_frame.h"
 #include "ffmpeg_tools.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 /*
    include gd header from local include dir. This is a copy of gd.h that is
