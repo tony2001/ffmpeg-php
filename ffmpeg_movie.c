@@ -584,12 +584,29 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getTrackNumber)
 }
 /* }}} */
 
+static const char *_php_get_year(ff_movie_context *ffmovie_ctx)
+{
+    AVDictionaryEntry *year = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "year", NULL, 0);
+
+    if (!year) {
+        year = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "date", NULL, 0);
+    }
+
+    return year->value;
+}
+
 /* {{{ proto int getYear()
  *  Return ID3 year field from an mp3 file
  */
 FFMPEG_PHP_METHOD(ffmpeg_movie, getYear)
 {
-	php_get_dict_value(INTERNAL_FUNCTION_PARAM_PASSTHRU, "year");
+    ff_movie_context *ffmovie_ctx;
+
+    GET_MOVIE_RESOURCE(ffmovie_ctx);
+
+    const char *year = _php_get_year(ffmovie_ctx);
+
+    RETURN_STRINGL(year, strlen(year), 1);
 }
 /* }}} */
 
