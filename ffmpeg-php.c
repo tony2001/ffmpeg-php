@@ -95,7 +95,9 @@ PHP_INI_END()
 PHP_MINIT_FUNCTION(ffmpeg)
 {
     /* register all codecs */
+    avcodec_register_all();
     av_register_all();
+    avformat_network_init();
 
     REGISTER_INI_ENTRIES();
 
@@ -163,6 +165,7 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     // TODO: Free any remaining persistent movies here?
 
+    avformat_network_deinit();
     UNREGISTER_INI_ENTRIES();
 
     return SUCCESS;
