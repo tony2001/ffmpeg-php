@@ -1280,6 +1280,13 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, IN
          */
         ff_frame = _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+        if (!ff_frame) {
+            free(frame);
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Error allocating ffmpeg_frame resource");
+            return 0;
+        }
+
         /* TODO: Provide function(s) for setting these in ffmpeg_frame */
         ff_frame->width = _php_get_framewidth(ffmovie_ctx);
         ff_frame->height = _php_get_frameheight(ffmovie_ctx);
@@ -1298,6 +1305,7 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, IN
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
 
+        free(frame);
         return 1;
     } else {
         return 0;
