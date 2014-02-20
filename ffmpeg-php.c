@@ -110,15 +110,39 @@ PHP_MINIT_FUNCTION(ffmpeg)
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_STRING_CONSTANT("FFMPEG_PHP_BUILD_DATE_STRING",
 		    __DATE__ " " __TIME__, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER",
-		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
-#ifdef LIBAVCODEC_BUILD
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
-		    LIBAVCODEC_BUILD, CONST_CS | CONST_PERSISTENT);
-#else
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
-            avcodec_build(), CONST_CS | CONST_PERSISTENT);
+
+#ifndef LIBAVCODEC_BUILD
+#define LIBAVCODEC_BUILD avcodec_build()
 #endif
+#ifndef LIBAVFORMAT_BUILD
+#define LIBAVFORMAT_BUILD avformat_build()
+#endif
+#ifndef LIBAVUTIL_BUILD
+#define LIBAVUTIL_BUILD avutils_build()
+#endif
+#ifndef LIBSWSCALE_BUILD
+#define LIBSWSCALE_BUILD swscale_build()
+#endif
+
+#define register_libav3(x, y, z) \
+    REGISTER_LONG_CONSTANT(#x "_VERSION_NUMBER", \
+		    y, CONST_CS | CONST_PERSISTENT); \
+    REGISTER_LONG_CONSTANT(#x "_BUILD_NUMBER", \
+		    z, CONST_CS | CONST_PERSISTENT)
+
+#define register_libav2(x, y) register_libav3(x, y, x##_BUILD)
+
+    register_libav2(LIBAVCODEC, avcodec_version());
+    register_libav2(LIBAVFORMAT, avformat_version());
+    register_libav2(LIBAVUTIL, avutil_version());
+#if HAVE_SWSCALER
+    register_libav2(LIBSWSCALE, swscale_version());
+#else
+    register_libav3(LIBSWSCALE, 0, 0);
+#endif
+
+#undef register_libav3
+#undef register_libav2
 
 #if HAVE_LIBGD20
     REGISTER_LONG_CONSTANT("FFMPEG_PHP_GD_ENABLED", 1, CONST_CS | CONST_PERSISTENT);
