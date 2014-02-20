@@ -282,16 +282,16 @@ FFMPEG_PHP_CONSTRUCTOR(ffmpeg_movie, __construct)
 {
     int hashkey_length = 0, filename_len;
     char *filename = NULL, *fullpath = NULL, *hashkey = NULL;
-	zend_bool persistent = 0;
+    zend_bool persistent = 0;
     ff_movie_context *ffmovie_ctx = NULL;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &filename, &filename_len, &persistent) != SUCCESS) {
-		return;
+        return;
     }
 
-	if (persistent && !INI_BOOL("ffmpeg.allow_persistent")) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Persistent movies have been disabled in php.ini");
-		RETURN_FALSE;
+    if (persistent && !INI_BOOL("ffmpeg.allow_persistent")) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Persistent movies have been disabled in php.ini");
+        RETURN_FALSE;
     }
 
     if (persistent) {
@@ -1333,9 +1333,9 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getFrame)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &wanted_frame) != SUCCESS) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &wanted_frame) != SUCCESS) {
+        return;
+    }
 
     if (! _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
         RETURN_FALSE;
