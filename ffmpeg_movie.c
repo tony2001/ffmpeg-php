@@ -1240,16 +1240,6 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
     while (1) {
         frame = _php_read_av_frame(ffmovie_ctx, decoder_ctx, is_keyframe, pts);
 
-        /* hurry up if we're still a ways from the target frame */
-        /*if (wanted_frame != GETFRAME_KEYFRAME &&
-                wanted_frame != GETFRAME_NEXTFRAME &&
-                wanted_frame - ffmovie_ctx->frame_number >
-                decoder_ctx->gop_size + 1) {
-            decoder_ctx->hurry_up = 1;
-        } else {
-            decoder_ctx->hurry_up = 0;
-        }*/
-        /*CUT? cannot hurry up ffmpeg anymore*/
         ffmovie_ctx->frame_number++;
 
         /*
