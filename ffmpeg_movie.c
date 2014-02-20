@@ -1245,7 +1245,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
         /*
          * if caller wants next keyframe then get it and break out of loop.
          */
-        if (wanted_frame == GETFRAME_KEYFRAME && is_keyframe) {
+        if (wanted_frame == GETFRAME_KEYFRAME && *is_keyframe) {
             return frame;
         }
 
