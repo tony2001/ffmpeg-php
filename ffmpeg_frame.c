@@ -231,7 +231,7 @@ static int _php_get_gd_image(int w, int h TSRMLS_DC)
     zend_function *func;
     zval *retval;
     char *function_cname = "imagecreatetruecolor";
-    int ret;
+    int ret = -1;
 
     if (zend_hash_find(EG(function_table), function_cname, strlen(function_cname) + 1, (void **)&func) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error can't find %s function", function_cname);
@@ -252,25 +252,22 @@ static int _php_get_gd_image(int w, int h TSRMLS_DC)
     if (call_user_function_ex(EG(function_table), NULL, function_name,
                 &retval, 2, argv, 0, NULL TSRMLS_CC) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error calling %s function", function_cname);
-
-        FREE_ZVAL(function_name);
-        FREE_ZVAL(width);
-        FREE_ZVAL(height);
-        return -1;
+        goto out;
     }
-
-    FREE_ZVAL(function_name);
-    FREE_ZVAL(width);
-    FREE_ZVAL(height);
 
     if (!retval || Z_TYPE_P(retval) != IS_RESOURCE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "Error creating GD Image");
-        return -1;
+        goto out;
     }
 
     ret = Z_LVAL_P(retval);
     zend_list_addref(ret);
     zval_ptr_dtor(&retval);
+
+out:
+    FREE_ZVAL(function_name);
+    FREE_ZVAL(width);
+    FREE_ZVAL(height);
 
     return ret;
 }
