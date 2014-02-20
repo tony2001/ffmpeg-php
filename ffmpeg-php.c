@@ -185,6 +185,8 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "ffmpeg libavcodec license", avcodec_license()); //people need to know if they can distribute
     php_info_print_table_row(2, "ffmpeg libavformat version", LIBAVFORMAT_IDENT);
     php_info_print_table_row(2, "ffmpeg libavformat license", avformat_license());
+    php_info_print_table_row(2, "ffmpeg libavutil version", LIBAVUTIL_IDENT);
+    php_info_print_table_row(2, "ffmpeg libavutil license", avutil_license());
 #if HAVE_SWSCALER
     php_info_print_table_row(2, "ffmpeg swscaler version", LIBSWSCALE_IDENT);
     php_info_print_table_row(2, "ffmpeg swscaler license", swscale_license());
