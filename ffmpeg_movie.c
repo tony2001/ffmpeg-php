@@ -585,11 +585,15 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getTrackNumber)
 /* }}} */
 
 static const char *_php_get_year(ff_movie_context *ffmovie_ctx)
-{
+{   
     AVDictionaryEntry *year = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "year", NULL, 0);
 
     if (!year) {
         year = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, "date", NULL, 0);
+    }
+
+    if (!year) {
+        return NULL;
     }
 
     return year->value;
@@ -605,6 +609,10 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getYear)
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
     const char *year = _php_get_year(ffmovie_ctx);
+
+    if (!year) {
+        RETURN_FALSE;
+    }
 
     RETURN_STRINGL(year, strlen(year), 1);
 }
