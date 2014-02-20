@@ -1343,6 +1343,12 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getFrame)
         return;
     }
 
+    /* bounds check wanted frame */
+    if (wanted_frame < 1) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Frame number must be greater than zero");
+        RETURN_FALSE;
+    }
+
     if (! _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
         RETURN_FALSE;
     }
