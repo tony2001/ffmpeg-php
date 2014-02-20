@@ -81,10 +81,12 @@ ZEND_GET_MODULE(ffmpeg);
 
 extern void register_ffmpeg_movie_class(int);
 extern void register_ffmpeg_frame_class(int);
+static PHP_INI_MH(OnUpdateLogLevel);
 
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("ffmpeg.show_warnings", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("ffmpeg.loglevel", "info", PHP_INI_ALL, OnUpdateLogLevel)
 PHP_INI_END()
 
 
@@ -227,6 +229,43 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+
+
+/* {{{ PHP_INI_MH
+ */
+static PHP_INI_MH(OnUpdateLogLevel)
+{
+    const struct { const char *name; int level; } log_levels[] = {
+        { "quiet"  , AV_LOG_QUIET   },
+        { "panic"  , AV_LOG_PANIC   },
+        { "fatal"  , AV_LOG_FATAL   },
+        { "error"  , AV_LOG_ERROR   },
+        { "warning", AV_LOG_WARNING },
+        { "info"   , AV_LOG_INFO    },
+        { "verbose", AV_LOG_VERBOSE },
+        { "debug"  , AV_LOG_DEBUG   }
+    };
+    char *tail;
+    int level;
+    int i;
+
+    for (i = 0; i < sizeof(log_levels)/sizeof(log_levels[0]); i++) {
+        if (!strcmp(log_levels[i].name, new_value)) {
+            av_log_set_level(log_levels[i].level);
+            return SUCCESS;
+        }
+    }
+
+    level = strtol(new_value, &tail, 10);
+    if (*tail) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid loglevel \"%s\". "
+               "Possible levels are numbers or {quiet, panic, fatal, error, warning, info, verbose, debug}", new_value);
+        return FAILURE;
+    }
+    av_log_set_level(level);
+    return SUCCESS;
 }
 /* }}} */
 
