@@ -453,6 +453,8 @@ void register_ffmpeg_movie_class(int module_number)
 static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
         int stream_type)
 {
+	TSRMLS_FETCH();
+	
     AVCodec *decoder;
     int stream_index;
 
