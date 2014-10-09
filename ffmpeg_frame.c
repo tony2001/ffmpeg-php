@@ -198,6 +198,8 @@ void register_ffmpeg_frame_class(int module_number)
 /* {{{ _php_convert_frame()
 */
 int _php_convert_frame(ff_frame_context *ff_frame, int dst_fmt) {
+   TSRMLS_FETCH();
+   
     AVFrame *dst_frame;
     int result = 0;
 
