@@ -915,7 +915,7 @@ static const char* _php_get_codec_name(ff_movie_context *ffmovie_ctx, int type)
                 codec_name = "mp1";
         }
 #endif
-    } else if (decoder_ctx->codec_id == CODEC_ID_MPEG2TS) {
+    } else if (decoder_ctx->codec_id == AV_CODEC_ID_MPEG2TS) {
         /* fake mpeg2 transport stream codec (currently not registered) */
         codec_name = "mpeg2ts";
     } else if (decoder_ctx->codec_name[0] != '\0') {
