@@ -81,10 +81,12 @@ ZEND_GET_MODULE(ffmpeg);
 
 extern void register_ffmpeg_movie_class(int);
 extern void register_ffmpeg_frame_class(int);
+static PHP_INI_MH(OnUpdateLogLevel);
 
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("ffmpeg.allow_persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("ffmpeg.show_warnings", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("ffmpeg.loglevel", "info", PHP_INI_ALL, OnUpdateLogLevel)
 PHP_INI_END()
 
 
@@ -93,7 +95,9 @@ PHP_INI_END()
 PHP_MINIT_FUNCTION(ffmpeg)
 {
     /* register all codecs */
+    avcodec_register_all();
     av_register_all();
+    avformat_network_init();
 
     REGISTER_INI_ENTRIES();
 
@@ -110,15 +114,39 @@ PHP_MINIT_FUNCTION(ffmpeg)
 		    FFMPEG_PHP_VERSION, CONST_CS | CONST_PERSISTENT);
     REGISTER_STRING_CONSTANT("FFMPEG_PHP_BUILD_DATE_STRING",
 		    __DATE__ " " __TIME__, CONST_CS | CONST_PERSISTENT);
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_VERSION_NUMBER",
-		    avcodec_version(), CONST_CS | CONST_PERSISTENT);
-#ifdef LIBAVCODEC_BUILD
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
-		    LIBAVCODEC_BUILD, CONST_CS | CONST_PERSISTENT);
-#else
-    REGISTER_LONG_CONSTANT("LIBAVCODEC_BUILD_NUMBER",
-            avcodec_build(), CONST_CS | CONST_PERSISTENT);
+
+#ifndef LIBAVCODEC_BUILD
+#define LIBAVCODEC_BUILD avcodec_build()
 #endif
+#ifndef LIBAVFORMAT_BUILD
+#define LIBAVFORMAT_BUILD avformat_build()
+#endif
+#ifndef LIBAVUTIL_BUILD
+#define LIBAVUTIL_BUILD avutils_build()
+#endif
+#ifndef LIBSWSCALE_BUILD
+#define LIBSWSCALE_BUILD swscale_build()
+#endif
+
+#define register_libav3(x, y, z) \
+    REGISTER_LONG_CONSTANT(#x "_VERSION_NUMBER", \
+		    y, CONST_CS | CONST_PERSISTENT); \
+    REGISTER_LONG_CONSTANT(#x "_BUILD_NUMBER", \
+		    z, CONST_CS | CONST_PERSISTENT)
+
+#define register_libav2(x, y) register_libav3(x, y, x##_BUILD)
+
+    register_libav2(LIBAVCODEC, avcodec_version());
+    register_libav2(LIBAVFORMAT, avformat_version());
+    register_libav2(LIBAVUTIL, avutil_version());
+#if HAVE_SWSCALER
+    register_libav2(LIBSWSCALE, swscale_version());
+#else
+    register_libav3(LIBSWSCALE, 0, 0);
+#endif
+
+#undef register_libav3
+#undef register_libav2
 
 #if HAVE_LIBGD20
     REGISTER_LONG_CONSTANT("FFMPEG_PHP_GD_ENABLED", 1, CONST_CS | CONST_PERSISTENT);
@@ -137,6 +165,7 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
 {
     // TODO: Free any remaining persistent movies here?
 
+    avformat_network_deinit();
     UNREGISTER_INI_ENTRIES();
 
     return SUCCESS;
@@ -161,6 +190,8 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_row(2, "ffmpeg libavcodec license", avcodec_license()); //people need to know if they can distribute
     php_info_print_table_row(2, "ffmpeg libavformat version", LIBAVFORMAT_IDENT);
     php_info_print_table_row(2, "ffmpeg libavformat license", avformat_license());
+    php_info_print_table_row(2, "ffmpeg libavutil version", LIBAVUTIL_IDENT);
+    php_info_print_table_row(2, "ffmpeg libavutil license", avutil_license());
 #if HAVE_SWSCALER
     php_info_print_table_row(2, "ffmpeg swscaler version", LIBSWSCALE_IDENT);
     php_info_print_table_row(2, "ffmpeg swscaler license", swscale_license());
@@ -201,6 +232,43 @@ PHP_MINFO_FUNCTION(ffmpeg)
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();
+}
+/* }}} */
+
+
+/* {{{ PHP_INI_MH
+ */
+static PHP_INI_MH(OnUpdateLogLevel)
+{
+    const struct { const char *name; int level; } log_levels[] = {
+        { "quiet"  , AV_LOG_QUIET   },
+        { "panic"  , AV_LOG_PANIC   },
+        { "fatal"  , AV_LOG_FATAL   },
+        { "error"  , AV_LOG_ERROR   },
+        { "warning", AV_LOG_WARNING },
+        { "info"   , AV_LOG_INFO    },
+        { "verbose", AV_LOG_VERBOSE },
+        { "debug"  , AV_LOG_DEBUG   }
+    };
+    char *tail;
+    int level;
+    int i;
+
+    for (i = 0; i < sizeof(log_levels)/sizeof(log_levels[0]); i++) {
+        if (!strcmp(log_levels[i].name, new_value)) {
+            av_log_set_level(log_levels[i].level);
+            return SUCCESS;
+        }
+    }
+
+    level = strtol(new_value, &tail, 10);
+    if (*tail) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid loglevel \"%s\". "
+               "Possible levels are numbers or {quiet, panic, fatal, error, warning, info, verbose, debug}", new_value);
+        return FAILURE;
+    }
+    av_log_set_level(level);
+    return SUCCESS;
 }
 /* }}} */
 

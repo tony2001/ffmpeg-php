@@ -282,16 +282,16 @@ FFMPEG_PHP_CONSTRUCTOR(ffmpeg_movie, __construct)
 {
     int hashkey_length = 0, filename_len;
     char *filename = NULL, *fullpath = NULL, *hashkey = NULL;
-	zend_bool persistent = 0;
+    zend_bool persistent = 0;
     ff_movie_context *ffmovie_ctx = NULL;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &filename, &filename_len, &persistent) != SUCCESS) {
-		return;
+        return;
     }
 
-	if (persistent && !INI_BOOL("ffmpeg.allow_persistent")) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Persistent movies have been disabled in php.ini");
-		RETURN_FALSE;
+    if (persistent && !INI_BOOL("ffmpeg.allow_persistent")) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Persistent movies have been disabled in php.ini");
+        RETURN_FALSE;
     }
 
     if (persistent) {
@@ -1177,8 +1177,16 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
             avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
 
             if (got_frame) {
+#if LIBAVCODEC_BUILD > 4640
+                *is_keyframe = frame->key_frame; // http://git.libav.org/?p=libav.git;a=commitdiff;h=1e491e29c27cf6a6925666e4f4eac41b65e263d7
+#else
                 *is_keyframe = (packet.flags & AV_PKT_FLAG_KEY);
+#endif
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,105,0)
+                *pts = frame->pkt_pts; // http://git.libav.org/?p=libav.git;a=commitdiff;h=393cbb963b83ecd98336502b1201f16f5eaed979
+#else
                 *pts = packet.pts;
+#endif
                 av_free_packet(&packet);
                 return frame;
             }
@@ -1213,7 +1221,7 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
         if (
 
 #if LIBAVFORMAT_BUILD >=  4619
-                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, 0)
+                av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0, AVSEEK_FLAG_BACKWARD)
 #else
                 av_seek_frame(ffmovie_ctx->fmt_ctx, -1, 0)
 #endif
@@ -1234,22 +1242,12 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
     while (1) {
         frame = _php_read_av_frame(ffmovie_ctx, decoder_ctx, is_keyframe, pts);
 
-        /* hurry up if we're still a ways from the target frame */
-        /*if (wanted_frame != GETFRAME_KEYFRAME &&
-                wanted_frame != GETFRAME_NEXTFRAME &&
-                wanted_frame - ffmovie_ctx->frame_number >
-                decoder_ctx->gop_size + 1) {
-            decoder_ctx->hurry_up = 1;
-        } else {
-            decoder_ctx->hurry_up = 0;
-        }*/
-        /*CUT? cannot hurry up ffmpeg anymore*/
-        ffmovie_ctx->frame_number++;
+        ffmovie_ctx->frame_number = decoder_ctx->frame_number;
 
         /*
          * if caller wants next keyframe then get it and break out of loop.
          */
-        if (wanted_frame == GETFRAME_KEYFRAME && is_keyframe) {
+        if (wanted_frame == GETFRAME_KEYFRAME && *is_keyframe) {
             return frame;
         }
 
@@ -1284,6 +1282,13 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, IN
          */
         ff_frame = _php_create_ffmpeg_frame(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
+        if (!ff_frame) {
+            free(frame);
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                    "Error allocating ffmpeg_frame resource");
+            return 0;
+        }
+
         /* TODO: Provide function(s) for setting these in ffmpeg_frame */
         ff_frame->width = _php_get_framewidth(ffmovie_ctx);
         ff_frame->height = _php_get_frameheight(ffmovie_ctx);
@@ -1302,6 +1307,7 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, IN
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
 
+        free(frame);
         return 1;
     } else {
         return 0;
@@ -1335,9 +1341,15 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getFrame)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &wanted_frame) != SUCCESS) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &wanted_frame) != SUCCESS) {
+        return;
+    }
+
+    /* bounds check wanted frame */
+    if (wanted_frame < 1) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Frame number must be greater than zero");
+        RETURN_FALSE;
+    }
 
     if (! _php_get_ff_frame(ffmovie_ctx, wanted_frame, INTERNAL_FUNCTION_PARAM_PASSTHRU)) {
         RETURN_FALSE;
