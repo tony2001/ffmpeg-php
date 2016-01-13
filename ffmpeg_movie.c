@@ -81,6 +81,9 @@ typedef struct {
     int64_t last_pts;
     int frame_number;
     long rsrc_id;
+	AVPacket packet;
+	int flushing;
+	uint64_t global_video_pkt_pts;
 } ff_movie_context;
 
 static zend_class_entry *ffmpeg_movie_class_entry_ptr;
@@ -88,6 +91,7 @@ zend_class_entry ffmpeg_movie_class_entry;
 
 static int le_ffmpeg_movie;
 static int le_ffmpeg_pmovie;
+//static uint64_t global_video_pkt_pts = AV_NOPTS_VALUE;
 
 /* {{{ ffmpeg_movie methods[]
     Methods of the ffmpeg_movie class
@@ -134,6 +138,22 @@ zend_function_entry ffmpeg_movie_class_methods[] = {
 };
 /* }}} */
 
+static int our_get_buffer(struct AVCodecContext *c, AVFrame *pic) {
+  int ret = avcodec_default_get_buffer(c, pic);
+  uint64_t *pts = av_malloc(sizeof(uint64_t));
+  //*pts = global_video_pkt_pts;
+  if(c->opaque)
+  {
+	*pts = *(uint64_t *) c->opaque;
+	pic->opaque = pts;
+  }
+  return ret;
+}
+static void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
+  if(pic) av_freep(&pic->opaque);
+  avcodec_default_release_buffer(c, pic);
+}
+
 
 /* {{{ _php_get_stream_index()
  */
@@ -141,7 +161,7 @@ static int _php_get_stream_index(AVFormatContext *fmt_ctx, int type)
 {
     int i;
 
-    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+    for (i = 0; i < ((int) (fmt_ctx->nb_streams)); i++) {
         if (fmt_ctx->streams[i] &&
                 GET_CODEC_FIELD(fmt_ctx->streams[i]->codec, codec_type) == type) {
             return i;
@@ -212,6 +232,8 @@ static ff_movie_context* _php_alloc_ffmovie_ctx(int persistent)
         ffmovie_ctx->codec_ctx[i] = NULL;
     }
 
+	ffmovie_ctx->flushing = 0;
+	ffmovie_ctx->global_video_pkt_pts = AV_NOPTS_VALUE;
     return ffmovie_ctx;
 }
 /* }}} */
@@ -257,6 +279,8 @@ static void _php_print_av_error(const char *filename, int err)
 static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
         char* filename)
 {
+  AVStream *st;
+
     if (ffmovie_ctx->fmt_ctx) {
         avformat_close_input(&ffmovie_ctx->fmt_ctx);
         ffmovie_ctx->fmt_ctx = NULL;
@@ -267,6 +291,10 @@ static int _php_open_movie_file(ff_movie_context *ffmovie_ctx,
         return 1;
     }
 
+    st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
+	st->codec->get_buffer = our_get_buffer;
+	st->codec->release_buffer = our_release_buffer;
+	
     /* decode the first frames to get the stream parameters. */
     avformat_find_stream_info(ffmovie_ctx->fmt_ctx, NULL);
 
@@ -458,6 +486,8 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
     AVCodec *decoder;
     int stream_index;
 
+	TSRMLS_FETCH();
+
     stream_index = _php_get_stream_index(ffmovie_ctx->fmt_ctx, stream_type);
     if (stream_index < 0) {
         // FIXME: factor out the conditional.
@@ -503,10 +533,11 @@ static AVCodecContext* _php_get_decoder_context(ff_movie_context *ffmovie_ctx,
 void php_get_dict_value(INTERNAL_FUNCTION_PARAMETERS, char *entry_name) /* {{{ */
 {
     ff_movie_context *ffmovie_ctx;
+	AVDictionaryEntry* m_entry;
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    AVDictionaryEntry *m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, entry_name, NULL, 0);
+    m_entry = av_dict_get(ffmovie_ctx->fmt_ctx->metadata, entry_name, NULL, 0);
 
     if (!m_entry) {
         RETURN_FALSE;
@@ -628,25 +659,26 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getDuration)
 static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
 {
     AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
-    float rate = 0.0f;
+    double rate = 0.0;
 
     if (!st) {
-      return rate;
+      return ((float) rate);
     }
 
-#if LIBAVCODEC_BUILD > 4753
-    if (GET_CODEC_FIELD(st->codec, codec_type) == AVMEDIA_TYPE_VIDEO){
-        if (st->r_frame_rate.den && st->r_frame_rate.num) {
-            rate = av_q2d(st->r_frame_rate);
-        } else {
-            rate = 1 / av_q2d(GET_CODEC_FIELD(st->codec, time_base));
-        }
-    }
-    return (float)rate;
-#else
-    return (float)GET_CODEC_FIELD(st->codec, frame_rate) /
-                        GET_CODEC_FIELD(st->codec, frame_rate_base);
-#endif
+	return (float) av_q2d(st->avg_frame_rate);
+//#if LIBAVCODEC_BUILD > 4753
+//    if (GET_CODEC_FIELD(st->codec, codec_type) == AVMEDIA_TYPE_VIDEO){
+//        if (st->r_frame_rate.den && st->r_frame_rate.num) {
+//            rate = av_q2d(st->r_frame_rate);
+//        } else {
+//            rate = 1 / av_q2d(GET_CODEC_FIELD(st->codec, time_base));
+//        }
+//    }
+//    return (float)rate;
+//#else
+//    return (float)GET_CODEC_FIELD(st->codec, frame_rate) /
+//                        GET_CODEC_FIELD(st->codec, frame_rate_base);
+//#endif
 }
 /* }}} */
 
@@ -655,13 +687,16 @@ static float _php_get_framerate(ff_movie_context *ffmovie_ctx)
  */
 static long _php_get_framecount(ff_movie_context *ffmovie_ctx)
 {
+  AVStream *st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
     /* does this movie have a video stream?  */
-    if (!_php_get_video_stream(ffmovie_ctx->fmt_ctx)) {
+    if (!st) {
       return 0;
     }
 
-    return LRINT(_php_get_framerate(ffmovie_ctx) *
-            _php_get_duration(ffmovie_ctx));
+
+	return LRINT(st->nb_frames);
+//    return LRINT(_php_get_framerate(ffmovie_ctx) *
+//            _php_get_duration(ffmovie_ctx));
 }
 /* }}} */
 
@@ -1155,12 +1190,13 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getVideoBitRate)
  Returns the next frame from the movie
  */
 static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
-        AVCodecContext *decoder_ctx, int *is_keyframe, int64_t *pts)
+        AVCodecContext *decoder_ctx, int *is_keyframe, double *pts TSRMLS_DC)
 {
     int video_stream;
-    AVPacket packet;
     AVFrame *frame = NULL;
     int got_frame;
+	AVStream* st;
+	int retValue;
 
     video_stream = _php_get_stream_index(ffmovie_ctx->fmt_ctx,
             AVMEDIA_TYPE_VIDEO);
@@ -1170,24 +1206,71 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
 
     frame = avcodec_alloc_frame();
 
+	st = _php_get_video_stream(ffmovie_ctx->fmt_ctx);
+
     /* read next frame */
-    while (av_read_frame(ffmovie_ctx->fmt_ctx, &packet) >= 0) {
-        if (packet.stream_index == video_stream) {
+	
+	decoder_ctx->opaque = &ffmovie_ctx->global_video_pkt_pts;
+	while (!ffmovie_ctx->flushing && (av_read_frame(ffmovie_ctx->fmt_ctx, &(ffmovie_ctx->packet)) >= 0)) {
+	  if (ffmovie_ctx->packet.stream_index == video_stream) {
 
-            avcodec_decode_video2(decoder_ctx, frame, &got_frame, &packet);
+		ffmovie_ctx->global_video_pkt_pts = ffmovie_ctx->packet.pts;
+		avcodec_decode_video2(decoder_ctx, frame, &got_frame, &(ffmovie_ctx->packet));
 
-            if (got_frame) {
-                *is_keyframe = (packet.flags & AV_PKT_FLAG_KEY);
-                *pts = packet.pts;
-                av_free_packet(&packet);
-                return frame;
-            }
-        }
+		if(frame->opaque && *(uint64_t*)frame->opaque != AV_NOPTS_VALUE) {
+		  *pts = *(uint64_t *)frame->opaque * av_q2d(st->time_base);
+		} else if(ffmovie_ctx->packet.dts != AV_NOPTS_VALUE) {
+		  *pts = ffmovie_ctx->packet.dts * av_q2d(st->time_base);
+		} else {
+		  *pts = 0;
+		}
 
-        /* free the packet allocated by av_read_frame */
-        av_free_packet(&packet);
-    }
+		//			*pts *= av_q2d(st->time_base);
 
+		if (got_frame) {
+		  *is_keyframe = (ffmovie_ctx->packet.flags & AV_PKT_FLAG_KEY);
+		  //                *pts = packet.pts;
+		  av_free_packet(&(ffmovie_ctx->packet));
+		  return frame;
+		}
+//		else
+//		{
+//		  php_error_docref(NULL TSRMLS_CC, E_WARNING, "SKIPPING.  NO FRAME DECODED");
+//		}
+	  }
+//	  else
+//		  php_error_docref(NULL TSRMLS_CC, E_WARNING, "NOT A VIDEO STREAM!!!!");
+
+
+	  /* free the packet allocated by av_read_frame */
+	  av_free_packet(&(ffmovie_ctx->packet));
+	}
+
+	if(!ffmovie_ctx->flushing)
+	{
+//	  php_error_docref(NULL TSRMLS_CC, E_WARNING, "BEGINNING FLUSH");
+	  ffmovie_ctx->flushing = 1;
+	}
+	// check for buffered frames
+	
+	if(retValue = avcodec_decode_video2(decoder_ctx, frame, &got_frame, &(ffmovie_ctx->packet)), 
+			((retValue != AVERROR_EOF) && (retValue >= 0) && (got_frame)))
+	{
+//	  php_error_docref(NULL TSRMLS_CC, E_WARNING, "FLUSHED FRAME");
+	  *is_keyframe = (ffmovie_ctx->packet.flags & AV_PKT_FLAG_KEY);
+		if(frame->opaque && *(uint64_t*)frame->opaque != AV_NOPTS_VALUE) {
+		  *pts = *(uint64_t *)frame->opaque * av_q2d(st->time_base);
+		} else if(ffmovie_ctx->packet.dts != AV_NOPTS_VALUE) {
+		  *pts = ffmovie_ctx->packet.dts * av_q2d(st->time_base);
+		} else {
+		  *pts = 0;
+		}
+		return frame;
+	}
+
+//	php_error_docref(NULL TSRMLS_CC, E_WARNING, "DONE FLUSHING WITH RETVALUE %d", retValue);
+	av_free_packet(&(ffmovie_ctx->packet));
+	ffmovie_ctx->flushing = 0;
     av_free(frame);
     return NULL;
 }
@@ -1198,10 +1281,12 @@ static AVFrame* _php_read_av_frame(ff_movie_context *ffmovie_ctx,
    */
 #define GETFRAME_KEYFRAME -1
 #define GETFRAME_NEXTFRAME 0
-static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, int *is_keyframe, int64_t *pts)
+static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, int *is_keyframe, double *pts TSRMLS_DC)
 {
     AVCodecContext *decoder_ctx = NULL;
     AVFrame *frame = NULL;
+//	char outputFilename[256];
+//	FILE* fp;
 
     decoder_ctx = _php_get_decoder_context(ffmovie_ctx, AVMEDIA_TYPE_VIDEO);
     if (decoder_ctx == NULL) {
@@ -1232,7 +1317,8 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
 
     /* read frames looking for wanted_frame */
     while (1) {
-        frame = _php_read_av_frame(ffmovie_ctx, decoder_ctx, is_keyframe, pts);
+//	  php_error_docref(NULL TSRMLS_CC, E_WARNING, "_php_get_av_frame: getting wanted frame %d", wanted_frame);
+        frame = _php_read_av_frame(ffmovie_ctx, decoder_ctx, is_keyframe, pts TSRMLS_CC);
 
         /* hurry up if we're still a ways from the target frame */
         /*if (wanted_frame != GETFRAME_KEYFRAME &&
@@ -1246,6 +1332,11 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
         /*CUT? cannot hurry up ffmpeg anymore*/
         ffmovie_ctx->frame_number++;
 
+//		sprintf(outputFilename, "c:\\test\\movie_%x.txt", ffmovie_ctx);
+//		fp = fopen(outputFilename, "a");
+//		fprintf(fp,"ffmovie_ctx: %x packet: %x\n", ffmovie_ctx, ffmovie_ctx->packet);
+//		fprintf(fp, "frame : %p frame #: %d\n",  frame, ffmovie_ctx->frame_number);
+//		fclose(fp);
         /*
          * if caller wants next keyframe then get it and break out of loop.
          */
@@ -1257,9 +1348,9 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
                 ffmovie_ctx->frame_number == wanted_frame) {
             return frame;
         }
+		av_free(frame);
     }
 
-    av_free(frame);
     return NULL;
 }
 /* }}} */
@@ -1271,12 +1362,14 @@ static AVFrame* _php_get_av_frame(ff_movie_context *ffmovie_ctx, int wanted_fram
  */
 static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, INTERNAL_FUNCTION_PARAMETERS) {
     int is_keyframe = 0;
-    int64_t pts;
+    double pts;
     AVFrame *frame = NULL;
     ff_frame_context *ff_frame;
 
-    frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts);
+//	php_error_docref(NULL TSRMLS_CC, E_WARNING, "_php_get_ff_frame: getting wanted frame # %d", wanted_frame);
+    frame = _php_get_av_frame(ffmovie_ctx, wanted_frame, &is_keyframe, &pts TSRMLS_CC);
     if (frame) {
+//	php_error_docref(NULL TSRMLS_CC, E_WARNING, "_php_get_ff_frame: got wanted frame # %d", wanted_frame);
         /*
          * _php_create_ffmpeg_frame sets PHP return_value to a ffmpeg_frame
          * object via INTERNAL_FUNCTION_PARAM_PASSTHRU, the returned ff_frame
@@ -1302,8 +1395,11 @@ static int _php_get_ff_frame(ff_movie_context *ffmovie_ctx, int wanted_frame, IN
                         (AVPicture*)frame, ff_frame->pixel_format,
                 ff_frame->width, ff_frame->height);
 
+		av_free(frame);
+
         return 1;
     } else {
+//	  php_error_docref(NULL TSRMLS_CC, E_WARNING, "_php_get_ff_frame: wanted frame NULL");
         return 0;
     }
 
@@ -1351,13 +1447,13 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getFrame)
  * one frame is read. This function will read a frame without moving the
  * frame counter.
  */
-void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
+void _php_pre_read_frame(ff_movie_context *ffmovie_ctx TSRMLS_DC) {
     AVFrame *frame = NULL;
     int is_keyframe;
-    int64_t pts;
+    double pts;
 
     frame = _php_get_av_frame(ffmovie_ctx,
-            _php_get_framenumber(ffmovie_ctx) - 1, &is_keyframe, &pts);
+            _php_get_framenumber(ffmovie_ctx) - 1, &is_keyframe, &pts TSRMLS_CC);
 
     av_free(frame);
 }
@@ -1366,7 +1462,7 @@ void _php_pre_read_frame(ff_movie_context *ffmovie_ctx) {
 
 /* {{{ _php_get_sample_aspec_ratio()
  */
-static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
+static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx TSRMLS_DC)
 {
     AVCodecContext *decoder_ctx;
 
@@ -1379,7 +1475,7 @@ static double _php_get_sample_aspect_ratio(ff_movie_context *ffmovie_ctx)
 
 	if (decoder_ctx->sample_aspect_ratio.num == 0) {
 		// pre read a frame so ffmpeg will fill in sample aspect ratio field.
-        _php_pre_read_frame(ffmovie_ctx);
+        _php_pre_read_frame(ffmovie_ctx TSRMLS_CC);
 
 		if (decoder_ctx->sample_aspect_ratio.num == 0) {
 			return -2; // aspect not set
@@ -1400,7 +1496,7 @@ FFMPEG_PHP_METHOD(ffmpeg_movie, getPixelAspectRatio)
 
     GET_MOVIE_RESOURCE(ffmovie_ctx);
 
-    aspect = _php_get_sample_aspect_ratio(ffmovie_ctx);
+    aspect = _php_get_sample_aspect_ratio(ffmovie_ctx TSRMLS_CC);
 
     if (aspect < 0) {
         RETURN_FALSE;

@@ -148,6 +148,11 @@ PHP_MSHUTDOWN_FUNCTION(ffmpeg)
    Add an entry for ffmpeg-php support in phpinfo() */
 PHP_MINFO_FUNCTION(ffmpeg)
 {
+    AVCodec *next_codec = NULL;
+    char *m_codec_list = NULL;
+    long m_codec_list_len = 0;
+    long m_codec_len = 0;
+
     php_info_print_table_start();
 //    php_info_print_table_header(2, "ffmpeg-php", "enabled");
     php_info_print_table_row(2, "ffmpeg-php version", FFMPEG_PHP_VERSION);
@@ -169,10 +174,6 @@ PHP_MINFO_FUNCTION(ffmpeg)
 #endif
 
     //phpinfo should show the codec list available to aid developers
-    AVCodec *next_codec = NULL;
-    char *m_codec_list = NULL;
-    long m_codec_list_len = 0;
-    long m_codec_len = 0;
     while((next_codec = av_codec_next(next_codec))) {
       //go through each codec and add to the list
       m_codec_len = (strlen(next_codec->name) + 5);
