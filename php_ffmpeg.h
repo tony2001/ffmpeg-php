@@ -61,7 +61,7 @@
 /*
  * fix for `undefined symbol: avcodec_alloc_frame in Unknown on line 0`
  */
-#define av_frame_alloc avcodec_alloc_frame
+#define avcodec_alloc_frame av_frame_alloc
 
 
 #define SAFE_STRING(s) ((s)?(s):"")
