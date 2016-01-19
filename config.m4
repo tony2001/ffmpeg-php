@@ -21,7 +21,12 @@ if test "$PHP_FFMPEG" != "no"; then
 
   AC_MSG_CHECKING(for ffmpeg headers)
   for i in $INC_CHECK_DIRS ; do
-    if test -f $i/include/libavcodec/avcodec.h; then
+    if test -d $i/include/ffmpeg -a -f $i/include/ffmpeg/libavcodec/avcodec.h; then
+      dnl some distros put headers under /usr/include/ffmpeg/libav{codec,...} now
+      FFMPEG_INC_FOUND=$i/include
+      PHP_ADD_INCLUDE($i/include/ffmpeg/)
+      break
+    elif test -f $i/include/libavcodec/avcodec.h; then
       dnl ffmpeg svn revision 12194 and newer put each header in its own dir
       dnl so we have to include them all.
 dnl      PHP_ADD_INCLUDE($i/include/libavcodec/)
