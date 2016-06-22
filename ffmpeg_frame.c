@@ -70,8 +70,12 @@
 
 #if PIX_FMT_RGBA32
 #define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT PIX_FMT_RGBA32
-#else
+#endif
+
+#if PIX_FMT_RGB32
 #define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT PIX_FMT_RGB32
+#else
+#define FFMPEG_PHP_FFMPEG_RGB_PIX_FORMAT AV_PIX_FMT_RGB32
 #endif
 
 #define gdImageBoundsSafeMacro(im, x, y) (!((((y) < (im)->cy1) || ((y) > (im)->cy2)) || (((x) < (im)->cx1) || ((x) > (im)->cx2))))
